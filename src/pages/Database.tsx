@@ -51,9 +51,16 @@ export function Database() {
                   <button onClick={() => setDateFilter('today')} className={`px-3 py-1.5 text-xs font-semibold rounded-lg border ${dateFilter === 'today' ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'}`}>Hoy</button>
                   <button onClick={() => setDateFilter('yesterday')} className={`px-3 py-1.5 text-xs font-semibold rounded-lg border ${dateFilter === 'yesterday' ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'}`}>Ayer</button>
                   <button onClick={() => setDateFilter('7days')} className={`px-3 py-1.5 text-xs font-semibold rounded-lg border ${dateFilter === '7days' ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'}`}>Últimos 7 días</button>
-                  <div className="relative flex-1">
-                    <Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
-                    <input type="date" className="w-full pl-8 pr-3 py-1.5 text-xs border border-gray-200 rounded-lg text-gray-600 focus:ring-1 focus:ring-blue-500" />
+                  <div className="flex items-center gap-2 flex-1">
+                    <div className="relative flex-1 min-w-[120px]">
+                      <Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+                      <input type="date" className="w-full pl-8 pr-2 py-1.5 text-xs border border-gray-200 rounded-lg text-gray-600 focus:ring-1 focus:ring-blue-500" title="Desde" />
+                    </div>
+                    <span className="text-xs font-bold text-gray-400">a</span>
+                    <div className="relative flex-1 min-w-[120px]">
+                      <Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+                      <input type="date" className="w-full pl-8 pr-2 py-1.5 text-xs border border-gray-200 rounded-lg text-gray-600 focus:ring-1 focus:ring-blue-500" title="Hasta" />
+                    </div>
                   </div>
                 </div>
               </div>
