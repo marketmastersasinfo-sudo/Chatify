@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Store, Plus, Search, MessageSquare, CheckCircle, Clock, AlertTriangle } from 'lucide-react';
+import { Store, Plus, Search, MessageSquare, CheckCircle, Clock } from 'lucide-react';
 
 export function Templates() {
   const [selectedStore, setSelectedStore] = useState('none');

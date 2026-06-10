@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, MessageSquare, CheckCircle, MapPin, MessageCircle, Settings, Truck, ThumbsUp, Database, Megaphone, FileText } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, MapPin, Settings, Truck, ThumbsUp, Database, Megaphone, FileText } from 'lucide-react';
 import { cn } from '../../utils/cn';
 
 const navigation = [
