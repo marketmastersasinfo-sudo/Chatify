@@ -28,28 +28,76 @@ export function Settings() {
             </div>
             <h2 className="text-xl font-bold text-gray-900">Motores de Inteligencia Artificial</h2>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {/* OpenAI */}
-            <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
-              <label className="block text-sm font-semibold text-gray-900 mb-2">OpenAI (GPT-4o)</label>
-              <input type="password" placeholder="sk-proj-..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500" defaultValue="sk-proj-123456789" />
-              <div className="mt-2 flex items-center gap-2 text-xs text-green-600 font-medium">
+            <div className="p-4 bg-gray-50 rounded-xl border border-gray-100 flex flex-col justify-between">
+              <div>
+                <label className="block text-sm font-semibold text-gray-900 mb-2">OpenAI</label>
+                <select className="w-full mb-3 px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-blue-500 focus:border-blue-500">
+                  <option>GPT-4o (Recomendado)</option>
+                  <option>GPT-4 Turbo</option>
+                  <option>GPT-3.5 Turbo</option>
+                </select>
+                <input type="password" placeholder="sk-proj-..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500" defaultValue="sk-proj-123456789" />
+              </div>
+              <div className="mt-4 flex items-center gap-2 text-xs text-green-600 font-medium">
                 <div className="w-2 h-2 rounded-full bg-green-500"></div> Conectado
               </div>
             </div>
-            {/* Claude */}
-            <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
-              <label className="block text-sm font-semibold text-gray-900 mb-2">Anthropic (Claude 3.5 Sonnet)</label>
-              <input type="password" placeholder="sk-ant-..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500" />
-              <div className="mt-2 flex items-center gap-2 text-xs text-gray-500 font-medium">
+            {/* Anthropic */}
+            <div className="p-4 bg-gray-50 rounded-xl border border-gray-100 flex flex-col justify-between">
+              <div>
+                <label className="block text-sm font-semibold text-gray-900 mb-2">Anthropic</label>
+                <select className="w-full mb-3 px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-blue-500 focus:border-blue-500">
+                  <option>Claude 3.5 Sonnet</option>
+                  <option>Claude 3 Opus</option>
+                  <option>Claude 3 Haiku</option>
+                </select>
+                <input type="password" placeholder="sk-ant-..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500" />
+              </div>
+              <div className="mt-4 flex items-center gap-2 text-xs text-gray-500 font-medium">
+                <div className="w-2 h-2 rounded-full bg-gray-300"></div> No Configurado
+              </div>
+            </div>
+            {/* Google Gemini */}
+            <div className="p-4 bg-gray-50 rounded-xl border border-gray-100 flex flex-col justify-between">
+              <div>
+                <label className="block text-sm font-semibold text-gray-900 mb-2">Google Gemini</label>
+                <select className="w-full mb-3 px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-blue-500 focus:border-blue-500">
+                  <option>Gemini 1.5 Pro</option>
+                  <option>Gemini 1.5 Flash</option>
+                </select>
+                <input type="password" placeholder="AIzaSy..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500" />
+              </div>
+              <div className="mt-4 flex items-center gap-2 text-xs text-gray-500 font-medium">
                 <div className="w-2 h-2 rounded-full bg-gray-300"></div> No Configurado
               </div>
             </div>
             {/* Grok */}
-            <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
-              <label className="block text-sm font-semibold text-gray-900 mb-2">xAI (Grok-2)</label>
-              <input type="password" placeholder="xai-..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500" />
-              <div className="mt-2 flex items-center gap-2 text-xs text-gray-500 font-medium">
+            <div className="p-4 bg-gray-50 rounded-xl border border-gray-100 flex flex-col justify-between">
+              <div>
+                <label className="block text-sm font-semibold text-gray-900 mb-2">xAI (Grok)</label>
+                <select className="w-full mb-3 px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-blue-500 focus:border-blue-500">
+                  <option>Grok-2</option>
+                  <option>Grok-1.5</option>
+                </select>
+                <input type="password" placeholder="xai-..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500" />
+              </div>
+              <div className="mt-4 flex items-center gap-2 text-xs text-gray-500 font-medium">
+                <div className="w-2 h-2 rounded-full bg-gray-300"></div> No Configurado
+              </div>
+            </div>
+            {/* Meta Llama */}
+            <div className="p-4 bg-gray-50 rounded-xl border border-gray-100 flex flex-col justify-between">
+              <div>
+                <label className="block text-sm font-semibold text-gray-900 mb-2">Meta Llama (Groq/Replicate)</label>
+                <select className="w-full mb-3 px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-blue-500 focus:border-blue-500">
+                  <option>Llama 3 70B</option>
+                  <option>Llama 3 8B</option>
+                </select>
+                <input type="password" placeholder="gsk_..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500" />
+              </div>
+              <div className="mt-4 flex items-center gap-2 text-xs text-gray-500 font-medium">
                 <div className="w-2 h-2 rounded-full bg-gray-300"></div> No Configurado
               </div>
             </div>
