@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, MessageSquare, MapPin, Settings, Truck, ThumbsUp, Database, Megaphone, FileText } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, MapPin, Settings, Truck, ThumbsUp, Database, Megaphone, FileText, RefreshCcw } from 'lucide-react';
 import { cn } from '../../utils/cn';
 
 const navigation = [
@@ -7,6 +7,7 @@ const navigation = [
   { name: 'CRM Ventas WA', href: '/crm-sales', icon: MessageSquare },
   { name: 'CRM Redes Sociales', href: '/crm-social', icon: ThumbsUp },
   { name: 'Logística ShopyEasy', href: '/crm-logistics', icon: Truck },
+  { name: 'CRM Remarketing', href: '/crm-remarketing', icon: RefreshCcw },
   { name: 'Base de Datos', href: '/database', icon: Database },
   { name: 'Difusión Masiva', href: '/broadcast', icon: Megaphone },
   { name: 'Gestor Plantillas', href: '/templates', icon: FileText },

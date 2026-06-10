@@ -176,14 +176,51 @@ export function Stores() {
                 <Store className="text-blue-600" /> Configuración: {selectedStore.name}
               </h2>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* WhatsApp Config */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* WhatsApp Config (BSP) */}
                 <div className="p-5 bg-gray-50 rounded-xl border border-gray-100">
-                  <h3 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2"><Smartphone className="w-4 h-4 text-green-600" /> Conexión WhatsApp</h3>
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2"><Smartphone className="w-4 h-4 text-green-600" /> WhatsApp & BSP</h3>
+                    <button className="text-xs font-bold text-blue-600 hover:text-blue-800">Editar</button>
+                  </div>
                   <div className="space-y-3">
                     <div>
                       <label className="block text-xs font-semibold text-gray-500 mb-1">Número WABA</label>
                       <input type="text" readOnly className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white text-gray-600" value={selectedStore.waba_number || 'No configurado'} />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 mb-1">Proveedor (BSP)</label>
+                      <select className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white text-gray-700 focus:ring-1 focus:ring-blue-500">
+                        <option>360Dialog</option>
+                        <option>Twilio</option>
+                        <option>Meta Cloud API (Nativo)</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 mb-1">API Key / Token BSP</label>
+                      <input type="password" placeholder="D3A-..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white text-gray-600 focus:ring-1 focus:ring-blue-500" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Fan Pages Config */}
+                <div className="p-5 bg-gray-50 rounded-xl border border-gray-100">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2"><Target className="w-4 h-4 text-blue-600" /> Redes Sociales (Meta)</h3>
+                    <button className="text-xs font-bold text-blue-600 hover:text-blue-800">Editar</button>
+                  </div>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 mb-1">Page ID (Facebook)</label>
+                      <input type="text" placeholder="103847593..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white text-gray-600 focus:ring-1 focus:ring-blue-500" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 mb-1">Instagram Account ID</label>
+                      <input type="text" placeholder="178414..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white text-gray-600 focus:ring-1 focus:ring-blue-500" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 mb-1">Page Access Token</label>
+                      <input type="password" placeholder="EAAQx..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white text-gray-600 focus:ring-1 focus:ring-blue-500" />
                     </div>
                   </div>
                 </div>
@@ -192,6 +229,7 @@ export function Stores() {
                 <div className="p-5 bg-gray-50 rounded-xl border border-gray-100">
                   <div className="flex justify-between items-center mb-4">
                     <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2"><Target className="w-4 h-4 text-purple-600" /> Píxel de Meta</h3>
+                    <button className="text-xs font-bold text-blue-600 hover:text-blue-800">Editar</button>
                   </div>
                   <div className="space-y-3">
                     <div>

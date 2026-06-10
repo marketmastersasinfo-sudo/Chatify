@@ -11,6 +11,7 @@ import { Orders } from './pages/Orders';
 import { Comments } from './pages/Comments';
 import { Broadcast } from './pages/Broadcast';
 import { Templates } from './pages/Templates';
+import { CrmRemarketing } from './pages/CrmRemarketing';
 
 function App() {
   return (
@@ -20,8 +21,9 @@ function App() {
           <Route path="/" element={<Dashboard />} />
           <Route path="crm-sales" element={<CrmSales />} />
           <Route path="crm-social" element={<CrmSocial />} />
-          <Route path="crm-logistics" element={<CrmLogistics />} />
-          <Route path="database" element={<DB />} />
+          <Route path="/crm-logistics" element={<CrmLogistics />} />
+          <Route path="/crm-remarketing" element={<CrmRemarketing />} />
+          <Route path="/database" element={<DB />} />
           <Route path="/orders" element={<Orders />} />
           <Route path="/stores" element={<Stores />} />
           <Route path="/comments" element={<Comments />} />
