@@ -29,14 +29,17 @@ export function Settings() {
             <h2 className="text-xl font-bold text-gray-900">Motores de Inteligencia Artificial</h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* OpenAI */}
-            <div className="p-4 bg-gray-50 rounded-xl border border-gray-100 flex flex-col justify-between">
+            {/* 1. OpenAI (Mejor Calidad/Precio) */}
+            <div className="p-4 bg-gray-50 rounded-xl border border-blue-200 flex flex-col justify-between shadow-sm relative">
+              <div className="absolute -top-3 right-4 bg-blue-100 text-blue-700 text-[10px] font-bold px-2 py-1 rounded-full border border-blue-200">
+                #1 Recomendado (Calidad/Precio)
+              </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-900 mb-2">OpenAI</label>
+                <label className="block text-sm font-bold text-gray-900 mb-2">OpenAI</label>
                 <select className="w-full mb-3 px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-blue-500 focus:border-blue-500">
-                  <option>GPT-4o (Recomendado)</option>
+                  <option>GPT-4o mini (El más barato/obediente)</option>
+                  <option>GPT-4o (Gasto alto)</option>
                   <option>GPT-4 Turbo</option>
-                  <option>GPT-3.5 Turbo</option>
                 </select>
                 <input type="password" placeholder="sk-proj-..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500" defaultValue="sk-proj-123456789" />
               </div>
@@ -44,28 +47,14 @@ export function Settings() {
                 <div className="w-2 h-2 rounded-full bg-green-500"></div> Conectado
               </div>
             </div>
-            {/* Anthropic */}
-            <div className="p-4 bg-gray-50 rounded-xl border border-gray-100 flex flex-col justify-between">
-              <div>
-                <label className="block text-sm font-semibold text-gray-900 mb-2">Anthropic</label>
-                <select className="w-full mb-3 px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-blue-500 focus:border-blue-500">
-                  <option>Claude 3.5 Sonnet</option>
-                  <option>Claude 3 Opus</option>
-                  <option>Claude 3 Haiku</option>
-                </select>
-                <input type="password" placeholder="sk-ant-..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500" />
-              </div>
-              <div className="mt-4 flex items-center gap-2 text-xs text-gray-500 font-medium">
-                <div className="w-2 h-2 rounded-full bg-gray-300"></div> No Configurado
-              </div>
-            </div>
-            {/* Google Gemini */}
-            <div className="p-4 bg-gray-50 rounded-xl border border-gray-100 flex flex-col justify-between">
+
+            {/* 2. Google Gemini */}
+            <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 flex flex-col justify-between">
               <div>
                 <label className="block text-sm font-semibold text-gray-900 mb-2">Google Gemini</label>
                 <select className="w-full mb-3 px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-blue-500 focus:border-blue-500">
+                  <option>Gemini 1.5 Flash (Excelente contexto)</option>
                   <option>Gemini 1.5 Pro</option>
-                  <option>Gemini 1.5 Flash</option>
                 </select>
                 <input type="password" placeholder="AIzaSy..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500" />
               </div>
@@ -73,8 +62,39 @@ export function Settings() {
                 <div className="w-2 h-2 rounded-full bg-gray-300"></div> No Configurado
               </div>
             </div>
-            {/* Grok */}
-            <div className="p-4 bg-gray-50 rounded-xl border border-gray-100 flex flex-col justify-between">
+
+            {/* 3. Meta Llama */}
+            <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 flex flex-col justify-between">
+              <div>
+                <label className="block text-sm font-semibold text-gray-900 mb-2">Meta Llama (vía Groq)</label>
+                <select className="w-full mb-3 px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-blue-500 focus:border-blue-500">
+                  <option>Llama 3 8B (Gratis / Instantáneo)</option>
+                  <option>Llama 3 70B</option>
+                </select>
+                <input type="password" placeholder="gsk_..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500" />
+              </div>
+              <div className="mt-4 flex items-center gap-2 text-xs text-gray-500 font-medium">
+                <div className="w-2 h-2 rounded-full bg-gray-300"></div> No Configurado
+              </div>
+            </div>
+
+            {/* 4. Anthropic */}
+            <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 flex flex-col justify-between">
+              <div>
+                <label className="block text-sm font-semibold text-gray-900 mb-2">Anthropic (Claude)</label>
+                <select className="w-full mb-3 px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-blue-500 focus:border-blue-500">
+                  <option>Claude 3 Haiku (Más humano)</option>
+                  <option>Claude 3.5 Sonnet</option>
+                </select>
+                <input type="password" placeholder="sk-ant-..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500" />
+              </div>
+              <div className="mt-4 flex items-center gap-2 text-xs text-gray-500 font-medium">
+                <div className="w-2 h-2 rounded-full bg-gray-300"></div> No Configurado
+              </div>
+            </div>
+
+            {/* 5. Grok */}
+            <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 flex flex-col justify-between">
               <div>
                 <label className="block text-sm font-semibold text-gray-900 mb-2">xAI (Grok)</label>
                 <select className="w-full mb-3 px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-blue-500 focus:border-blue-500">
@@ -82,20 +102,6 @@ export function Settings() {
                   <option>Grok-1.5</option>
                 </select>
                 <input type="password" placeholder="xai-..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500" />
-              </div>
-              <div className="mt-4 flex items-center gap-2 text-xs text-gray-500 font-medium">
-                <div className="w-2 h-2 rounded-full bg-gray-300"></div> No Configurado
-              </div>
-            </div>
-            {/* Meta Llama */}
-            <div className="p-4 bg-gray-50 rounded-xl border border-gray-100 flex flex-col justify-between">
-              <div>
-                <label className="block text-sm font-semibold text-gray-900 mb-2">Meta Llama (Groq/Replicate)</label>
-                <select className="w-full mb-3 px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-blue-500 focus:border-blue-500">
-                  <option>Llama 3 70B</option>
-                  <option>Llama 3 8B</option>
-                </select>
-                <input type="password" placeholder="gsk_..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500" />
               </div>
               <div className="mt-4 flex items-center gap-2 text-xs text-gray-500 font-medium">
                 <div className="w-2 h-2 rounded-full bg-gray-300"></div> No Configurado
