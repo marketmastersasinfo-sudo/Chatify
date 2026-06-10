@@ -6,6 +6,7 @@ import { Products } from './pages/Products';
 import { Finance } from './pages/Finance';
 import { Settings } from './pages/Settings';
 import { Stores } from './pages/Stores';
+import { Chats } from './pages/Chats';
 
 function App() {
   return (
@@ -16,7 +17,7 @@ function App() {
           <Route path="/products" element={<Products />} />
           <Route path="/stores" element={<Stores />} />
           <Route path="/finance" element={<Finance />} />
-          <Route path="/chats" element={<div className="text-gray-900 dark:text-white">Chats e IA - En construcción</div>} />
+          <Route path="/chats" element={<Chats />} />
           <Route path="/settings" element={<Settings />} />
         </Route>
       </Routes>

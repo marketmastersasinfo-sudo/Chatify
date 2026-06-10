@@ -68,6 +68,56 @@ export function Settings() {
             </form>
           </div>
         </div>
+
+        {/* API Keys de IA y Fallback */}
+        <div className="bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl md:col-span-2 dark:bg-gray-900 dark:ring-gray-800">
+          <div className="px-4 py-6 sm:p-8">
+            <h2 className="text-base font-semibold leading-7 text-gray-900 dark:text-white">Motor de Ventas IA (Fallback Router)</h2>
+            <p className="mt-1 text-sm leading-6 text-gray-500 dark:text-gray-400">
+              Configura las llaves de acceso a las IAs y el orden de prioridad para balancear Costos vs. Inteligencia.
+            </p>
+
+            <form className="mt-6 grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
+              <div>
+                <label className="block text-sm font-medium leading-6 text-gray-900 dark:text-white">Grok API Key (xAI)</label>
+                <div className="mt-2">
+                  <input type="password" placeholder="xoxb-..." className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-blue-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-white dark:ring-gray-700" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium leading-6 text-gray-900 dark:text-white">Claude API Key (Anthropic)</label>
+                <div className="mt-2">
+                  <input type="password" placeholder="sk-ant-..." className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-blue-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-white dark:ring-gray-700" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium leading-6 text-gray-900 dark:text-white">OpenAI API Key (Whisper/GPT)</label>
+                <div className="mt-2">
+                  <input type="password" placeholder="sk-proj-..." className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-blue-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-white dark:ring-gray-700" />
+                </div>
+              </div>
+              
+              <div className="sm:col-span-2 mt-4 pt-4 border-t border-gray-200 dark:border-gray-800">
+                <label className="block text-sm font-medium leading-6 text-gray-900 dark:text-white">Orden del Enrutador (Fallback Priority)</label>
+                <p className="text-xs text-gray-500 mb-3">Si la Prioridad 1 falla o demora, saltará a la Prioridad 2 automáticamente para no perder la venta.</p>
+                <div className="flex gap-4">
+                  <select className="block w-full rounded-md border-0 py-1.5 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-blue-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-white dark:ring-gray-700">
+                    <option>1. Grok (Más rápido/barato)</option>
+                    <option>1. Claude Haiku</option>
+                  </select>
+                  <select className="block w-full rounded-md border-0 py-1.5 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-blue-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-white dark:ring-gray-700">
+                    <option>2. Claude 3.5 Sonnet (Máxima Inteligencia)</option>
+                    <option>2. GPT-4o Mini</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="sm:col-span-2 flex items-center justify-end pt-4">
+                <button type="button" className="rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500">Guardar Motor IA</button>
+              </div>
+            </form>
+          </div>
+        </div>
       </div>
     </div>
   );
