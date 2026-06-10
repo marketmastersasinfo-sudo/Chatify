@@ -22,12 +22,15 @@ export function Settings() {
         
         {/* Motores de IA */}
         <div className="glass-card rounded-2xl p-6">
-          <div className="flex items-center gap-3 mb-6">
+          <div className="flex items-center gap-3 mb-2">
             <div className="p-2 bg-blue-50 rounded-lg">
               <Key className="h-6 w-6 text-blue-600" />
             </div>
-            <h2 className="text-xl font-bold text-gray-900">Motores de Inteligencia Artificial</h2>
+            <h2 className="text-xl font-bold text-gray-900">Motores de Inteligencia Artificial & Router</h2>
           </div>
+          <p className="text-sm text-gray-600 mb-6 bg-blue-50 p-3 rounded-lg border border-blue-100">
+            <b className="text-blue-800">🧠 AI Router & Fallback (Cascada):</b> Chatify usará <b>GPT-4o mini</b> para cerrar ventas por WA, <b>Claude 3</b> para moderar Redes Sociales, y <b>Llama 3</b> para clasificar Kanban. Si el motor principal se cae en un lanzamiento, el tráfico saltará automáticamente al motor de respaldo para garantizar 100% de operatividad.
+          </p>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {/* 1. OpenAI (Mejor Calidad/Precio) */}
             <div className="p-4 bg-gray-50 rounded-xl border border-blue-200 flex flex-col justify-between shadow-sm relative">
@@ -43,8 +46,11 @@ export function Settings() {
                 </select>
                 <input type="password" placeholder="sk-proj-..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500" defaultValue="sk-proj-123456789" />
               </div>
-              <div className="mt-4 flex items-center gap-2 text-xs text-green-600 font-medium">
-                <div className="w-2 h-2 rounded-full bg-green-500"></div> Conectado
+              <div className="mt-4 flex items-center justify-between">
+                <div className="flex items-center gap-2 text-xs text-green-700 font-bold bg-green-50 px-2 py-1.5 rounded-md border border-green-200">
+                  <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div> ✅ Conectado de forma exitosa
+                </div>
+                <button className="text-xs font-bold text-blue-600 hover:text-blue-800">Editar</button>
               </div>
             </div>
 

@@ -9,6 +9,8 @@ import { CrmLogistics } from './pages/CrmLogistics';
 import { Database as DB } from './pages/Database';
 import { Orders } from './pages/Orders';
 import { Comments } from './pages/Comments';
+import { Broadcast } from './pages/Broadcast';
+import { Templates } from './pages/Templates';
 
 function App() {
   return (
@@ -23,6 +25,8 @@ function App() {
           <Route path="/orders" element={<Orders />} />
           <Route path="/stores" element={<Stores />} />
           <Route path="/comments" element={<Comments />} />
+          <Route path="/broadcast" element={<Broadcast />} />
+          <Route path="/templates" element={<Templates />} />
           <Route path="/settings" element={<Settings />} />
         </Route>
       </Routes>
