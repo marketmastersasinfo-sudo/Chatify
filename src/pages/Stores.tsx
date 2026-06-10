@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Store, Smartphone, Target, Settings2, Plus, ShoppingBag, Loader2, Save, X } from 'lucide-react';
+import { Store, Smartphone, Target, Plus, ShoppingBag, Loader2, Save, X } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 export function Stores() {
@@ -26,10 +26,10 @@ export function Stores() {
       let { data: orgs } = await supabase.from('organizations').select('id').limit(1);
       let orgId;
       if (!orgs || orgs.length === 0) {
-        const { data: newOrg } = await supabase.from('organizations').insert({ name: 'Organización Principal' }).select().single();
-        orgId = newOrg?.id;
+        const { data: newOrg } = await supabase.from('organizations').insert({ name: 'Organización Principal' } as any).select().single();
+        orgId = (newOrg as any)?.id;
       } else {
-        orgId = orgs[0].id;
+        orgId = (orgs as any)[0].id;
       }
 
       // 2. Traer las tiendas de ese país
@@ -60,12 +60,12 @@ export function Stores() {
       let { data: orgs } = await supabase.from('organizations').select('id').limit(1);
       
       const { data, error } = await supabase.from('stores').insert({
-        organization_id: orgs![0].id,
+        organization_id: (orgs as any)![0].id,
         name: newStoreName,
         country: selectedCountry,
         waba_number: newWaba,
         meta_pixel_id: newPixel
-      }).select().single();
+      } as any).select().single();
 
       if (data && !error) {
         setStores([...stores, data]);
