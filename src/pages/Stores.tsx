@@ -1,97 +1,133 @@
-
+import { useState } from 'react';
+import { Store, Smartphone, Target, Settings2, Plus, ShoppingBag } from 'lucide-react';
 
 export function Stores() {
+  const [selectedCountry, setSelectedCountry] = useState('Colombia');
+  const [selectedStore, setSelectedStore] = useState('Dropi Principal');
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-7xl mx-auto pb-12">
       <div className="sm:flex sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">Mis Tiendas (Jerarquía Cero Sancocho)</h1>
-          <p className="mt-2 text-sm text-gray-700 dark:text-gray-300">
-            Administra tus tiendas por país. Configura el número de WhatsApp exclusivo y el Pixel CAPI de cada una.
+          <h1 className="text-2xl font-bold tracking-tight text-gray-900">Organización Multitienda</h1>
+          <p className="mt-2 text-sm text-gray-500">
+            Gestiona la jerarquía de Países, Tiendas, SIM Cards, Píxeles y Catálogos de manera aislada.
           </p>
         </div>
-        <div className="mt-4 sm:ml-16 sm:mt-0 sm:flex-none">
-          <button
-            type="button"
-            className="block rounded-md bg-blue-600 px-3 py-2 text-center text-sm font-semibold text-white shadow-sm hover:bg-blue-500"
-          >
-            Agregar Nueva Tienda
-          </button>
-        </div>
+        <button className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-soft hover:bg-blue-500">
+          <Plus className="h-4 w-4" /> Nueva Tienda
+        </button>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {/* Tarjeta de Tienda */}
-        <div className="divide-y divide-gray-200 overflow-hidden rounded-lg bg-white shadow ring-1 ring-gray-900/5 dark:divide-gray-800 dark:bg-gray-900 dark:ring-gray-800">
-          <div className="px-4 py-5 sm:px-6">
-            <div className="flex items-center justify-between">
-              <h3 className="text-base font-semibold leading-6 text-gray-900 dark:text-white">Dropi Colombia Principal</h3>
-              <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10 dark:bg-blue-900/20 dark:text-blue-400">
-                🇨🇴 COL
-              </span>
-            </div>
-            <p className="mt-1 max-w-2xl text-sm text-gray-500 dark:text-gray-400">ShopyEasy ID: #1092</p>
-          </div>
-          <div className="px-4 py-5 sm:p-6 space-y-4">
-            <div>
-              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">Número WABA (Bot)</label>
-              <div className="mt-1 font-semibold text-gray-900 dark:text-white">+57 300 123 4567</div>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">Moneda Local</label>
-              <div className="mt-1 font-semibold text-gray-900 dark:text-white">COP (Pesos Colombianos)</div>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">Pixel ID (Específico)</label>
-              <input 
-                type="text" 
-                placeholder="Usando el Global por defecto..." 
-                className="mt-1 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:ring-gray-700 dark:text-white"
-                defaultValue="998877665544"
-              />
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        {/* Sidebar Navigation */}
+        <div className="lg:col-span-1 space-y-4">
+          <div className="glass-card rounded-2xl p-4">
+            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">🌎 Paises Activos</h3>
+            <div className="space-y-1">
+              {['Colombia', 'México', 'Argentina', 'Chile'].map(country => (
+                <button 
+                  key={country}
+                  onClick={() => setSelectedCountry(country)}
+                  className={`w-full text-left px-3 py-2 rounded-lg text-sm font-semibold transition-colors ${selectedCountry === country ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-50'}`}
+                >
+                  {country}
+                </button>
+              ))}
             </div>
           </div>
-          <div className="px-4 py-4 sm:px-6 flex justify-end gap-3 bg-gray-50 dark:bg-gray-800/50">
-             <button className="text-sm font-semibold text-blue-600 hover:text-blue-500 dark:text-blue-400">Verificar Conexión</button>
-             <button className="text-sm font-semibold text-gray-900 hover:text-gray-600 dark:text-white">Guardar</button>
+          
+          <div className="glass-card rounded-2xl p-4">
+            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 flex justify-between items-center">
+              Tiendas en {selectedCountry}
+              <Plus className="w-3 h-3 cursor-pointer text-blue-600" />
+            </h3>
+            <div className="space-y-1">
+              <button onClick={() => setSelectedStore('Dropi Principal')} className={`w-full flex items-center gap-2 text-left px-3 py-2 rounded-lg text-sm font-semibold transition-colors ${selectedStore === 'Dropi Principal' ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-50'}`}>
+                <Store className="w-4 h-4" /> Dropi Principal
+              </button>
+              <button onClick={() => setSelectedStore('Nicho Belleza')} className={`w-full flex items-center gap-2 text-left px-3 py-2 rounded-lg text-sm font-semibold transition-colors ${selectedStore === 'Nicho Belleza' ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-50'}`}>
+                <Store className="w-4 h-4" /> Nicho Belleza
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* Otra Tienda */}
-        <div className="divide-y divide-gray-200 overflow-hidden rounded-lg bg-white shadow ring-1 ring-gray-900/5 dark:divide-gray-800 dark:bg-gray-900 dark:ring-gray-800">
-          <div className="px-4 py-5 sm:px-6">
-            <div className="flex items-center justify-between">
-              <h3 className="text-base font-semibold leading-6 text-gray-900 dark:text-white">Dropi Argentina Sur</h3>
-              <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10 dark:bg-blue-900/20 dark:text-blue-400">
-                🇦🇷 ARG
-              </span>
+        {/* Main Content Area */}
+        <div className="lg:col-span-3 space-y-6">
+          <div className="glass-card rounded-2xl p-6 border-t-4 border-t-blue-600">
+            <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+              <Store className="text-blue-600" /> Configuración: {selectedStore} ({selectedCountry})
+            </h2>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* WhatsApp Config */}
+              <div className="p-5 bg-gray-50 rounded-xl border border-gray-100">
+                <h3 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2"><Smartphone className="w-4 h-4 text-green-600" /> Conexión WhatsApp</h3>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">SIM Card Asignada</label>
+                    <input type="text" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white" defaultValue="Tigo Plan Empresas #4" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">Número WABA</label>
+                    <input type="text" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white" defaultValue="+57 300 123 4567" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Pixel Config */}
+              <div className="p-5 bg-gray-50 rounded-xl border border-gray-100">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2"><Target className="w-4 h-4 text-purple-600" /> Píxel de Tienda</h3>
+                  <button className="text-xs font-semibold text-blue-600 hover:text-blue-800 flex items-center gap-1"><Plus className="w-3 h-3" /> Añadir Píxel</button>
+                </div>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">ID Píxel</label>
+                    <input type="text" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white" defaultValue="84759384758" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">Token CAPI</label>
+                    <input type="password" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white" defaultValue="EAA123" />
+                  </div>
+                </div>
+              </div>
             </div>
-            <p className="mt-1 max-w-2xl text-sm text-gray-500 dark:text-gray-400">ShopyEasy ID: #1105</p>
-          </div>
-          <div className="px-4 py-5 sm:p-6 space-y-4">
-            <div>
-              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">Número WABA (Bot)</label>
-              <div className="mt-1 font-semibold text-gray-900 dark:text-white">+54 9 11 1234 5678</div>
+
+            {/* Products & AI Rules */}
+            <div className="mt-6 p-5 bg-white shadow-sm ring-1 ring-gray-900/5 rounded-xl border border-blue-100">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-base font-bold text-gray-900 flex items-center gap-2"><ShoppingBag className="w-5 h-5 text-blue-600" /> Catálogo y Reglas IA de la Tienda</h3>
+                <button className="text-sm font-semibold text-blue-600 hover:text-blue-800 flex items-center gap-1"><Plus className="w-4 h-4" /> Nuevo Producto</button>
+              </div>
+              
+              <div className="space-y-4">
+                {/* Product Item */}
+                <div className="border border-gray-200 rounded-lg p-4 flex justify-between items-start">
+                  <div>
+                    <h4 className="font-bold text-gray-900">Joggers UrbanFit</h4>
+                    <p className="text-xs text-gray-500 mt-1">Precio: $89.000 COP | Envío: Gratis</p>
+                  </div>
+                  <button className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-md text-sm font-semibold text-gray-700 hover:bg-gray-100">
+                    <Settings2 className="w-4 h-4" /> Prompt y Reglas
+                  </button>
+                </div>
+                {/* Product Item */}
+                <div className="border border-gray-200 rounded-lg p-4 flex justify-between items-start">
+                  <div>
+                    <h4 className="font-bold text-gray-900">Camiseta Supreme Blanca</h4>
+                    <p className="text-xs text-gray-500 mt-1">Precio: $45.000 COP | Envío: $10.000 COP</p>
+                  </div>
+                  <button className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-md text-sm font-semibold text-gray-700 hover:bg-gray-100">
+                    <Settings2 className="w-4 h-4" /> Prompt y Reglas
+                  </button>
+                </div>
+              </div>
             </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">Moneda Local</label>
-              <div className="mt-1 font-semibold text-gray-900 dark:text-white">ARS (Pesos Argentinos)</div>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">Pixel ID (Específico)</label>
-              <input 
-                type="text" 
-                placeholder="Usando el Global por defecto..." 
-                className="mt-1 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:ring-gray-700 dark:text-white"
-              />
-            </div>
-          </div>
-          <div className="px-4 py-4 sm:px-6 flex justify-end gap-3 bg-gray-50 dark:bg-gray-800/50">
-             <button className="text-sm font-semibold text-blue-600 hover:text-blue-500 dark:text-blue-400">Verificar Conexión</button>
-             <button className="text-sm font-semibold text-gray-900 hover:text-gray-600 dark:text-white">Guardar</button>
+
           </div>
         </div>
-
       </div>
     </div>
   );

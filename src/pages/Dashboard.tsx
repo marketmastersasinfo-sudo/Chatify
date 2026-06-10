@@ -1,41 +1,171 @@
-import { Calendar as CalendarIcon } from 'lucide-react';
+import { Calendar as CalendarIcon, TrendingUp, Users, ShoppingCart, DollarSign, Activity } from 'lucide-react';
 
 export function Dashboard() {
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-7xl mx-auto pb-12">
+      {/* Header & Date Picker */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">Dashboard Global (USD)</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-gray-900">Dashboard de Embudo (Contra Entrega)</h1>
+          <p className="text-sm text-gray-500 mt-1">Métricas en tiempo real de todo el ecosistema.</p>
         </div>
-        <div className="mt-4 sm:ml-16 sm:mt-0 flex gap-2">
-          <select className="block rounded-md border-0 py-1.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-blue-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:text-white dark:ring-gray-700">
+        <div className="flex gap-2">
+          <select className="block rounded-xl border-0 py-2 pl-3 pr-10 text-gray-700 ring-1 ring-inset ring-gray-200 focus:ring-2 focus:ring-blue-600 sm:text-sm bg-white shadow-soft">
             <option>Hoy</option>
             <option>Ayer</option>
             <option>Últimos 7 días</option>
             <option>Este Mes</option>
-            <option>Personalizado (Desde - Hasta)</option>
           </select>
-          <button className="inline-flex items-center gap-x-1.5 rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-white dark:ring-gray-700 dark:hover:bg-gray-700">
-            <CalendarIcon className="-ml-0.5 h-4 w-4" aria-hidden="true" />
+          <button className="inline-flex items-center gap-x-2 rounded-xl bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-soft ring-1 ring-inset ring-gray-200 hover:bg-gray-50 transition-colors">
+            <CalendarIcon className="-ml-0.5 h-4 w-4 text-blue-500" aria-hidden="true" />
             01 Jun - 10 Jun
           </button>
         </div>
       </div>
-      
+
+      {/* Top KPIs (Funnel Metrics) */}
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-        {/* Placeholder cards */}
-        {['Ventas Netas', 'Conversaciones Activas', 'Tasa de Conversión', 'Gasto en Meta (Est)'].map((metric) => (
-          <div key={metric} className="overflow-hidden rounded-lg bg-white p-6 shadow-sm ring-1 ring-gray-900/5 dark:bg-gray-900 dark:ring-gray-800">
-            <p className="truncate text-sm font-medium text-gray-500 dark:text-gray-400">{metric}</p>
-            <div className="mt-2 flex items-baseline gap-x-2">
-              <span className="text-3xl font-semibold tracking-tight text-gray-900 dark:text-white">0</span>
+        <div className="glass-card rounded-2xl p-6">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-blue-50 rounded-lg">
+              <Users className="h-5 w-5 text-blue-600" />
             </div>
+            <h3 className="text-sm font-medium text-gray-500">Nuevos Leads (Chat Iniciado)</h3>
           </div>
-        ))}
+          <div className="mt-4 flex items-baseline gap-2">
+            <p className="text-3xl font-bold text-gray-900">3,010</p>
+            <span className="text-sm font-medium text-green-600 flex items-center gap-1">
+              <TrendingUp className="h-3 w-3" /> +12%
+            </span>
+          </div>
+        </div>
+
+        <div className="glass-card rounded-2xl p-6">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-indigo-50 rounded-lg">
+              <Activity className="h-5 w-5 text-indigo-600" />
+            </div>
+            <h3 className="text-sm font-medium text-gray-500">Datos Recolectados (IA)</h3>
+          </div>
+          <div className="mt-4 flex items-baseline gap-2">
+            <p className="text-3xl font-bold text-gray-900">1,850</p>
+            <span className="text-sm text-gray-400">61% Conversión</span>
+          </div>
+          <div className="mt-3 w-full bg-gray-100 rounded-full h-1.5">
+            <div className="bg-indigo-500 h-1.5 rounded-full" style={{ width: '61%' }}></div>
+          </div>
+        </div>
+
+        <div className="glass-card rounded-2xl p-6">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-purple-50 rounded-lg">
+              <ShoppingCart className="h-5 w-5 text-purple-600" />
+            </div>
+            <h3 className="text-sm font-medium text-gray-500">Pedidos Confirmados</h3>
+          </div>
+          <div className="mt-4 flex items-baseline gap-2">
+            <p className="text-3xl font-bold text-gray-900">845</p>
+            <span className="text-sm text-gray-400">45% Conversión</span>
+          </div>
+          <div className="mt-3 w-full bg-gray-100 rounded-full h-1.5">
+            <div className="bg-purple-500 h-1.5 rounded-full" style={{ width: '45%' }}></div>
+          </div>
+        </div>
+
+        <div className="glass-card rounded-2xl p-6">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-green-50 rounded-lg">
+              <DollarSign className="h-5 w-5 text-green-600" />
+            </div>
+            <h3 className="text-sm font-medium text-gray-500">Ventas (Contra Entrega)</h3>
+          </div>
+          <div className="mt-4 flex items-baseline gap-2">
+            <p className="text-3xl font-bold text-gray-900">$34,345</p>
+            <span className="text-sm font-medium text-green-600 flex items-center gap-1">
+              <TrendingUp className="h-3 w-3" /> +8%
+            </span>
+          </div>
+        </div>
       </div>
 
-      <div className="rounded-lg bg-white p-6 shadow-sm ring-1 ring-gray-900/5 dark:bg-gray-900 dark:ring-gray-800 h-96 flex items-center justify-center">
-        <p className="text-gray-500 dark:text-gray-400">Gráfico del embudo de conversión</p>
+      {/* Main Charts Area */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        {/* Curved Line Chart Placeholder (Main) */}
+        <div className="glass-card rounded-2xl p-6 lg:col-span-2">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg font-bold text-gray-900">Flujo de Leads vs Confirmados</h3>
+            <div className="flex gap-4 text-sm">
+              <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-blue-400"></div> Leads</div>
+              <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-purple-500"></div> Confirmados</div>
+            </div>
+          </div>
+          
+          {/* Faking a spline chart with CSS/SVG */}
+          <div className="h-64 w-full relative">
+            <div className="absolute inset-0 flex items-end">
+              {/* Grid lines */}
+              <div className="w-full h-full flex flex-col justify-between absolute inset-0">
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="w-full border-t border-gray-100 h-0"></div>
+                ))}
+              </div>
+              
+              {/* Fake Spline Gradient SVG */}
+              <svg className="w-full h-full absolute inset-0 z-10" preserveAspectRatio="none" viewBox="0 0 100 100">
+                <defs>
+                  <linearGradient id="blueGrad" x1="0" x2="0" y1="0" y2="1">
+                    <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.4" />
+                    <stop offset="100%" stopColor="#3b82f6" stopOpacity="0" />
+                  </linearGradient>
+                  <linearGradient id="purpleGrad" x1="0" x2="0" y1="0" y2="1">
+                    <stop offset="0%" stopColor="#a855f7" stopOpacity="0.4" />
+                    <stop offset="100%" stopColor="#a855f7" stopOpacity="0" />
+                  </linearGradient>
+                </defs>
+                <path d="M0,80 Q10,70 20,40 T40,60 T60,20 T80,50 T100,10 L100,100 L0,100 Z" fill="url(#blueGrad)" />
+                <path d="M0,80 Q10,70 20,40 T40,60 T60,20 T80,50 T100,10" fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" />
+                
+                <path d="M0,90 Q15,85 25,70 T45,80 T65,50 T85,75 T100,40 L100,100 L0,100 Z" fill="url(#purpleGrad)" />
+                <path d="M0,90 Q15,85 25,70 T45,80 T65,50 T85,75 T100,40" fill="none" stroke="#a855f7" strokeWidth="2" strokeLinecap="round" />
+              </svg>
+            </div>
+            
+            {/* X Axis labels */}
+            <div className="absolute -bottom-6 w-full flex justify-between text-xs text-gray-400">
+              <span>Lun</span><span>Mar</span><span>Mié</span><span>Jue</span><span>Vie</span><span>Sáb</span><span>Dom</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Donut Chart Placeholder */}
+        <div className="glass-card rounded-2xl p-6 flex flex-col items-center justify-center">
+          <h3 className="text-lg font-bold text-gray-900 w-full text-left mb-6">Tasa de Efectividad IA</h3>
+          <div className="relative w-48 h-48">
+            <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90">
+              {/* Background circle */}
+              <circle cx="50" cy="50" r="40" fill="transparent" stroke="#f3f4f6" strokeWidth="15" />
+              {/* Progress circle */}
+              <circle cx="50" cy="50" r="40" fill="transparent" stroke="#3b82f6" strokeWidth="15" strokeDasharray="251.2" strokeDashoffset="36.8" className="transition-all duration-1000 ease-out" />
+              {/* Third layer (human intervention) */}
+              <circle cx="50" cy="50" r="40" fill="transparent" stroke="#a855f7" strokeWidth="15" strokeDasharray="251.2" strokeDashoffset="214.4" />
+            </svg>
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <span className="text-3xl font-bold text-gray-900">85%</span>
+              <span className="text-xs text-gray-500 text-center px-4">Cierres 100% IA</span>
+            </div>
+          </div>
+          <div className="mt-8 w-full space-y-3">
+            <div className="flex justify-between items-center text-sm">
+              <span className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-blue-500"></div> Cerrado por Bot</span>
+              <span className="font-semibold text-gray-900">85.3%</span>
+            </div>
+            <div className="flex justify-between items-center text-sm">
+              <span className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-purple-500"></div> Cierre Humano</span>
+              <span className="font-semibold text-gray-900">14.7%</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -1,27 +1,28 @@
-
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AppLayout } from './components/layout/AppLayout';
 import { Dashboard } from './pages/Dashboard';
-import { Products } from './pages/Products';
-import { Finance } from './pages/Finance';
 import { Settings } from './pages/Settings';
 import { Stores } from './pages/Stores';
-import { Chats } from './pages/Chats';
+import { Crm } from './pages/Crm';
+import { Database } from './pages/Database';
+import { Orders } from './pages/Orders';
+import { Comments } from './pages/Comments';
 
 function App() {
   return (
-    <BrowserRouter>
+    <Router>
       <Routes>
         <Route element={<AppLayout />}>
           <Route path="/" element={<Dashboard />} />
-          <Route path="/products" element={<Products />} />
+          <Route path="/crm" element={<Crm />} />
+          <Route path="/database" element={<Database />} />
+          <Route path="/orders" element={<Orders />} />
           <Route path="/stores" element={<Stores />} />
-          <Route path="/finance" element={<Finance />} />
-          <Route path="/chats" element={<Chats />} />
+          <Route path="/comments" element={<Comments />} />
           <Route path="/settings" element={<Settings />} />
         </Route>
       </Routes>
-    </BrowserRouter>
+    </Router>
   );
 }
 
