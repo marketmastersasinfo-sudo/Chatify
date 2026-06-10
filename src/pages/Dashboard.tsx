@@ -1,4 +1,4 @@
-import { Calendar as CalendarIcon, Filter } from 'lucide-react';
+import { Calendar as CalendarIcon } from 'lucide-react';
 
 export function Dashboard() {
   return (
