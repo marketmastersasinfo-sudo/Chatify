@@ -1,11 +1,13 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Users, MessageSquare, CheckCircle, MapPin, MessageCircle, Settings } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, CheckCircle, MapPin, MessageCircle, Settings, Truck, ThumbsUp, Database } from 'lucide-react';
 import { cn } from '../../utils/cn';
 
 const navigation = [
-  { name: 'Dashboard Global', href: '/', icon: LayoutDashboard },
-  { name: 'CRM Kanban', href: '/crm', icon: MessageSquare },
-  { name: 'Base de Datos', href: '/database', icon: Users },
+  { name: 'Dashboard Central', href: '/', icon: LayoutDashboard },
+  { name: 'CRM Ventas WA', href: '/crm-sales', icon: MessageSquare },
+  { name: 'CRM Redes Sociales', href: '/crm-social', icon: ThumbsUp },
+  { name: 'Logística ShopyEasy', href: '/crm-logistics', icon: Truck },
+  { name: 'Base de Datos', href: '/database', icon: Database },
   { name: 'Confirmar Pedidos', href: '/orders', icon: CheckCircle },
   { name: 'Organización Multitienda', href: '/stores', icon: MapPin },
   { name: 'Asistente Comentarios', href: '/comments', icon: MessageCircle },
