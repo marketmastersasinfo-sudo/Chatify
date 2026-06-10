@@ -59,7 +59,6 @@ export function Products() {
           </div>
         </div>
       </div>
-      </div>
 
       {/* Editor de Reglas de IA (Simulación de Panel Abierto) */}
       <div className="mt-8 bg-white dark:bg-gray-900 shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl overflow-hidden">
