@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { NavLink } from 'react-router-dom';
 import { LayoutDashboard, ShoppingBag, Settings, MessageSquare, DollarSign, MapPin } from 'lucide-react';
 import { cn } from '../../utils/cn';
