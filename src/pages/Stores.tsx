@@ -1,21 +1,100 @@
-import { useState } from 'react';
-import { Store, Smartphone, Target, Settings2, Plus, ShoppingBag } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Store, Smartphone, Target, Settings2, Plus, ShoppingBag, Loader2, Save, X } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
 export function Stores() {
   const [selectedCountry, setSelectedCountry] = useState('Colombia');
-  const [selectedStore, setSelectedStore] = useState('Dropi Principal');
+  const [stores, setStores] = useState<any[]>([]);
+  const [selectedStore, setSelectedStore] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  
+  // Modal/Form State
+  const [isAdding, setIsAdding] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [newStoreName, setNewStoreName] = useState('');
+  const [newWaba, setNewWaba] = useState('');
+  const [newPixel, setNewPixel] = useState('');
+
+  useEffect(() => {
+    loadStores();
+  }, [selectedCountry]);
+
+  async function loadStores() {
+    setLoading(true);
+    try {
+      // 1. Obtener Organización principal (Crea una si no existe)
+      let { data: orgs } = await supabase.from('organizations').select('id').limit(1);
+      let orgId;
+      if (!orgs || orgs.length === 0) {
+        const { data: newOrg } = await supabase.from('organizations').insert({ name: 'Organización Principal' }).select().single();
+        orgId = newOrg?.id;
+      } else {
+        orgId = orgs[0].id;
+      }
+
+      // 2. Traer las tiendas de ese país
+      if (orgId) {
+        const { data: storesData } = await supabase
+          .from('stores')
+          .select('*')
+          .eq('country', selectedCountry)
+          .eq('organization_id', orgId);
+          
+        setStores(storesData || []);
+        if (storesData && storesData.length > 0) {
+          setSelectedStore(storesData[0]);
+        } else {
+          setSelectedStore(null);
+        }
+      }
+    } catch (error) {
+      console.error("Error loading stores:", error);
+    }
+    setLoading(false);
+  }
+
+  async function handleSaveStore() {
+    if (!newStoreName) return;
+    setSaving(true);
+    try {
+      let { data: orgs } = await supabase.from('organizations').select('id').limit(1);
+      
+      const { data, error } = await supabase.from('stores').insert({
+        organization_id: orgs![0].id,
+        name: newStoreName,
+        country: selectedCountry,
+        waba_number: newWaba,
+        meta_pixel_id: newPixel
+      }).select().single();
+
+      if (data && !error) {
+        setStores([...stores, data]);
+        setSelectedStore(data);
+        setIsAdding(false);
+        setNewStoreName('');
+        setNewWaba('');
+        setNewPixel('');
+      }
+    } catch (error) {
+      console.error("Error saving store:", error);
+    }
+    setSaving(false);
+  }
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-12">
+    <div className="space-y-6 max-w-7xl mx-auto pb-12 relative">
       <div className="sm:flex sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-gray-900">Organización Multitienda</h1>
           <p className="mt-2 text-sm text-gray-500">
-            Gestiona la jerarquía de Países, Tiendas, SIM Cards, Píxeles y Catálogos de manera aislada.
+            Base de Datos Conectada: Guarda tus tiendas en la nube de Supabase.
           </p>
         </div>
-        <button className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-soft hover:bg-blue-500">
-          <Plus className="h-4 w-4" /> Nueva Tienda
+        <button 
+          onClick={() => setIsAdding(true)}
+          className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-soft hover:bg-blue-500"
+        >
+          <Plus className="h-4 w-4" /> Nueva Tienda en {selectedCountry}
         </button>
       </div>
 
@@ -39,94 +118,101 @@ export function Stores() {
           
           <div className="glass-card rounded-2xl p-4">
             <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 flex justify-between items-center">
-              Tiendas en {selectedCountry}
-              <Plus className="w-3 h-3 cursor-pointer text-blue-600" />
+              Tiendas
+              <Plus onClick={() => setIsAdding(true)} className="w-3 h-3 cursor-pointer text-blue-600" />
             </h3>
             <div className="space-y-1">
-              <button onClick={() => setSelectedStore('Dropi Principal')} className={`w-full flex items-center gap-2 text-left px-3 py-2 rounded-lg text-sm font-semibold transition-colors ${selectedStore === 'Dropi Principal' ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-50'}`}>
-                <Store className="w-4 h-4" /> Dropi Principal
-              </button>
-              <button onClick={() => setSelectedStore('Nicho Belleza')} className={`w-full flex items-center gap-2 text-left px-3 py-2 rounded-lg text-sm font-semibold transition-colors ${selectedStore === 'Nicho Belleza' ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-50'}`}>
-                <Store className="w-4 h-4" /> Nicho Belleza
-              </button>
+              {loading ? (
+                <div className="flex justify-center p-4"><Loader2 className="w-5 h-5 text-blue-500 animate-spin" /></div>
+              ) : stores.length === 0 ? (
+                <p className="text-xs text-gray-400 text-center py-2">No hay tiendas aquí</p>
+              ) : (
+                stores.map(store => (
+                  <button 
+                    key={store.id}
+                    onClick={() => setSelectedStore(store)} 
+                    className={`w-full flex items-center gap-2 text-left px-3 py-2 rounded-lg text-sm font-semibold transition-colors ${selectedStore?.id === store.id ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-50'}`}
+                  >
+                    <Store className="w-4 h-4" /> {store.name}
+                  </button>
+                ))
+              )}
             </div>
           </div>
         </div>
 
         {/* Main Content Area */}
         <div className="lg:col-span-3 space-y-6">
-          <div className="glass-card rounded-2xl p-6 border-t-4 border-t-blue-600">
-            <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-              <Store className="text-blue-600" /> Configuración: {selectedStore} ({selectedCountry})
-            </h2>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* WhatsApp Config */}
-              <div className="p-5 bg-gray-50 rounded-xl border border-gray-100">
-                <h3 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2"><Smartphone className="w-4 h-4 text-green-600" /> Conexión WhatsApp</h3>
-                <div className="space-y-3">
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-500 mb-1">SIM Card Asignada</label>
-                    <input type="text" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white" defaultValue="Tigo Plan Empresas #4" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-500 mb-1">Número WABA</label>
-                    <input type="text" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white" defaultValue="+57 300 123 4567" />
-                  </div>
-                </div>
-              </div>
-
-              {/* Pixel Config */}
-              <div className="p-5 bg-gray-50 rounded-xl border border-gray-100">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2"><Target className="w-4 h-4 text-purple-600" /> Píxel de Tienda</h3>
-                  <button className="text-xs font-semibold text-blue-600 hover:text-blue-800 flex items-center gap-1"><Plus className="w-3 h-3" /> Añadir Píxel</button>
-                </div>
-                <div className="space-y-3">
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-500 mb-1">ID Píxel</label>
-                    <input type="text" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white" defaultValue="84759384758" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-500 mb-1">Token CAPI</label>
-                    <input type="password" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white" defaultValue="EAA123" />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Products & AI Rules */}
-            <div className="mt-6 p-5 bg-white shadow-sm ring-1 ring-gray-900/5 rounded-xl border border-blue-100">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-base font-bold text-gray-900 flex items-center gap-2"><ShoppingBag className="w-5 h-5 text-blue-600" /> Catálogo y Reglas IA de la Tienda</h3>
-                <button className="text-sm font-semibold text-blue-600 hover:text-blue-800 flex items-center gap-1"><Plus className="w-4 h-4" /> Nuevo Producto</button>
+          {isAdding ? (
+            <div className="glass-card rounded-2xl p-6 border-t-4 border-t-green-500">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                  <Store className="text-green-600" /> Crear Nueva Tienda ({selectedCountry})
+                </h2>
+                <button onClick={() => setIsAdding(false)} className="text-gray-400 hover:text-red-500"><X className="w-5 h-5"/></button>
               </div>
               
-              <div className="space-y-4">
-                {/* Product Item */}
-                <div className="border border-gray-200 rounded-lg p-4 flex justify-between items-start">
-                  <div>
-                    <h4 className="font-bold text-gray-900">Joggers UrbanFit</h4>
-                    <p className="text-xs text-gray-500 mt-1">Precio: $89.000 COP | Envío: Gratis</p>
-                  </div>
-                  <button className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-md text-sm font-semibold text-gray-700 hover:bg-gray-100">
-                    <Settings2 className="w-4 h-4" /> Prompt y Reglas
-                  </button>
+              <div className="space-y-4 max-w-lg">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">Nombre de la Tienda</label>
+                  <input value={newStoreName} onChange={e => setNewStoreName(e.target.value)} type="text" placeholder="Ej: Dropi Belleza" className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-blue-500" />
                 </div>
-                {/* Product Item */}
-                <div className="border border-gray-200 rounded-lg p-4 flex justify-between items-start">
-                  <div>
-                    <h4 className="font-bold text-gray-900">Camiseta Supreme Blanca</h4>
-                    <p className="text-xs text-gray-500 mt-1">Precio: $45.000 COP | Envío: $10.000 COP</p>
-                  </div>
-                  <button className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-md text-sm font-semibold text-gray-700 hover:bg-gray-100">
-                    <Settings2 className="w-4 h-4" /> Prompt y Reglas
-                  </button>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">Número WABA (Opcional)</label>
+                  <input value={newWaba} onChange={e => setNewWaba(e.target.value)} type="text" placeholder="+57 300..." className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-blue-500" />
                 </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">ID del Píxel (Opcional)</label>
+                  <input value={newPixel} onChange={e => setNewPixel(e.target.value)} type="text" placeholder="123456789" className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-blue-500" />
+                </div>
+                <button onClick={handleSaveStore} disabled={saving} className="mt-4 w-full flex justify-center items-center gap-2 bg-green-600 text-white py-2 rounded-lg font-bold hover:bg-green-700 disabled:opacity-50">
+                  {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Guardar en Base de Datos
+                </button>
               </div>
             </div>
+          ) : selectedStore ? (
+            <div className="glass-card rounded-2xl p-6 border-t-4 border-t-blue-600">
+              <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+                <Store className="text-blue-600" /> Configuración: {selectedStore.name}
+              </h2>
 
-          </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* WhatsApp Config */}
+                <div className="p-5 bg-gray-50 rounded-xl border border-gray-100">
+                  <h3 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2"><Smartphone className="w-4 h-4 text-green-600" /> Conexión WhatsApp</h3>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 mb-1">Número WABA</label>
+                      <input type="text" readOnly className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white text-gray-600" value={selectedStore.waba_number || 'No configurado'} />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Pixel Config */}
+                <div className="p-5 bg-gray-50 rounded-xl border border-gray-100">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2"><Target className="w-4 h-4 text-purple-600" /> Píxel de Meta</h3>
+                  </div>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 mb-1">ID Píxel</label>
+                      <input type="text" readOnly className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white text-gray-600" value={selectedStore.meta_pixel_id || 'No configurado'} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Products Placeholder */}
+              <div className="mt-6 p-5 bg-white shadow-sm ring-1 ring-gray-900/5 rounded-xl border border-blue-100 flex items-center justify-between opacity-50">
+                <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2"><ShoppingBag className="w-4 h-4 text-blue-600" /> Módulo de Productos y Prompts IA (Próximamente)</h3>
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center h-64 border-2 border-dashed border-gray-200 rounded-2xl bg-gray-50">
+              <Store className="w-12 h-12 text-gray-300 mb-3" />
+              <p className="text-gray-500 font-medium text-sm">Selecciona o crea una tienda para ver su configuración</p>
+            </div>
+          )}
         </div>
       </div>
     </div>
