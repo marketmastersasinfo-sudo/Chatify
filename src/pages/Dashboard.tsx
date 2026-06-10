@@ -1,25 +1,72 @@
-import { Calendar as CalendarIcon, TrendingUp, Users, ShoppingCart, DollarSign, Activity } from 'lucide-react';
+import { Calendar as CalendarIcon, TrendingUp, Users, ShoppingCart, DollarSign, Activity, Filter, ChevronDown } from 'lucide-react';
 
 export function Dashboard() {
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
-      {/* Header & Date Picker */}
-      <div className="flex items-center justify-between">
+      {/* Header & Advanced Filters */}
+      <div className="space-y-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-gray-900">Dashboard de Embudo (Contra Entrega)</h1>
           <p className="text-sm text-gray-500 mt-1">Métricas en tiempo real de todo el ecosistema.</p>
         </div>
-        <div className="flex gap-2">
-          <select className="block rounded-xl border-0 py-2 pl-3 pr-10 text-gray-700 ring-1 ring-inset ring-gray-200 focus:ring-2 focus:ring-blue-600 sm:text-sm bg-white shadow-soft">
-            <option>Hoy</option>
-            <option>Ayer</option>
-            <option>Últimos 7 días</option>
-            <option>Este Mes</option>
-          </select>
-          <button className="inline-flex items-center gap-x-2 rounded-xl bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-soft ring-1 ring-inset ring-gray-200 hover:bg-gray-50 transition-colors">
-            <CalendarIcon className="-ml-0.5 h-4 w-4 text-blue-500" aria-hidden="true" />
-            01 Jun - 10 Jun
-          </button>
+        
+        {/* Advanced Filters Bar */}
+        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex flex-wrap items-end gap-4">
+          <div className="flex items-center gap-2 font-bold text-gray-700 w-full sm:w-auto">
+            <Filter className="w-4 h-4 text-blue-600" /> Filtros Globales
+          </div>
+          
+          <div className="flex-1 min-w-[200px]">
+            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Rango de Fechas</label>
+            <div className="flex items-center gap-2">
+              <div className="relative flex-1">
+                <CalendarIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+                <input type="date" className="w-full pl-8 pr-2 py-1.5 text-xs border border-gray-200 rounded-lg text-gray-600 focus:ring-1 focus:ring-blue-500 bg-gray-50/50" title="Desde" />
+              </div>
+              <span className="text-xs font-bold text-gray-400">a</span>
+              <div className="relative flex-1">
+                <CalendarIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+                <input type="date" className="w-full pl-8 pr-2 py-1.5 text-xs border border-gray-200 rounded-lg text-gray-600 focus:ring-1 focus:ring-blue-500 bg-gray-50/50" title="Hasta" />
+              </div>
+            </div>
+          </div>
+
+          <div className="flex-1 min-w-[150px]">
+            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">País</label>
+            <div className="relative">
+              <select className="w-full pl-3 pr-8 py-1.5 text-sm border border-gray-200 rounded-lg text-gray-700 appearance-none focus:ring-1 focus:ring-blue-500 bg-gray-50/50">
+                <option value="all">Global (Todos)</option>
+                <option value="CO">Colombia</option>
+                <option value="MX">México</option>
+                <option value="AR">Argentina</option>
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+            </div>
+          </div>
+
+          <div className="flex-1 min-w-[150px]">
+            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Tienda</label>
+            <div className="relative">
+              <select className="w-full pl-3 pr-8 py-1.5 text-sm border border-gray-200 rounded-lg text-gray-700 appearance-none focus:ring-1 focus:ring-blue-500 bg-gray-50/50">
+                <option value="all">Todas las Tiendas</option>
+                <option value="dropi_co">Dropi Colombia</option>
+                <option value="belleza_co">Nicho Belleza CO</option>
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+            </div>
+          </div>
+
+          <div className="flex-1 min-w-[150px]">
+            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Producto</label>
+            <div className="relative">
+              <select className="w-full pl-3 pr-8 py-1.5 text-sm border border-gray-200 rounded-lg text-gray-700 appearance-none focus:ring-1 focus:ring-blue-500 bg-gray-50/50">
+                <option value="all">Todos los Productos</option>
+                <option value="p1">Smartwatch X8</option>
+                <option value="p2">Joggers UrbanFit</option>
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+            </div>
+          </div>
         </div>
       </div>
 
