@@ -16,7 +16,7 @@ export function Dashboard() {
             <Filter className="w-4 h-4 text-blue-600" /> Filtros Globales
           </div>
           
-          <div className="flex-1 min-w-[200px]">
+          <div className="flex-1 min-w-[320px]">
             <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Rango de Fechas</label>
             <div className="flex items-center gap-2">
               <div className="relative flex-1">

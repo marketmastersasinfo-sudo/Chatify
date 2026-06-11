@@ -10,8 +10,8 @@ import { Database as DB } from './pages/Database';
 import { Orders } from './pages/Orders';
 import { Comments } from './pages/Comments';
 import { Broadcast } from './pages/Broadcast';
-import { Templates } from './pages/Templates';
-import { CrmRemarketing } from './pages/CrmRemarketing';
+import { CrmRemarketingCarts } from './pages/CrmRemarketingCarts';
+import { CrmRemarketingWa } from './pages/CrmRemarketingWa';
 
 function App() {
   return (
@@ -22,13 +22,13 @@ function App() {
           <Route path="crm-sales" element={<CrmSales />} />
           <Route path="crm-social" element={<CrmSocial />} />
           <Route path="/crm-logistics" element={<CrmLogistics />} />
-          <Route path="/crm-remarketing" element={<CrmRemarketing />} />
+          <Route path="/crm-remarketing-carts" element={<CrmRemarketingCarts />} />
+          <Route path="/crm-remarketing-wa" element={<CrmRemarketingWa />} />
           <Route path="/database" element={<DB />} />
           <Route path="/orders" element={<Orders />} />
           <Route path="/stores" element={<Stores />} />
           <Route path="/comments" element={<Comments />} />
           <Route path="/broadcast" element={<Broadcast />} />
-          <Route path="/templates" element={<Templates />} />
           <Route path="/settings" element={<Settings />} />
         </Route>
       </Routes>

@@ -153,17 +153,27 @@ export function Stores() {
               </div>
               
               <div className="space-y-4 max-w-lg">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">Nombre de la Tienda</label>
-                  <input value={newStoreName} onChange={e => setNewStoreName(e.target.value)} type="text" placeholder="Ej: Dropi Belleza" className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-blue-500" />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">Número WABA (Opcional)</label>
-                  <input value={newWaba} onChange={e => setNewWaba(e.target.value)} type="text" placeholder="+57 300..." className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-blue-500" />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">ID del Píxel (Opcional)</label>
-                  <input value={newPixel} onChange={e => setNewPixel(e.target.value)} type="text" placeholder="123456789" className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-blue-500" />
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">Nombre de la Tienda</label>
+                    <input value={newStoreName} onChange={e => setNewStoreName(e.target.value)} type="text" placeholder="Ej: Dropi Belleza" className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-blue-500" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">Logo URL (Opcional)</label>
+                    <input type="text" placeholder="https://..." className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-blue-500" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">Número WABA</label>
+                    <input value={newWaba} onChange={e => setNewWaba(e.target.value)} type="text" placeholder="+57 300..." className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-blue-500" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">SIM Card Asociada (Opcional)</label>
+                    <input type="text" placeholder="ICCID o Info" className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-blue-500" />
+                  </div>
+                  <div className="col-span-2">
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">ID del Píxel (Opcional)</label>
+                    <input value={newPixel} onChange={e => setNewPixel(e.target.value)} type="text" placeholder="123456789" className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-blue-500" />
+                  </div>
                 </div>
                 <button onClick={handleSaveStore} disabled={saving} className="mt-4 w-full flex justify-center items-center gap-2 bg-green-600 text-white py-2 rounded-lg font-bold hover:bg-green-700 disabled:opacity-50">
                   {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Guardar en Base de Datos
@@ -197,7 +207,10 @@ export function Stores() {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-gray-500 mb-1">API Key / Token BSP</label>
+                      <label className="flex justify-between text-xs font-semibold text-gray-500 mb-1">
+                        <span>API Key / Token BSP</span>
+                        <a href="#" className="text-blue-500 hover:underline">¿Cómo obtenerlo?</a>
+                      </label>
                       <input type="password" placeholder="D3A-..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white text-gray-600 focus:ring-1 focus:ring-blue-500" />
                     </div>
                   </div>
@@ -219,7 +232,10 @@ export function Stores() {
                       <input type="text" placeholder="178414..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white text-gray-600 focus:ring-1 focus:ring-blue-500" />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-gray-500 mb-1">Page Access Token</label>
+                      <label className="flex justify-between text-xs font-semibold text-gray-500 mb-1">
+                        <span>Page Access Token</span>
+                        <a href="#" className="text-blue-500 hover:underline">¿Cómo obtenerlo?</a>
+                      </label>
                       <input type="password" placeholder="EAAQx..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white text-gray-600 focus:ring-1 focus:ring-blue-500" />
                     </div>
                   </div>
@@ -235,6 +251,73 @@ export function Stores() {
                     <div>
                       <label className="block text-xs font-semibold text-gray-500 mb-1">ID Píxel</label>
                       <input type="text" readOnly className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white text-gray-600" value={selectedStore.meta_pixel_id || 'No configurado'} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* AI Template Manager */}
+              <div className="mt-8 border-t border-gray-200 pt-8">
+                <div className="flex justify-between items-center mb-6">
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                      <FileText className="w-5 h-5 text-indigo-600" /> Gestor de Plantillas IA
+                    </h3>
+                    <p className="text-sm text-gray-500 mt-1">Crea, edita y mide el éxito de tus plantillas oficiales para esta tienda.</p>
+                  </div>
+                  <button className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-soft flex items-center gap-2">
+                    <BrainCircuit className="w-4 h-4" /> Generar con IA
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Template Card */}
+                  <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm relative overflow-hidden">
+                    <div className="absolute top-0 right-0 p-3 flex gap-2">
+                      <span className="bg-green-100 text-green-700 text-[10px] font-bold px-2 py-1 rounded uppercase">Aprobada</span>
+                    </div>
+                    <h4 className="font-bold text-gray-900 mb-1">Confirmación V1 (Con Foto)</h4>
+                    <p className="text-xs text-gray-500 mb-3 uppercase font-semibold">Categoría: UTILITY</p>
+                    <div className="bg-gray-50 p-3 rounded-lg text-sm text-gray-700 mb-4 border border-gray-100 italic">
+                      "Hola {'{{1}}'}, gracias por tu compra. Te muestro la foto real del {'{{2}}'} en color {'{{3}}'} que separaste."
+                    </div>
+                    <div className="flex justify-between items-end border-t border-gray-100 pt-3">
+                      <div className="flex gap-4">
+                        <div>
+                          <p className="text-[10px] font-bold text-gray-400 uppercase">Leídos</p>
+                          <p className="text-sm font-bold text-gray-900">89%</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-bold text-gray-400 uppercase">Respuesta</p>
+                          <p className="text-sm font-bold text-green-600">64%</p>
+                        </div>
+                      </div>
+                      <button className="text-xs font-bold text-blue-600 hover:text-blue-800">Editar (A/B Test)</button>
+                    </div>
+                  </div>
+
+                  {/* Template Card 2 */}
+                  <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm relative overflow-hidden">
+                    <div className="absolute top-0 right-0 p-3 flex gap-2">
+                      <span className="bg-green-100 text-green-700 text-[10px] font-bold px-2 py-1 rounded uppercase">Aprobada</span>
+                    </div>
+                    <h4 className="font-bold text-gray-900 mb-1">Carrito Abandonado V1</h4>
+                    <p className="text-xs text-gray-500 mb-3 uppercase font-semibold">Categoría: MARKETING</p>
+                    <div className="bg-gray-50 p-3 rounded-lg text-sm text-gray-700 mb-4 border border-gray-100 italic">
+                      "Hola {'{{1}}'}, notamos que no terminaste tu compra del {'{{2}}'}... ¿Tuviste algún problema?"
+                    </div>
+                    <div className="flex justify-between items-end border-t border-gray-100 pt-3">
+                      <div className="flex gap-4">
+                        <div>
+                          <p className="text-[10px] font-bold text-gray-400 uppercase">Leídos</p>
+                          <p className="text-sm font-bold text-gray-900">75%</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-bold text-gray-400 uppercase">Respuesta</p>
+                          <p className="text-sm font-bold text-green-600">22%</p>
+                        </div>
+                      </div>
+                      <button className="text-xs font-bold text-blue-600 hover:text-blue-800">Editar (A/B Test)</button>
                     </div>
                   </div>
                 </div>
@@ -262,8 +345,29 @@ export function Stores() {
                       </div>
                     </div>
                     <button className="px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-sm font-semibold text-gray-700 shadow-soft hover:bg-gray-50">
-                      Editar Prompt / Info
+                      Editar Producto
                     </button>
+                  </div>
+
+                  {/* A/B Template Mapping */}
+                  <div className="px-5 py-4 bg-gray-50 border-b border-gray-100">
+                    <h5 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">🧩 Mapeo de Automatizaciones (A/B Testing)</h5>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-700 mb-1">Trigger: Confirmación de Pedido</label>
+                        <select className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-1 focus:ring-blue-500 bg-white">
+                          <option>Plantilla: Confirmación V1 (Con Foto)</option>
+                          <option>Plantilla: Confirmación V2 (Urgencia)</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-700 mb-1">Trigger: Carrito Abandonado</label>
+                        <select className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-1 focus:ring-blue-500 bg-white">
+                          <option>Plantilla: Carrito Abandonado V1</option>
+                          <option>Plantilla: Carrito V2 (Oferta 10%)</option>
+                        </select>
+                      </div>
+                    </div>
                   </div>
                   
                   {/* AI Feedback Loop Panel */}
