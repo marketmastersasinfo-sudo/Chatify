@@ -26,8 +26,6 @@ export function CrmSales() {
 
   // Chat Pane State
   const [selectedLead, setSelectedLead] = useState<any | null>(null);
-  const [messages, setMessages] = useState<any[]>([]);
-  const [newMessage, setNewMessage] = useState('');
 
   useEffect(() => {
     loadStores();
@@ -41,11 +39,7 @@ export function CrmSales() {
     }
   }, [selectedStoreId]);
 
-  useEffect(() => {
-    if (selectedLead) {
-      loadMessages(selectedLead.id);
-    }
-  }, [selectedLead]);
+
 
   async function loadStores() {
     try {
@@ -72,15 +66,6 @@ export function CrmSales() {
       console.error(e);
     }
     setLoading(false);
-  }
-
-  async function loadMessages(leadId: string) {
-    try {
-      const { data } = await supabase.from('messages').select('*').eq('lead_id', leadId).order('created_at', { ascending: true });
-      setMessages(data || []);
-    } catch (e) {
-      console.error(e);
-    }
   }
 
   async function handleCreateLead() {
