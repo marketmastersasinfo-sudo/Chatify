@@ -32,7 +32,8 @@ export function LeadChatPanel({
     city: lead?.city || '',
     address: lead?.address || '',
     document_id: lead?.document_id || '',
-    notes: lead?.notes || ''
+    notes: lead?.notes || '',
+    status: lead?.status || 'new'
   });
   const [savingForm, setSavingForm] = useState(false);
 
@@ -46,7 +47,8 @@ export function LeadChatPanel({
         city: lead.city || '',
         address: lead.address || '',
         document_id: lead.document_id || '',
-        notes: lead.notes || ''
+        notes: lead.notes || '',
+        status: lead.status || 'new'
       });
     }
   }, [lead]);
@@ -214,6 +216,23 @@ export function LeadChatPanel({
 
             {/* Edit Form */}
             <div className="space-y-4">
+              
+              <div className="p-3 bg-blue-50 border border-blue-100 rounded-xl">
+                <label className="text-xs font-bold text-blue-700 uppercase tracking-wider mb-1.5 block">Etapa del Embudo (Columna)</label>
+                <select 
+                  value={formData.status} 
+                  onChange={e => setFormData({...formData, status: e.target.value})}
+                  className="w-full px-3 py-2 bg-white border border-blue-200 rounded-lg text-sm font-semibold text-blue-900 focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer"
+                >
+                  <option value="new">Nuevo Lead</option>
+                  <option value="contacted">Contacto Inicial</option>
+                  <option value="interaction">Interacción</option>
+                  <option value="closed">Cierre Exitoso</option>
+                  <option value="lost">Venta Perdida</option>
+                  <option value="human">Intervención Humana</option>
+                </select>
+              </div>
+
               <div>
                 <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 flex items-center gap-1"><User className="w-3 h-3"/> Nombre Completo</label>
                 <input type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-white focus:ring-2 focus:ring-blue-500 outline-none text-sm transition-all" />
