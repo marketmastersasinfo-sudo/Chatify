@@ -154,19 +154,30 @@ export function Stores() {
       if (!orgs || orgs.length === 0) throw new Error("No organization found");
       const orgId = (orgs as any)[0].id;
 
+      const countryMap: Record<string, string> = {
+        'CO': 'Colombia',
+        'MX': 'México',
+        'AR': 'Argentina',
+        'CL': 'Chile',
+        'PE': 'Perú',
+        'EC': 'Ecuador'
+      };
+
       let imported = 0;
       for (const shopyStore of data.stores) {
+        const mappedCountry = countryMap[shopyStore.country] || shopyStore.country;
+        
         const { data: existing } = await supabase.from('stores')
           .select('id')
           .eq('name', shopyStore.name)
-          .eq('country', shopyStore.country)
+          .eq('country', mappedCountry)
           .single();
         
         if (!existing) {
           await supabase.from('stores').insert({
             organization_id: orgId,
             name: shopyStore.name,
-            country: shopyStore.country
+            country: mappedCountry
           } as any);
           imported++;
         }
