@@ -30,7 +30,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     // 1. Buscar el ID de la tienda por su nombre Y país
-    const country = storeCountry || 'CO';
+    const rawCountry = storeCountry || 'CO';
+    const countryMap: Record<string, string> = {
+      'CO': 'Colombia',
+      'MX': 'México',
+      'AR': 'Argentina',
+      'CL': 'Chile',
+      'PE': 'Perú',
+      'EC': 'Ecuador',
+      'VE': 'Venezuela',
+      'CR': 'Costa Rica',
+      'GT': 'Guatemala'
+    };
+    const country = countryMap[rawCountry] || rawCountry;
+    
     const { data: store } = await supabase.from('stores').select('id').eq('name', storeName).eq('country', country).single();
     if (!store) {
       return res.status(404).json({ error: `Tienda no encontrada: ${storeName} en ${country}` });
