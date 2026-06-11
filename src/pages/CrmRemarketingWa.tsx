@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { RefreshCcw, Clock, AlertCircle, FileText, CheckCircle2, XCircle, Search, MessageSquare, Loader2, Ban } from 'lucide-react';
+import { RefreshCcw, Clock, AlertCircle, FileText, CheckCircle2, XCircle, Search, MessageSquare, Loader2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { CrmFilters } from '../components/CrmFilters';
 import type { CrmFilterState } from '../components/CrmFilters';

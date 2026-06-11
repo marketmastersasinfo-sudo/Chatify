@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { MessageSquare, AlertCircle, CheckCircle2, Store, Plus, Loader2, X, Ban } from 'lucide-react';
+import { MessageSquare, AlertCircle, CheckCircle2, Plus, Loader2, X, Ban } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { LeadChatPanel } from '../components/LeadChatPanel';
 import { formatPhoneNumber } from '../utils/phoneFormatter';

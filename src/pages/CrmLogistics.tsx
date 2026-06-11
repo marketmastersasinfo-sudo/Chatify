@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Truck, Clock, AlertCircle, MapPin, CheckCircle2, Loader2, Ban } from 'lucide-react';
+import { Truck, AlertCircle, MapPin, CheckCircle2, Loader2, Ban } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { CrmFilters } from '../components/CrmFilters';
 import type { CrmFilterState } from '../components/CrmFilters';

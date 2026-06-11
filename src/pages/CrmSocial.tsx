@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { MessageCircle, Clock, AlertCircle, Link, Loader2, Ban } from 'lucide-react';
+import { MessageCircle, AlertCircle, Link, Loader2, Ban } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { CrmFilters } from '../components/CrmFilters';
 import type { CrmFilterState } from '../components/CrmFilters';
