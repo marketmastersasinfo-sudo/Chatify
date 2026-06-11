@@ -20,7 +20,7 @@ export function TemplateBuilder() {
     headerType: 'NONE', // NONE, IMAGE
     headerImageUrl: '', // Solo de uso interno si queremos preview
     bodyText: 'Hola {{1}}, gracias por tu compra. Te enviaremos a la ciudad {{2}}.',
-    variableExamples: { '1': 'Juan', '2': 'Bogotá' }
+    variableExamples: { '1': 'Juan', '2': 'Bogotá' } as Record<string, string>
   });
 
   useEffect(() => {
