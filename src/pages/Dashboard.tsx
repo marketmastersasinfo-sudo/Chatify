@@ -198,84 +198,110 @@ export function Dashboard() {
       {/* Funnel Visualization Area */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
-        {/* Premium Vertical Funnel Flow */}
+        {/* SVG Literal Funnel Chart - Premium Split View */}
         <div className="glass-card rounded-2xl p-8 lg:col-span-2">
           <div className="flex justify-between items-center mb-8">
-            <div>
-              <h3 className="text-lg font-bold text-gray-900">Pipeline de Conversión</h3>
-              <p className="text-sm text-gray-500">Análisis detallado de retención y puntos de fricción.</p>
-            </div>
+            <h3 className="text-lg font-bold text-gray-900">Embudo Geométrico (Drop-off Visual)</h3>
           </div>
           
-          <div className="flex flex-col items-center w-full relative">
-            {currentData.funnel.map((stage, i) => {
-              const prevStage = i > 0 ? currentData.funnel[i-1] : null;
-              const dropPercent = prevStage ? Math.round(((prevStage.count - stage.count) / prevStage.count) * 100) : 0;
-              const dropCount = prevStage ? prevStage.count - stage.count : 0;
-
-              return (
-                <div key={i} className="w-full flex flex-col items-center">
+          <div className="relative w-full h-[600px] flex">
+            
+            {/* Left Side: Literal SVG Funnel */}
+            <div className="w-[50%] h-full relative">
+              <svg viewBox="0 0 500 600" className="w-full h-full drop-shadow-md" preserveAspectRatio="none">
+                {currentData.funnel.map((stage, i) => {
+                  // Calculate widths relative to 500px canvas
+                  const calculateWidth = (percent: number) => Math.max(percent * 5, 80); // Base width 80px
                   
-                  {/* Stage Card */}
-                  <div className="w-full max-w-[500px] bg-white rounded-2xl border border-gray-200 shadow-sm p-5 relative overflow-hidden group hover:border-blue-300 transition-colors z-10">
-                    {/* Background Progress Fill */}
-                    <div 
-                      className={`absolute left-0 top-0 bottom-0 ${stage.bg} opacity-50 transition-all duration-1000`}
-                      style={{ width: `${stage.percentage}%` }}
+                  const topWidth = calculateWidth(stage.percentage);
+                  const bottomWidth = i < currentData.funnel.length - 1 
+                    ? calculateWidth(currentData.funnel[i+1].percentage) 
+                    : topWidth * 0.6; 
+                  
+                  const topLeftX = 250 - topWidth / 2;
+                  const topRightX = 250 + topWidth / 2;
+                  const bottomLeftX = 250 - bottomWidth / 2;
+                  const bottomRightX = 250 + bottomWidth / 2;
+                  
+                  // Height is 150 per stage
+                  const topY = i * 150;
+                  const bottomY = (i + 1) * 150 - 4; // Gap
+                  
+                  const points = `${topLeftX},${topY} ${topRightX},${topY} ${bottomRightX},${bottomY} ${bottomLeftX},${bottomY}`;
+                  
+                  return (
+                    <polygon 
+                      key={i}
+                      points={points} 
+                      fill={stage.colorHex} 
+                      opacity="0.95"
+                      className="transition-all duration-700 ease-in-out hover:opacity-100 hover:brightness-110 cursor-pointer"
+                      strokeWidth="0"
                     />
+                  );
+                })}
+              </svg>
+
+              {/* Labels inside the funnel */}
+              <div className="absolute inset-0 flex flex-col justify-between pointer-events-none">
+                {currentData.funnel.map((stage, i) => (
+                  <div key={i} className="h-[150px] flex flex-col items-center justify-center">
+                    <span className="text-gray-900 font-bold text-sm md:text-base drop-shadow-md text-center">{stage.stage}</span>
+                    <span className="text-gray-900 font-black text-xl md:text-3xl drop-shadow-md tracking-tight">
+                      {stage.count} <span className="text-gray-800 text-xs md:text-sm font-semibold opacity-80">({stage.percentage}%)</span>
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Right Side: Analysis Cards with Connectors */}
+            <div className="w-[50%] h-full relative pointer-events-none">
+              {currentData.funnel.map((stage, i) => {
+                if (i === 0) return null; // No dropoff for first stage
+                
+                const prevStage = currentData.funnel[i-1];
+                const dropPercent = Math.round(((prevStage.count - stage.count) / prevStage.count) * 100);
+                const dropCount = prevStage.count - stage.count;
+
+                if (dropPercent <= 0) return null;
+
+                // Position the card perfectly at the seam between the two stages
+                const topPosition = i * 150 - 45; 
+
+                return (
+                  <div 
+                    key={i} 
+                    className="absolute w-full flex items-center pr-4" 
+                    style={{ top: `${topPosition}px` }}
+                  >
+                    {/* SVG Curve Connector */}
+                    <svg className="w-16 h-12 flex-shrink-0 -ml-4" viewBox="0 0 50 50">
+                       <path d="M 0,0 Q 25,0 25,25 T 50,25" fill="none" stroke="#ef4444" strokeWidth="2" strokeDasharray="4" opacity="0.6"/>
+                    </svg>
                     
-                    <div className="relative flex justify-between items-center">
-                      <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center font-black text-lg ${stage.bg} ${stage.color}`}>
-                          {i + 1}
+                    {/* Premium Drop-off Card */}
+                    <div className="flex-1 bg-white/80 backdrop-blur-md px-5 py-4 rounded-2xl border border-red-100 shadow-xl pointer-events-auto hover:border-red-300 transition-colors">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="bg-red-100 p-1.5 rounded-lg flex-shrink-0">
+                          <TrendingDown className="w-4 h-4 text-red-600" />
                         </div>
                         <div>
-                          <h4 className="text-base font-bold text-gray-900">{stage.stage.replace(/^\d+\.\s*/, '')}</h4>
-                          <span className="text-xs font-semibold text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
-                            Top: {stage.percentage}%
-                          </span>
+                          <h5 className="text-red-700 font-black text-sm">Fuga del {dropPercent}%</h5>
+                          <p className="text-xs font-bold text-red-500/80 -mt-1">-{dropCount} usuarios</p>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <span className="text-2xl font-black text-gray-900">{stage.count.toLocaleString()}</span>
-                        <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Usuarios</p>
-                      </div>
+                      {stage.dropoffAnalysis && (
+                        <p className="text-xs text-gray-600 font-medium leading-relaxed mt-2 border-t border-red-50 pt-2">
+                          <strong className="text-red-800/80">{stage.dropoffAnalysis.split(':')[0]}:</strong> 
+                          {stage.dropoffAnalysis.substring(stage.dropoffAnalysis.indexOf(':') + 1)}
+                        </p>
+                      )}
                     </div>
                   </div>
-
-                  {/* Connecting Line & Drop-off Analysis */}
-                  {i < currentData.funnel.length - 1 && (
-                    <div className="flex w-full max-w-[500px] min-h-[80px] relative">
-                      {/* Vertical Spine */}
-                      <div className="absolute left-[40px] top-0 bottom-0 border-l-2 border-dashed border-gray-300 z-0"></div>
-                      
-                      {/* Horizontal Branch to Drop-off */}
-                      <div className="absolute left-[40px] top-1/2 w-[30px] border-t-2 border-dashed border-red-300 z-0"></div>
-                      
-                      {/* Drop-off Card */}
-                      <div className="ml-[80px] my-4 w-full bg-gradient-to-r from-red-50 to-white rounded-xl p-4 border border-red-100 shadow-sm relative z-10">
-                        <div className="flex justify-between items-start mb-2">
-                          <div className="flex items-center gap-1.5">
-                            <div className="bg-red-100 p-1 rounded-md">
-                              <TrendingDown className="w-4 h-4 text-red-600" />
-                            </div>
-                            <span className="text-red-700 font-bold text-sm">Fuga del {dropPercent}%</span>
-                          </div>
-                          <span className="text-xs font-bold text-red-500 bg-red-100/50 px-2 py-0.5 rounded-md border border-red-200">
-                            -{dropCount.toLocaleString()} perdidos
-                          </span>
-                        </div>
-                        {stage.dropoffAnalysis && (
-                          <p className="text-xs text-red-600/90 leading-relaxed font-medium">
-                            {stage.dropoffAnalysis}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
         </div>
 
