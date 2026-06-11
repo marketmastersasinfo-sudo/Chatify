@@ -12,10 +12,10 @@ const funnels = {
       { label: "Pedidos Confirmados", value: "380", trend: "45% Cierre", icon: DollarSign, color: "text-green-600", bg: "bg-green-50" }
     ],
     funnel: [
-      { stage: "1. Leads Entrantes", count: 3010, percentage: 100, color: "bg-blue-500", text: "text-blue-700", bg: "bg-blue-50" },
-      { stage: "2. Interacción IA", count: 1850, percentage: 61.4, color: "bg-indigo-500", text: "text-indigo-700", bg: "bg-indigo-50" },
-      { stage: "3. Datos Recolectados", count: 845, percentage: 28.0, color: "bg-purple-500", text: "text-purple-700", bg: "bg-purple-50" },
-      { stage: "4. Pedidos Confirmados", count: 380, percentage: 12.6, color: "bg-green-500", text: "text-green-700", bg: "bg-green-50" }
+      { stage: "1. Leads Entrantes", count: 3010, percentage: 100, colorHex: "#3b82f6", color: "text-blue-700", bg: "bg-blue-50" },
+      { stage: "2. Interacción IA", count: 1850, percentage: 61.4, colorHex: "#6366f1", color: "text-indigo-700", bg: "bg-indigo-50" },
+      { stage: "3. Datos Recolectados", count: 845, percentage: 28.0, colorHex: "#a855f7", color: "text-purple-700", bg: "bg-purple-50" },
+      { stage: "4. Pedidos Confirmados", count: 380, percentage: 12.6, colorHex: "#22c55e", color: "text-green-700", bg: "bg-green-50" }
     ]
   },
   carts: {
@@ -27,30 +27,45 @@ const funnels = {
       { label: "Carritos Recuperados", value: "120", trend: "26% Cierre", icon: DollarSign, color: "text-green-600", bg: "bg-green-50" }
     ],
     funnel: [
-      { stage: "1. Carritos Detectados", count: 1200, percentage: 100, color: "bg-blue-500", text: "text-blue-700", bg: "bg-blue-50" },
-      { stage: "2. Plantillas Enviadas", count: 1150, percentage: 95.8, color: "bg-indigo-500", text: "text-indigo-700", bg: "bg-indigo-50" },
-      { stage: "3. Respuestas al Bot", count: 450, percentage: 37.5, color: "bg-purple-500", text: "text-purple-700", bg: "bg-purple-50" },
-      { stage: "4. Carritos Recuperados", count: 120, percentage: 10.0, color: "bg-green-500", text: "text-green-700", bg: "bg-green-50" }
+      { stage: "1. Carritos Detectados", count: 1200, percentage: 100, colorHex: "#3b82f6", color: "text-blue-700", bg: "bg-blue-50" },
+      { stage: "2. Plantillas Enviadas", count: 1150, percentage: 95.8, colorHex: "#6366f1", color: "text-indigo-700", bg: "bg-indigo-50" },
+      { stage: "3. Respuestas al Bot", count: 450, percentage: 37.5, colorHex: "#a855f7", color: "text-purple-700", bg: "bg-purple-50" },
+      { stage: "4. Carritos Recuperados", count: 120, percentage: 10.0, colorHex: "#22c55e", color: "text-green-700", bg: "bg-green-50" }
     ]
   },
   remarketing: {
-    title: "Remarketing (Difusión Masiva)",
+    title: "Remarketing (Seguimiento a Prospectos)",
     kpis: [
-      { label: "Mensajes Lanzados", value: "5,000", trend: "Ráfagas", icon: MessageSquare, color: "text-blue-600", bg: "bg-blue-50" },
-      { label: "Mensajes Leídos", value: "4,200", trend: "84% Open", icon: Activity, color: "text-indigo-600", bg: "bg-indigo-50" },
-      { label: "Clics / Respuestas", value: "850", trend: "20% Click", icon: Target, color: "text-purple-600", bg: "bg-purple-50" },
-      { label: "Ventas Generadas", value: "95", trend: "11% Cierre", icon: DollarSign, color: "text-green-600", bg: "bg-green-50" }
+      { label: "Prospectos Calientes", value: "850", trend: "-", icon: Users, color: "text-blue-600", bg: "bg-blue-50" },
+      { label: "Mensajes Enviados", value: "800", trend: "94% Alcance", icon: MessageSquare, color: "text-indigo-600", bg: "bg-indigo-50" },
+      { label: "Respuestas Recibidas", value: "320", trend: "40% Click", icon: Activity, color: "text-purple-600", bg: "bg-purple-50" },
+      { label: "Ventas Remarketing", value: "65", trend: "20% Cierre", icon: DollarSign, color: "text-green-600", bg: "bg-green-50" }
     ],
     funnel: [
-      { stage: "1. Mensajes Lanzados", count: 5000, percentage: 100, color: "bg-blue-500", text: "text-blue-700", bg: "bg-blue-50" },
-      { stage: "2. Mensajes Leídos", count: 4200, percentage: 84.0, color: "bg-indigo-500", text: "text-indigo-700", bg: "bg-indigo-50" },
-      { stage: "3. Clics / Respuestas", count: 850, percentage: 17.0, color: "bg-purple-500", text: "text-purple-700", bg: "bg-purple-50" },
-      { stage: "4. Ventas Generadas", count: 95, percentage: 1.9, color: "bg-green-500", text: "text-green-700", bg: "bg-green-50" }
+      { stage: "1. Prospectos Calientes", count: 850, percentage: 100, colorHex: "#3b82f6", color: "text-blue-700", bg: "bg-blue-50" },
+      { stage: "2. Mensajes Enviados", count: 800, percentage: 94.1, colorHex: "#6366f1", color: "text-indigo-700", bg: "bg-indigo-50" },
+      { stage: "3. Respuestas Recibidas", count: 320, percentage: 37.6, colorHex: "#a855f7", color: "text-purple-700", bg: "bg-purple-50" },
+      { stage: "4. Ventas Remarketing", count: 65, percentage: 7.6, colorHex: "#22c55e", color: "text-green-700", bg: "bg-green-50" }
+    ]
+  },
+  broadcast: {
+    title: "Difusión Masiva (Ráfagas)",
+    kpis: [
+      { label: "Mensajes Lanzados", value: "15,000", trend: "Ráfagas", icon: MessageSquare, color: "text-blue-600", bg: "bg-blue-50" },
+      { label: "Mensajes Leídos", value: "12,200", trend: "81% Open", icon: Activity, color: "text-indigo-600", bg: "bg-indigo-50" },
+      { label: "Clics / Respuestas", value: "1,850", trend: "15% Click", icon: Target, color: "text-purple-600", bg: "bg-purple-50" },
+      { label: "Re-compras", value: "210", trend: "11% Cierre", icon: DollarSign, color: "text-green-600", bg: "bg-green-50" }
+    ],
+    funnel: [
+      { stage: "1. Mensajes Lanzados", count: 15000, percentage: 100, colorHex: "#3b82f6", color: "text-blue-700", bg: "bg-blue-50" },
+      { stage: "2. Mensajes Leídos", count: 12200, percentage: 81.3, colorHex: "#6366f1", color: "text-indigo-700", bg: "bg-indigo-50" },
+      { stage: "3. Clics / Respuestas", count: 1850, percentage: 12.3, colorHex: "#a855f7", color: "text-purple-700", bg: "bg-purple-50" },
+      { stage: "4. Re-compras", count: 210, percentage: 1.4, colorHex: "#22c55e", color: "text-green-700", bg: "bg-green-50" }
     ]
   }
 };
 
-type TabType = 'whatsapp' | 'carts' | 'remarketing';
+type TabType = 'whatsapp' | 'carts' | 'remarketing' | 'broadcast';
 
 export function Dashboard() {
   const [activeTab, setActiveTab] = useState<TabType>('whatsapp');
@@ -112,33 +127,42 @@ export function Dashboard() {
       </div>
 
       {/* Tabs Menu */}
-      <div className="flex space-x-2 border-b border-gray-200 mb-6">
+      <div className="flex space-x-2 border-b border-gray-200 mb-6 overflow-x-auto pb-1">
         <button
           onClick={() => setActiveTab('whatsapp')}
           className={cn(
-            "px-6 py-3 text-sm font-bold border-b-2 transition-colors",
+            "px-6 py-3 text-sm font-bold border-b-2 transition-colors whitespace-nowrap",
             activeTab === 'whatsapp' ? "border-blue-600 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
           )}
         >
-          Ventas WhatsApp
+          1. Ventas WhatsApp
         </button>
         <button
           onClick={() => setActiveTab('carts')}
           className={cn(
-            "px-6 py-3 text-sm font-bold border-b-2 transition-colors",
+            "px-6 py-3 text-sm font-bold border-b-2 transition-colors whitespace-nowrap",
             activeTab === 'carts' ? "border-blue-600 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
           )}
         >
-          Carritos Abandonados
+          2. Carritos Abandonados
         </button>
         <button
           onClick={() => setActiveTab('remarketing')}
           className={cn(
-            "px-6 py-3 text-sm font-bold border-b-2 transition-colors",
+            "px-6 py-3 text-sm font-bold border-b-2 transition-colors whitespace-nowrap",
             activeTab === 'remarketing' ? "border-blue-600 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
           )}
         >
-          Remarketing / Difusión
+          3. Remarketing (Activo)
+        </button>
+        <button
+          onClick={() => setActiveTab('broadcast')}
+          className={cn(
+            "px-6 py-3 text-sm font-bold border-b-2 transition-colors whitespace-nowrap",
+            activeTab === 'broadcast' ? "border-blue-600 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+          )}
+        >
+          4. Difusión Masiva
         </button>
       </div>
 
@@ -174,65 +198,94 @@ export function Dashboard() {
       {/* Funnel Visualization Area */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
-        {/* Horizontal Funnel Chart */}
-        <div className="glass-card rounded-2xl p-6 lg:col-span-2">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-lg font-bold text-gray-900">Análisis de Retención (Caída por Etapas)</h3>
+        {/* SVG Literal Funnel Chart */}
+        <div className="glass-card rounded-2xl p-8 lg:col-span-2 flex flex-col items-center">
+          <div className="flex justify-between items-center mb-8 w-full">
+            <h3 className="text-lg font-bold text-gray-900">Embudo de Retención Real (Drop-off)</h3>
           </div>
           
-          <div className="space-y-6">
-            {currentData.funnel.map((stage, i) => {
-              // Calculate drop from previous stage
-              const prevStage = i > 0 ? currentData.funnel[i-1] : null;
-              const dropPercent = prevStage ? Math.round(((prevStage.count - stage.count) / prevStage.count) * 100) : 0;
+          <div className="relative w-full max-w-[600px] h-[400px]">
+            {/* SVG Data-Driven Funnel */}
+            <svg viewBox="0 0 1000 400" className="w-full h-full drop-shadow-sm" preserveAspectRatio="none">
+              {currentData.funnel.map((stage, i) => {
+                // Determine top and bottom widths for trapezoid
+                // We map percentage (0-100) to width (0-1000)
+                // Wait, if it drops to 1% it becomes too narrow to render text.
+                // We use a base width + percentage width to keep it visible, or pure percentage.
+                // Let's use pure percentage * 10, but ensure minimum width of 100 (10%).
+                const calculateWidth = (percent: number) => Math.max(percent * 10, 100);
+                
+                const topWidth = calculateWidth(stage.percentage);
+                const bottomWidth = i < currentData.funnel.length - 1 
+                  ? calculateWidth(currentData.funnel[i+1].percentage) 
+                  : topWidth * 0.7; // Taper off the last one slightly
+                
+                const topLeftX = 500 - topWidth / 2;
+                const topRightX = 500 + topWidth / 2;
+                const bottomLeftX = 500 - bottomWidth / 2;
+                const bottomRightX = 500 + bottomWidth / 2;
+                
+                // Height is 100 per stage
+                const topY = i * 100;
+                const bottomY = (i + 1) * 100 - 4; // -4px gap between layers
+                
+                const points = `${topLeftX},${topY} ${topRightX},${topY} ${bottomRightX},${bottomY} ${bottomLeftX},${bottomY}`;
+                
+                return (
+                  <polygon 
+                    key={i}
+                    points={points} 
+                    fill={stage.colorHex} 
+                    opacity="0.95"
+                    className="transition-all duration-700 ease-in-out hover:opacity-100 hover:stroke-gray-900 cursor-pointer"
+                    strokeWidth="0"
+                  />
+                );
+              })}
+            </svg>
 
-              return (
-                <div key={i} className="relative">
-                  <div className="flex justify-between items-end mb-1">
-                    <span className={`text-sm font-bold ${stage.text}`}>{stage.stage}</span>
-                    <span className="text-sm font-bold text-gray-900">{stage.count} <span className="text-gray-400 font-normal text-xs">({stage.percentage}%)</span></span>
-                  </div>
-                  
-                  {/* Bar */}
-                  <div className="w-full bg-gray-100 rounded-full h-8 overflow-hidden relative group">
-                    <div 
-                      className={`h-full ${stage.color} rounded-full flex items-center justify-end pr-3 transition-all duration-1000 ease-out`}
-                      style={{ width: `${stage.percentage}%` }}
-                    >
-                      {stage.percentage > 15 && (
-                        <span className="text-white text-xs font-bold">{stage.percentage}% retenido</span>
-                      )}
-                    </div>
-                  </div>
+            {/* Labels Overlay */}
+            <div className="absolute inset-0 flex flex-col justify-between pointer-events-none">
+              {currentData.funnel.map((stage, i) => {
+                const prevStage = i > 0 ? currentData.funnel[i-1] : null;
+                const dropPercent = prevStage ? Math.round(((prevStage.count - stage.count) / prevStage.count) * 100) : 0;
 
-                  {/* Drop-off warning arrow */}
-                  {i < currentData.funnel.length - 1 && (
-                    <div className="absolute -bottom-5 left-8 flex items-center gap-1 text-[10px] font-bold text-red-500">
-                      <TrendingUp className="w-3 h-3 rotate-180" /> 
-                      Se cayó el {dropPercent}% aquí
+                return (
+                  <div key={i} className="h-[100px] flex items-center justify-center relative w-full">
+                    {/* Stage Title and Numbers centered inside the funnel layer */}
+                    <div className="text-center z-10 flex flex-col items-center">
+                      <span className="text-white font-bold text-sm md:text-base drop-shadow-md">{stage.stage}</span>
+                      <span className="text-white font-black text-lg md:text-xl drop-shadow-md">
+                        {stage.count} <span className="text-white/80 text-xs md:text-sm font-semibold">({stage.percentage}%)</span>
+                      </span>
                     </div>
-                  )}
-                </div>
-              );
-            })}
+
+                    {/* Drop-off Warning on the right side */}
+                    {i > 0 && dropPercent > 0 && (
+                      <div className="absolute -top-[10px] right-0 translate-x-4 md:translate-x-12 bg-red-50 px-3 py-1.5 rounded-lg border border-red-100 shadow-sm flex items-center gap-1">
+                        <TrendingUp className="w-3 h-3 text-red-500 rotate-180" />
+                        <span className="text-red-700 font-bold text-[10px] md:text-xs">-{dropPercent}% abandonó</span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
 
         {/* Effectiveness Donut Chart */}
         <div className="glass-card rounded-2xl p-6 flex flex-col items-center justify-center">
-          <h3 className="text-lg font-bold text-gray-900 w-full text-left mb-6">Tasa de Efectividad IA</h3>
+          <h3 className="text-lg font-bold text-gray-900 w-full text-left mb-6">Cierres 100% IA</h3>
           <div className="relative w-48 h-48">
             <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90">
-              {/* Background circle */}
               <circle cx="50" cy="50" r="40" fill="transparent" stroke="#f3f4f6" strokeWidth="15" />
-              {/* Progress circle */}
               <circle cx="50" cy="50" r="40" fill="transparent" stroke="#3b82f6" strokeWidth="15" strokeDasharray="251.2" strokeDashoffset="36.8" className="transition-all duration-1000 ease-out" />
-              {/* Third layer (human intervention) */}
               <circle cx="50" cy="50" r="40" fill="transparent" stroke="#a855f7" strokeWidth="15" strokeDasharray="251.2" strokeDashoffset="214.4" />
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
               <span className="text-3xl font-bold text-gray-900">85%</span>
-              <span className="text-xs text-gray-500 text-center px-4">Cierres 100% IA</span>
+              <span className="text-xs text-gray-500 text-center px-4">Efectividad IA</span>
             </div>
           </div>
           <div className="mt-8 w-full space-y-3">
@@ -241,7 +294,7 @@ export function Dashboard() {
               <span className="font-semibold text-gray-900">85.3%</span>
             </div>
             <div className="flex justify-between items-center text-sm">
-              <span className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-purple-500"></div> Cierre Humano</span>
+              <span className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-purple-500"></div> Intervención Humana</span>
               <span className="font-semibold text-gray-900">14.7%</span>
             </div>
           </div>
