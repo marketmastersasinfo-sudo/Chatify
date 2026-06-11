@@ -74,15 +74,24 @@ export function TemplateBuilder() {
       }
 
       // Armar el JSON estricto que pide Meta
-      const components: any[] = [
-        {
-          type: 'BODY',
-          text: newTemplate.bodyText
-          // Ejemplo: Si hay variables, Meta a veces requiere 'example', pero a menudo lo infiere si no hay media.
-          // Para texto puro, no es estrictamente necesario enviar examples a menos que sea estricto.
-          // Lo enviaremos sin examples por ahora para simplificar.
-        }
-      ];
+      const bodyComponent: any = {
+        type: 'BODY',
+        text: newTemplate.bodyText
+      };
+
+      // Extract unique variables to generate examples required by Meta
+      const matches = newTemplate.bodyText.match(/\{\{\d+\}\}/g);
+      if (matches && matches.length > 0) {
+        // Meta requires an array of strings matching the number of variables
+        // We generate dummy strings like "Ejemplo 1", "Ejemplo 2"
+        const uniqueVarsCount = new Set(matches).size;
+        const exampleValues = Array.from({length: uniqueVarsCount}).map((_, i) => `Ejemplo ${i + 1}`);
+        bodyComponent.example = {
+          body_text: [exampleValues]
+        };
+      }
+
+      const components: any[] = [bodyComponent];
 
       if (newTemplate.headerType === 'IMAGE') {
         components.push({
