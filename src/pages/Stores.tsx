@@ -17,6 +17,7 @@ export function Stores() {
   const [newWaba, setNewWaba] = useState('');
   const [newPixel, setNewPixel] = useState('');
   const [showToken, setShowToken] = useState(false);
+  const [syncingStores, setSyncingStores] = useState(false);
   
   // Products State
   const [products, setProducts] = useState<any[]>([]);
@@ -142,6 +143,44 @@ export function Stores() {
     setSavingProduct(false);
   }
 
+  async function handleSyncStores() {
+    setSyncingStores(true);
+    try {
+      const res = await fetch('https://shopyeasy-seven.vercel.app/api/chatify/export-stores?secret=chatify_sync_2026_x');
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || 'Unknown error fetching stores');
+
+      let { data: orgs } = await supabase.from('organizations').select('id').limit(1);
+      if (!orgs || orgs.length === 0) throw new Error("No organization found");
+      const orgId = (orgs as any)[0].id;
+
+      let imported = 0;
+      for (const shopyStore of data.stores) {
+        const { data: existing } = await supabase.from('stores')
+          .select('id')
+          .eq('name', shopyStore.name)
+          .eq('country', shopyStore.country)
+          .single();
+        
+        if (!existing) {
+          await supabase.from('stores').insert({
+            organization_id: orgId,
+            name: shopyStore.name,
+            country: shopyStore.country
+          } as any);
+          imported++;
+        }
+      }
+
+      alert(`Sincronización completada. Se importaron ${imported} tiendas nuevas.`);
+      loadStores();
+    } catch (error: any) {
+      console.error(error);
+      alert("Error al sincronizar: " + error.message);
+    }
+    setSyncingStores(false);
+  }
+
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12 relative">
       <div className="sm:flex sm:items-center sm:justify-between">
@@ -151,12 +190,22 @@ export function Stores() {
             Base de Datos Conectada: Guarda tus tiendas en la nube de Supabase.
           </p>
         </div>
-        <button 
-          onClick={() => setIsAdding(true)}
-          className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-soft hover:bg-blue-500"
-        >
-          <Plus className="h-4 w-4" /> Nueva Tienda en {selectedCountry}
-        </button>
+        <div className="flex gap-2">
+          <button 
+            onClick={() => setIsAdding(true)}
+            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 shadow-sm"
+          >
+            <Plus className="w-4 h-4 mr-2" /> Agregar Tienda Manual
+          </button>
+          <button 
+            onClick={handleSyncStores}
+            disabled={syncingStores}
+            className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 shadow-sm disabled:opacity-50"
+          >
+            {syncingStores ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <ShoppingBag className="w-4 h-4 mr-2" />}
+            {syncingStores ? "Sincronizando..." : "Sincronizar Shopyeasy"}
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
