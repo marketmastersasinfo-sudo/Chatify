@@ -20,6 +20,7 @@ export function TemplateBuilder() {
     headerType: 'NONE', // NONE, IMAGE
     headerImageUrl: '', // Solo de uso interno si queremos preview
     bodyText: 'Hola {{1}}, gracias por tu compra. Te enviaremos a la ciudad {{2}}.',
+    variableExamples: { '1': 'Juan', '2': 'Bogotá' }
   });
 
   useEffect(() => {
@@ -82,10 +83,12 @@ export function TemplateBuilder() {
       // Extract unique variables to generate examples required by Meta
       const matches = newTemplate.bodyText.match(/\{\{\d+\}\}/g);
       if (matches && matches.length > 0) {
-        // Meta requires an array of strings matching the number of variables
-        // We generate dummy strings like "Ejemplo 1", "Ejemplo 2"
-        const uniqueVarsCount = new Set(matches).size;
-        const exampleValues = Array.from({length: uniqueVarsCount}).map((_, i) => `Ejemplo ${i + 1}`);
+        // Get unique numbers from {{1}}, {{2}}...
+        const uniqueNumbers = Array.from(new Set(matches.map(m => m.replace(/[\{\}]/g, '')))).sort((a, b) => parseInt(a) - parseInt(b));
+        
+        // Map user provided examples or fallback to generic
+        const exampleValues = uniqueNumbers.map(num => newTemplate.variableExamples[num as keyof typeof newTemplate.variableExamples] || `Ejemplo ${num}`);
+        
         bodyComponent.example = {
           body_text: [exampleValues]
         };
@@ -127,7 +130,7 @@ export function TemplateBuilder() {
 
       // Éxito
       setIsCreating(false);
-      setNewTemplate({ ...newTemplate, name: '', bodyText: '' });
+      setNewTemplate({ ...newTemplate, name: '', bodyText: '', variableExamples: {} });
       fetchMetaTemplates(selectedStore.id); // Recargar la lista
 
     } catch (err: any) {
@@ -258,6 +261,43 @@ export function TemplateBuilder() {
                 <p className="text-[11px] text-gray-500 mt-2 font-medium">Usa <code className="bg-gray-100 text-blue-600 px-1 py-0.5 rounded">{'{{1}}'}</code>, <code className="bg-gray-100 text-blue-600 px-1 py-0.5 rounded">{'{{2}}'}</code> para inyectar variables automáticas.</p>
               </div>
 
+              {/* Dynamic Variable Examples */}
+              {(() => {
+                const matches = newTemplate.bodyText.match(/\{\{\d+\}\}/g);
+                if (!matches) return null;
+                const uniqueNumbers = Array.from(new Set(matches.map(m => m.replace(/[\{\}]/g, '')))).sort((a, b) => parseInt(a) - parseInt(b));
+                if (uniqueNumbers.length === 0) return null;
+
+                return (
+                  <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
+                    <h5 className="text-xs font-bold text-blue-800 uppercase tracking-wider mb-3">Ejemplos para las variables</h5>
+                    <p className="text-[10px] text-blue-600 mb-3">Meta exige ejemplos reales de lo que irá en las variables para aprobar la plantilla rápidamente.</p>
+                    <div className="grid grid-cols-2 gap-3">
+                      {uniqueNumbers.map(num => (
+                        <div key={num} className="flex items-center gap-2">
+                          <span className="bg-blue-200 text-blue-800 text-xs font-bold px-2 py-1 rounded w-10 text-center">{`{{${num}}}`}</span>
+                          <input 
+                            type="text" 
+                            placeholder={`Ej: ${num === '1' ? 'Juan' : num === '2' ? 'Bogotá' : 'Ejemplo'}`}
+                            value={(newTemplate.variableExamples as any)[num] || ''}
+                            onChange={(e) => {
+                              setNewTemplate({
+                                ...newTemplate,
+                                variableExamples: {
+                                  ...newTemplate.variableExamples,
+                                  [num]: e.target.value
+                                }
+                              });
+                            }}
+                            className="w-full px-3 py-1.5 bg-white border border-blue-200 rounded text-xs focus:ring-1 focus:ring-blue-500"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
+
               <div className="pt-4 flex justify-end gap-3">
                 <button onClick={() => setIsCreating(false)} className="px-5 py-2.5 text-sm font-bold text-gray-600 hover:text-gray-900 transition-colors">Cancelar</button>
                 <button 
@@ -295,10 +335,16 @@ export function TemplateBuilder() {
                     )}
                     
                     <p className="text-sm text-gray-800 whitespace-pre-wrap break-words leading-relaxed font-[system-ui]">
-                      {/* Resaltar variables falsas en amarillo */}
+                      {/* Resaltar variables falsas en amarillo con su ejemplo */}
                       {newTemplate.bodyText.split(/(\{\{\d+\}\})/).map((part, i) => {
                         if (part.match(/\{\{\d+\}\}/)) {
-                          return <span key={i} className="bg-yellow-200 text-yellow-800 px-1 rounded mx-0.5 font-bold">{part}</span>;
+                          const num = part.replace(/[\{\}]/g, '');
+                          const exampleText = (newTemplate.variableExamples as any)[num];
+                          return (
+                            <span key={i} className="bg-yellow-200 text-yellow-800 px-1 rounded mx-0.5 font-bold">
+                              {exampleText ? exampleText : part}
+                            </span>
+                          );
                         }
                         return part;
                       })}
