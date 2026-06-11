@@ -141,6 +141,11 @@ export function TemplateManager() {
 }
 
 function TemplateConfigCard({ title, type, store, template, onUpdateField, onFileUpload, isSaving }: any) {
+  const [localName, setLocalName] = useState(template.template_name || '');
+
+  useEffect(() => {
+    setLocalName(template.template_name || '');
+  }, [template.template_name]);
   return (
     <div className="space-y-4 bg-gray-50/30 p-5 rounded-xl border border-gray-100">
       <h4 className="font-semibold text-gray-800 flex items-center gap-2">
@@ -154,8 +159,9 @@ function TemplateConfigCard({ title, type, store, template, onUpdateField, onFil
           type="text"
           className="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
           placeholder="ej: confirmacion_pedido_v1"
-          value={template.template_name || ''}
-          onChange={(e) => onUpdateField(store.id, type, 'template_name', e.target.value)}
+          value={localName}
+          onChange={(e) => setLocalName(e.target.value)}
+          onBlur={() => onUpdateField(store.id, type, 'template_name', localName)}
         />
       </div>
 
