@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { X, Send, User, MapPin, Mail, AlignLeft, Phone, Building2, Ban, Trash2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
@@ -70,7 +70,7 @@ export function LeadChatPanel({
   async function handleSendMessage() {
     if (!newMessage.trim()) return;
     try {
-      const { data } = await supabase.from('messages').insert({
+      const { data } = await (supabase as any).from('messages').insert({
         lead_id: lead.id,
         sender_type: 'human',
         content: newMessage
@@ -101,7 +101,7 @@ export function LeadChatPanel({
   async function handleSaveData() {
     setSavingForm(true);
     try {
-      await supabase.from('leads').update(formData).eq('id', lead.id);
+      await (supabase as any).from('leads').update(formData).eq('id', lead.id);
       onUpdateLead({ ...lead, ...formData });
       // Show some toast or indication here ideally
     } catch(e) {

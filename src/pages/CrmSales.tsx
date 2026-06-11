@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { MessageSquare, AlertCircle, CheckCircle2, Store, Plus, Loader2, X, Send, Trash2, Ban } from 'lucide-react';
+import { MessageSquare, AlertCircle, CheckCircle2, Store, Plus, Loader2, X, Ban } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { LeadChatPanel } from '../components/LeadChatPanel';
 
@@ -140,24 +140,6 @@ export function CrmSales() {
     
     setDraggedLeadId(null);
   };
-
-  async function handleSendMessage() {
-    if (!newMessage.trim() || !selectedLead) return;
-    try {
-      const { data } = await supabase.from('messages').insert({
-        lead_id: selectedLead.id,
-        sender_type: 'human',
-        content: newMessage
-      } as any).select().single();
-      
-      if (data) {
-        setMessages([...messages, data]);
-        setNewMessage('');
-      }
-    } catch(e) {
-      console.error(e);
-    }
-  }
 
   async function handleDeleteLead(leadId: string) {
     if (!confirm('¿Estás seguro de eliminar este contacto y todo su chat permanentemente?')) return;
