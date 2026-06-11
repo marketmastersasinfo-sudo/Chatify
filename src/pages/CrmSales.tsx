@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { MessageSquare, AlertCircle, CheckCircle2, Store, Plus, Loader2, X, Ban } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { LeadChatPanel } from '../components/LeadChatPanel';
+import { formatPhoneNumber } from '../utils/phoneFormatter';
 
 const columns = [
   { id: 'new', title: 'Nuevo Lead', color: 'border-blue-500', bg: 'bg-blue-50' },
@@ -71,10 +72,12 @@ export function CrmSales() {
   async function handleCreateLead() {
     if (!newLeadName || !newLeadPhone || !selectedStoreId) return;
     try {
+      const formattedPhone = formatPhoneNumber(newLeadPhone);
+
       const { data, error } = await supabase.from('leads').insert({
         store_id: selectedStoreId,
         name: newLeadName,
-        phone: newLeadPhone,
+        phone: formattedPhone,
         traffic_source: 'Manual (Vendedor)',
         board_type: 'sales_wa',
         status: 'new'
