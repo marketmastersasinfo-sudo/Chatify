@@ -239,8 +239,11 @@ export function Stores() {
       for (const cart of result.data) {
         const mappedCountry = countryMap[cart.storeCountry] || cart.storeCountry;
         
-        // Buscar la tienda local
-        const store = localStores.find((s: any) => s.name === cart.storeName && s.country === mappedCountry);
+        // Buscar la tienda local (ignorando mayúsculas/minúsculas)
+        const store = localStores.find((s: any) => 
+          s.name.toLowerCase() === cart.storeName.toLowerCase() && 
+          s.country.toLowerCase() === mappedCountry.toLowerCase()
+        );
         if (!store) continue; // Si no encontramos la tienda, saltamos
 
         // Formatear teléfono
