@@ -12,6 +12,7 @@ export function TemplateBuilder() {
 
   // New Template Form State
   const [isCreating, setIsCreating] = useState(false);
+  const [selectedTemplateToView, setSelectedTemplateToView] = useState<any>(null);
   const [saving, setSaving] = useState(false);
   const [newTemplate, setNewTemplate] = useState({
     name: '',
@@ -410,7 +411,12 @@ export function TemplateBuilder() {
                       {getStatusBadge(tpl.status)}
                     </td>
                     <td className="p-4 text-right pr-6">
-                      <button className="text-blue-600 font-bold hover:text-blue-800 transition-colors text-xs">Ver Detalles</button>
+                      <button 
+                        onClick={() => setSelectedTemplateToView(tpl)}
+                        className="text-blue-600 font-bold hover:text-blue-800 transition-colors text-xs"
+                      >
+                        Ver Detalles
+                      </button>
                     </td>
                   </tr>
                 ))
@@ -419,6 +425,111 @@ export function TemplateBuilder() {
           </table>
         </div>
       </div>
+
+      {/* View Template Details Modal */}
+      {selectedTemplateToView && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full flex flex-col md:flex-row overflow-hidden max-h-[90vh]">
+            
+            {/* Left: Info */}
+            <div className="flex-1 p-8 overflow-y-auto border-r border-gray-100">
+              <div className="flex justify-between items-start mb-6">
+                <div>
+                  <h3 className="text-2xl font-bold text-gray-900">{selectedTemplateToView.name}</h3>
+                  <div className="flex items-center gap-3 mt-2">
+                    {getStatusBadge(selectedTemplateToView.status)}
+                    <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{selectedTemplateToView.category}</span>
+                    <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{selectedTemplateToView.language}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-6 mt-8">
+                {selectedTemplateToView.components?.map((comp: any, idx: number) => (
+                  <div key={idx} className="bg-gray-50 rounded-xl p-5 border border-gray-200">
+                    <h4 className="text-xs font-bold text-blue-800 uppercase tracking-wider mb-3">Componente: {comp.type}</h4>
+                    {comp.format && <p className="text-xs text-gray-500 mb-2 font-semibold">Formato: {comp.format}</p>}
+                    <p className="text-sm text-gray-800 whitespace-pre-wrap font-[system-ui] leading-relaxed">
+                      {comp.text || 'Contenido multimedia / sin texto'}
+                    </p>
+                    {comp.example?.body_text && (
+                      <div className="mt-4 pt-3 border-t border-gray-200">
+                        <p className="text-xs font-bold text-gray-500 mb-2">Ejemplos configurados:</p>
+                        <div className="flex flex-wrap gap-2">
+                          {comp.example.body_text[0]?.map((ex: string, i: number) => (
+                            <span key={i} className="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded font-semibold">
+                              {`{{${i+1}}}`} = {ex}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Right: WhatsApp Preview */}
+            <div className="w-full md:w-[380px] bg-gray-100/50 p-8 flex flex-col items-center justify-center relative">
+              <button 
+                onClick={() => setSelectedTemplateToView(null)}
+                className="absolute top-4 right-4 p-2 bg-white rounded-full text-gray-500 hover:text-gray-900 shadow-sm transition-colors z-20"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              <div className="absolute inset-0 bg-[url('https://transparenttextures.com/patterns/cubes.png')] opacity-5 mix-blend-overlay"></div>
+              
+              <div className="bg-[#EFEAE2] w-full max-w-[320px] h-auto min-h-[450px] rounded-[2.5rem] shadow-2xl border-[8px] border-gray-900 relative z-10 overflow-hidden flex flex-col">
+                <div className="bg-[#075E54] text-white px-4 py-3 flex items-center gap-3">
+                  <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
+                    <MessageSquareDashed className="w-4 h-4 text-white"/>
+                  </div>
+                  <div className="font-semibold text-sm">WhatsApp Preview</div>
+                </div>
+                
+                <div className="flex-1 p-4 flex flex-col justify-start">
+                  <div className="bg-white rounded-xl rounded-tl-none p-2 shadow-sm w-[90%] self-start relative">
+                    <div className="absolute top-0 -left-2 w-0 h-0 border-t-[0px] border-t-transparent border-r-[10px] border-r-white border-b-[10px] border-b-transparent"></div>
+                    
+                    {selectedTemplateToView.components?.find((c: any) => c.type === 'HEADER' && c.format === 'IMAGE') && (
+                      <div className="w-full h-32 bg-gray-200 rounded-lg mb-2 flex items-center justify-center overflow-hidden">
+                        <ImageIcon className="w-8 h-8 text-gray-400" />
+                      </div>
+                    )}
+                    
+                    <p className="text-sm text-gray-800 whitespace-pre-wrap break-words leading-relaxed font-[system-ui]">
+                      {(() => {
+                        const bodyComp = selectedTemplateToView.components?.find((c: any) => c.type === 'BODY');
+                        if (!bodyComp || !bodyComp.text) return '';
+                        
+                        let text = bodyComp.text;
+                        const examples = bodyComp.example?.body_text?.[0];
+                        
+                        if (examples) {
+                          return text.split(/(\{\{\d+\}\})/).map((part: string, i: number) => {
+                            const match = part.match(/\{\{(\d+)\}\}/);
+                            if (match) {
+                              const numIndex = parseInt(match[1]) - 1;
+                              const exampleValue = examples[numIndex] || part;
+                              return <span key={i} className="bg-yellow-200 text-yellow-800 px-1 rounded mx-0.5 font-bold">{exampleValue}</span>;
+                            }
+                            return part;
+                          });
+                        }
+                        
+                        return text;
+                      })()}
+                    </p>
+                    <div className="text-[10px] text-gray-400 text-right mt-1">Ahora mismo</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+          </div>
+        </div>
+      )}
     </div>
   );
 }
