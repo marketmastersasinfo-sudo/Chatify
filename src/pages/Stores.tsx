@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Store, Smartphone, Target, Plus, ShoppingBag, Loader2, Save, X, BrainCircuit, TrendingDown, AlertTriangle, FileText } from 'lucide-react';
+import { Store, Smartphone, Target, Plus, ShoppingBag, Loader2, Save, X, BrainCircuit, TrendingDown, AlertTriangle, FileText, Eye, EyeOff } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 
@@ -16,6 +16,7 @@ export function Stores() {
   const [newStoreName, setNewStoreName] = useState('');
   const [newWaba, setNewWaba] = useState('');
   const [newPixel, setNewPixel] = useState('');
+  const [showToken, setShowToken] = useState(false);
   
   // Products State
   const [products, setProducts] = useState<any[]>([]);
@@ -340,10 +341,10 @@ export function Stores() {
                               className="w-full px-3 py-2 border border-blue-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500" 
                             />
                           </div>
-                          <div className="md:col-span-2">
+                          <div className="md:col-span-2 relative">
                             <label className="block text-xs font-semibold text-blue-800 mb-1">Permanent Access Token</label>
                             <input 
-                              type="password" 
+                              type={showToken ? "text" : "password"} 
                               value={selectedStore.meta_access_token || ''}
                               onChange={async (e) => {
                                 const val = e.target.value;
@@ -352,8 +353,15 @@ export function Stores() {
                                 await supabase.from('stores').update({meta_access_token: val}).eq('id', selectedStore.id);
                               }}
                               placeholder="EAAGm0..." 
-                              className="w-full px-3 py-2 border border-blue-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500" 
+                              className="w-full px-3 py-2 pr-10 border border-blue-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500" 
                             />
+                            <button
+                              type="button"
+                              onClick={() => setShowToken(!showToken)}
+                              className="absolute right-3 top-[26px] text-gray-400 hover:text-gray-600 focus:outline-none"
+                            >
+                              {showToken ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                            </button>
                           </div>
                         </div>
                       </div>
