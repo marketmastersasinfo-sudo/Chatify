@@ -38,6 +38,7 @@ CREATE TABLE public.leads (
     traffic_source TEXT,
     board_type TEXT NOT NULL CHECK (board_type IN ('sales_wa', 'social_media', 'logistics')),
     status TEXT NOT NULL,
+    is_banned BOOLEAN DEFAULT false,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
@@ -62,3 +63,6 @@ CREATE POLICY "Enable all actions for public" ON public.stores FOR ALL USING (tr
 CREATE POLICY "Enable all actions for public" ON public.products FOR ALL USING (true);
 CREATE POLICY "Enable all actions for public" ON public.leads FOR ALL USING (true);
 CREATE POLICY "Enable all actions for public" ON public.messages FOR ALL USING (true);
+
+-- Si ya creaste las tablas antes, ejecuta esto en tu SQL Editor para agregar la columna de Baneo:
+-- ALTER TABLE public.leads ADD COLUMN is_banned BOOLEAN DEFAULT false;

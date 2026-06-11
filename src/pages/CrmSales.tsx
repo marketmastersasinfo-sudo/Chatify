@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { MessageSquare, AlertCircle, CheckCircle2, Store, Plus, Loader2, X, Send } from 'lucide-react';
+import { MessageSquare, AlertCircle, CheckCircle2, Store, Plus, Loader2, X, Send, Trash2, Ban } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 const columns = [
@@ -158,6 +158,27 @@ export function CrmSales() {
     }
   }
 
+  async function handleDeleteLead(leadId: string) {
+    if (!confirm('¿Estás seguro de eliminar este contacto y todo su chat permanentemente?')) return;
+    try {
+      await supabase.from('leads').delete().eq('id', leadId);
+      setLeads(leads.filter(l => l.id !== leadId));
+      if (selectedLead?.id === leadId) setSelectedLead(null);
+    } catch(e) {
+      console.error(e);
+    }
+  }
+
+  async function handleBanLead(leadId: string, currentStatus: boolean) {
+    try {
+      await (supabase as any).from('leads').update({ is_banned: !currentStatus }).eq('id', leadId);
+      setLeads(leads.map(l => l.id === leadId ? { ...l, is_banned: !currentStatus } : l));
+      if (selectedLead?.id === leadId) setSelectedLead({ ...selectedLead, is_banned: !currentStatus });
+    } catch(e) {
+      console.error(e);
+    }
+  }
+
   return (
     <div className="h-[calc(100vh-8rem)] flex flex-col relative">
       <div className="mb-6 flex justify-between items-end">
@@ -225,6 +246,11 @@ export function CrmSales() {
                         <span className="text-xs font-semibold px-2 py-1 bg-gray-100 text-gray-700 rounded-md">
                           {lead.traffic_source}
                         </span>
+                        {lead.is_banned && (
+                          <span className="bg-red-100 text-red-600 px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1">
+                            <Ban className="w-3 h-3"/> Baneado
+                          </span>
+                        )}
                       </div>
                       <h4 className="font-bold text-gray-900 text-sm">{lead.name}</h4>
                       <p className="text-xs text-gray-500 mt-1">{lead.phone}</p>
@@ -251,10 +277,29 @@ export function CrmSales() {
           <div className="w-96 bg-white border border-gray-200 shadow-2xl rounded-2xl flex flex-col shrink-0 overflow-hidden">
             <div className="p-4 bg-blue-600 text-white flex justify-between items-center">
               <div>
-                <h3 className="font-bold">{selectedLead.name}</h3>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-bold">{selectedLead.name}</h3>
+                  {selectedLead.is_banned && <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded font-bold">Baneado</span>}
+                </div>
                 <p className="text-xs text-blue-100">{selectedLead.phone}</p>
               </div>
-              <button onClick={() => setSelectedLead(null)} className="hover:bg-blue-500 p-1 rounded-md"><X className="w-5 h-5"/></button>
+              <div className="flex items-center gap-1">
+                <button 
+                  onClick={() => handleBanLead(selectedLead.id, selectedLead.is_banned)} 
+                  title={selectedLead.is_banned ? "Quitar Baneo" : "Banear (Silenciar IA)"}
+                  className={`p-1.5 rounded-md transition-colors ${selectedLead.is_banned ? 'bg-red-500 hover:bg-red-400' : 'hover:bg-blue-500 text-blue-100'}`}
+                >
+                  <Ban className="w-4 h-4"/>
+                </button>
+                <button 
+                  onClick={() => handleDeleteLead(selectedLead.id)} 
+                  title="Eliminar permanentemente"
+                  className="hover:bg-red-500 text-blue-100 p-1.5 rounded-md transition-colors"
+                >
+                  <Trash2 className="w-4 h-4"/>
+                </button>
+                <button onClick={() => setSelectedLead(null)} className="hover:bg-blue-500 p-1.5 rounded-md transition-colors"><X className="w-5 h-5"/></button>
+              </div>
             </div>
             
             <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
