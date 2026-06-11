@@ -485,15 +485,15 @@ export function Stores() {
                 <div className="grid grid-cols-1 gap-4">
                   <div>
                     <label className="block text-xs font-bold text-indigo-800 mb-1 flex items-center gap-1">
-                      <Smartphone className="w-3 h-3"/> Contexto para WhatsApp (Cierre de Ventas)
+                      <Smartphone className="w-3 h-3"/> Prompt producto
                     </label>
                     <p className="text-[11px] text-indigo-600 mb-2 leading-tight">
-                      Instrucciones sobre objeciones de precio, envíos, garantías y cómo empujar el cierre del carrito abandonado.
+                      Pega aquí el prompt generado con las reglas de venta (objeciones, envíos, garantías, etc).
                     </p>
                     <textarea 
                       rows={3} 
                       className="w-full px-4 py-3 border border-indigo-200 rounded-lg text-sm focus:ring-indigo-500 focus:border-indigo-500 bg-white"
-                      placeholder="Ej: Es resistente al agua (IP68). Batería 3 días. Garantía de 3 meses. Ofrecer envío gratis si preguntan por descuento. El objetivo es que llenen el formulario de pago contra entrega."
+                      placeholder="Ej: Eres un vendedor experto. Ofrece envío gratis. El objetivo es que llenen el formulario de pago contra entrega."
                     ></textarea>
                   </div>
 
