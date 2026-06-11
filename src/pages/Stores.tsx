@@ -370,13 +370,26 @@ export function Stores() {
                     <div className="col-span-1 md:col-span-2 bg-green-50 p-4 rounded-xl border border-green-100 mb-4">
                       <div className="flex justify-between items-center">
                         <div>
-                          <h5 className="font-bold text-green-900 flex items-center gap-2"><ShoppingBag className="w-4 h-4"/> ShopyEasy (Recuperación de Carritos)</h5>
-                          <p className="text-xs text-green-700 mt-1">Copia esta URL y pégala en la sección de Webhooks de tu panel de ShopyEasy.</p>
+                          <h5 className="font-bold text-green-900 flex items-center gap-2"><ShoppingBag className="w-4 h-4"/> Integración Webhook ShopyEasy</h5>
+                          <p className="text-xs text-green-700 mt-1">Copia esta URL y pégala en ShopyEasy para recibir pedidos y carritos abandonados automáticamente.</p>
                         </div>
                       </div>
                       <div className="mt-3 flex gap-2">
-                        <input type="text" readOnly value="https://chatify.com/api/webhook/shopyeasy/store_987654321" className="flex-1 px-3 py-2 border border-green-200 rounded-lg text-sm bg-white text-gray-600 font-mono" />
-                        <button className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm hover:bg-green-700">Copiar URL</button>
+                        <input 
+                          type="text" 
+                          readOnly 
+                          value={`${window.location.origin}/api/webhooks/shopyeasy?storeId=${selectedStore.id}`} 
+                          className="flex-1 px-3 py-2 border border-green-200 rounded-lg text-sm bg-white text-gray-600 font-mono" 
+                        />
+                        <button 
+                          onClick={() => {
+                            navigator.clipboard.writeText(`${window.location.origin}/api/webhooks/shopyeasy?storeId=${selectedStore.id}`);
+                            alert('URL copiada al portapapeles');
+                          }}
+                          className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm hover:bg-green-700"
+                        >
+                          Copiar URL
+                        </button>
                       </div>
                     </div>
                   </div>
