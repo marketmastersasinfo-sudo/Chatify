@@ -147,17 +147,19 @@ function TemplateConfigCard({ title, type, store, template, onUpdateField, onFil
     setLocalName(template.template_name || '');
   }, [template.template_name]);
   return (
-    <div className="space-y-4 bg-gray-50/30 p-5 rounded-xl border border-gray-100">
-      <h4 className="font-semibold text-gray-800 flex items-center gap-2">
-        <MessageSquareDashed className="h-4 w-4 text-blue-500" />
-        {title}
-      </h4>
+    <div className="space-y-5 bg-gradient-to-b from-white to-gray-50/50 p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-300">
+      <div className="flex items-center gap-3 border-b border-gray-100 pb-4">
+        <div className="p-2.5 bg-blue-50 rounded-xl text-blue-600">
+          <MessageSquareDashed className="h-5 w-5" />
+        </div>
+        <h4 className="text-base font-bold text-gray-900 tracking-tight">{title}</h4>
+      </div>
       
-      <div>
-        <label className="block text-xs font-medium text-gray-700 mb-1">Nombre en Meta (Plantilla)</label>
+      <div className="space-y-1.5">
+        <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider">Nombre en Meta (Plantilla)</label>
         <input
           type="text"
-          className="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
+          className="w-full rounded-xl border-gray-200 bg-white/50 px-4 py-2.5 text-sm text-gray-900 shadow-sm transition-all focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 placeholder:text-gray-400"
           placeholder="ej: confirmacion_pedido_v1"
           value={localName}
           onChange={(e) => setLocalName(e.target.value)}
@@ -165,33 +167,37 @@ function TemplateConfigCard({ title, type, store, template, onUpdateField, onFil
         />
       </div>
 
-      <div>
-        <label className="block text-xs font-medium text-gray-700 mb-1">Imagen de Cabecera (Opcional)</label>
+      <div className="space-y-1.5">
+        <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider">Imagen de Cabecera (Opcional)</label>
         {template.image_url ? (
-          <div className="relative group rounded-lg overflow-hidden border border-gray-200 bg-white">
-            <img src={template.image_url} alt="Template header" className="w-full h-32 object-cover" />
-            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-              <label className="cursor-pointer bg-white text-gray-900 px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-gray-50">
-                Cambiar Imagen
+          <div className="relative group rounded-xl overflow-hidden border border-gray-200 bg-gray-50/50 shadow-inner">
+            <div className="absolute inset-0 bg-[url('https://transparenttextures.com/patterns/cubes.png')] opacity-10 mix-blend-overlay"></div>
+            <img src={template.image_url} alt="Template header" className="w-full h-40 object-contain p-2 relative z-10 drop-shadow-md transition-transform duration-500 group-hover:scale-105" />
+            <div className="absolute inset-0 bg-gray-900/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center z-20 backdrop-blur-[2px]">
+              <label className="cursor-pointer bg-white text-gray-900 px-4 py-2 rounded-xl text-sm font-semibold shadow-lg hover:bg-gray-50 hover:scale-105 transition-transform">
+                Actualizar Imagen
                 <input type="file" className="hidden" accept="image/*" onChange={(e) => onFileUpload(e, store.id, type)} />
               </label>
             </div>
           </div>
         ) : (
-          <div className="mt-1 flex justify-center rounded-lg border border-dashed border-gray-900/25 px-6 py-6 bg-white hover:bg-gray-50 transition-colors">
-            <div className="text-center">
+          <div className="mt-1 flex justify-center rounded-xl border-2 border-dashed border-gray-200 bg-gray-50/50 px-6 py-8 hover:bg-gray-50 hover:border-blue-300 transition-all duration-300 group cursor-pointer relative overflow-hidden">
+            <div className="absolute inset-0 bg-blue-50/0 group-hover:bg-blue-50/50 transition-colors duration-300"></div>
+            <div className="text-center relative z-10">
               {isSaving ? (
-                <Loader2 className="mx-auto h-8 w-8 text-blue-500 animate-spin" />
+                <Loader2 className="mx-auto h-10 w-10 text-blue-500 animate-spin" />
               ) : (
-                <ImageIcon className="mx-auto h-8 w-8 text-gray-300" aria-hidden="true" />
+                <div className="mx-auto h-12 w-12 rounded-full bg-white shadow-sm flex items-center justify-center mb-4 group-hover:scale-110 group-hover:shadow-md transition-all duration-300">
+                  <ImageIcon className="h-6 w-6 text-gray-400 group-hover:text-blue-500 transition-colors" aria-hidden="true" />
+                </div>
               )}
-              <div className="mt-4 flex text-sm leading-6 text-gray-600 justify-center">
-                <label className="relative cursor-pointer rounded-md font-semibold text-blue-600 focus-within:outline-none focus-within:ring-2 focus-within:ring-blue-600 focus-within:ring-offset-2 hover:text-blue-500">
-                  <span>Subir archivo</span>
-                  <input type="file" className="sr-only" accept="image/*" onChange={(e) => onFileUpload(e, store.id, type)} disabled={isSaving} />
+              <div className="flex text-sm leading-6 text-gray-600 justify-center font-medium">
+                <label className="relative cursor-pointer rounded-md text-blue-600 focus-within:outline-none hover:text-blue-500">
+                  <span>Haz clic para subir un archivo</span>
+                  <input type="file" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" accept="image/*" onChange={(e) => onFileUpload(e, store.id, type)} disabled={isSaving} />
                 </label>
               </div>
-              <p className="text-xs leading-5 text-gray-600">PNG, JPG hasta 5MB</p>
+              <p className="text-xs leading-5 text-gray-400 mt-1">PNG, JPG o GIF hasta 5MB</p>
             </div>
           </div>
         )}
