@@ -13,9 +13,9 @@ const funnels = {
     ],
     funnel: [
       { stage: "1. Leads Entrantes", count: 3010, percentage: 100, colorHex: "#3b82f6", color: "text-blue-700", bg: "bg-blue-50" },
-      { stage: "2. Interacción IA", count: 1850, percentage: 61.4, colorHex: "#6366f1", color: "text-indigo-700", bg: "bg-indigo-50" },
-      { stage: "3. Datos Recolectados", count: 845, percentage: 28.0, colorHex: "#a855f7", color: "text-purple-700", bg: "bg-purple-50" },
-      { stage: "4. Pedidos Confirmados", count: 380, percentage: 12.6, colorHex: "#22c55e", color: "text-green-700", bg: "bg-green-50" }
+      { stage: "2. Interacción IA", count: 1850, percentage: 61.4, colorHex: "#6366f1", color: "text-indigo-700", bg: "bg-indigo-50", dropoffAnalysis: "Fricción Inicial: El cliente hizo clic en el anuncio pero ignoró el saludo de la IA. Revisa si el gancho del anuncio es engañoso o si el primer mensaje de la IA es muy largo." },
+      { stage: "3. Datos Recolectados", count: 845, percentage: 28.0, colorHex: "#a855f7", color: "text-purple-700", bg: "bg-purple-50", dropoffAnalysis: "Fricción de Datos: Hubo conversación, pero la persona no quiso dar su dirección. Posible falta de confianza. Ofrece pago contra entrega explícitamente." },
+      { stage: "4. Pedidos Confirmados", count: 380, percentage: 12.6, colorHex: "#22c55e", color: "text-green-700", bg: "bg-green-50", dropoffAnalysis: "Fricción de Cierre: Llegaron al final pero no confirmaron el pedido. Analiza si el costo de envío mató la venta o si hay una objeción de precio no resuelta." }
     ]
   },
   carts: {
@@ -28,9 +28,9 @@ const funnels = {
     ],
     funnel: [
       { stage: "1. Carritos Detectados", count: 1200, percentage: 100, colorHex: "#3b82f6", color: "text-blue-700", bg: "bg-blue-50" },
-      { stage: "2. Plantillas Enviadas", count: 1150, percentage: 95.8, colorHex: "#6366f1", color: "text-indigo-700", bg: "bg-indigo-50" },
-      { stage: "3. Respuestas al Bot", count: 450, percentage: 37.5, colorHex: "#a855f7", color: "text-purple-700", bg: "bg-purple-50" },
-      { stage: "4. Carritos Recuperados", count: 120, percentage: 10.0, colorHex: "#22c55e", color: "text-green-700", bg: "bg-green-50" }
+      { stage: "2. Plantillas Enviadas", count: 1150, percentage: 95.8, colorHex: "#6366f1", color: "text-indigo-700", bg: "bg-indigo-50", dropoffAnalysis: "Fallos de Envío: El número de teléfono dejado en el checkout es inválido o no tiene WhatsApp." },
+      { stage: "3. Respuestas al Bot", count: 450, percentage: 37.5, colorHex: "#a855f7", color: "text-purple-700", bg: "bg-purple-50", dropoffAnalysis: "Ignorados: El mensaje llegó pero no les interesó. Intenta ofrecer un cupón de descuento o un gancho más agresivo en el primer mensaje." },
+      { stage: "4. Carritos Recuperados", count: 120, percentage: 10.0, colorHex: "#22c55e", color: "text-green-700", bg: "bg-green-50", dropoffAnalysis: "Objeción Final: Respondieron al bot pero no terminaron comprando. Es vital que un humano lea estas conversaciones para ajustar el entrenamiento de la IA." }
     ]
   },
   remarketing: {
@@ -43,9 +43,9 @@ const funnels = {
     ],
     funnel: [
       { stage: "1. Prospectos Calientes", count: 850, percentage: 100, colorHex: "#3b82f6", color: "text-blue-700", bg: "bg-blue-50" },
-      { stage: "2. Mensajes Enviados", count: 800, percentage: 94.1, colorHex: "#6366f1", color: "text-indigo-700", bg: "bg-indigo-50" },
-      { stage: "3. Respuestas Recibidas", count: 320, percentage: 37.6, colorHex: "#a855f7", color: "text-purple-700", bg: "bg-purple-50" },
-      { stage: "4. Ventas Remarketing", count: 65, percentage: 7.6, colorHex: "#22c55e", color: "text-green-700", bg: "bg-green-50" }
+      { stage: "2. Mensajes Enviados", count: 800, percentage: 94.1, colorHex: "#6366f1", color: "text-indigo-700", bg: "bg-indigo-50", dropoffAnalysis: "Pérdida de Contacto: Algunos números fueron bloqueados o ya no existen." },
+      { stage: "3. Respuestas Recibidas", count: 320, percentage: 37.6, colorHex: "#a855f7", color: "text-purple-700", bg: "bg-purple-50", dropoffAnalysis: "Falta de Interés: La oferta de Remarketing no es lo suficientemente atractiva comparada con el precio original." },
+      { stage: "4. Ventas Remarketing", count: 65, percentage: 7.6, colorHex: "#22c55e", color: "text-green-700", bg: "bg-green-50", dropoffAnalysis: "Fricción de Pago: Respondieron pero no concretaron. Quizás el proceso de pago manual es muy engorroso." }
     ]
   },
   broadcast: {
@@ -58,9 +58,9 @@ const funnels = {
     ],
     funnel: [
       { stage: "1. Mensajes Lanzados", count: 15000, percentage: 100, colorHex: "#3b82f6", color: "text-blue-700", bg: "bg-blue-50" },
-      { stage: "2. Mensajes Leídos", count: 12200, percentage: 81.3, colorHex: "#6366f1", color: "text-indigo-700", bg: "bg-indigo-50" },
-      { stage: "3. Clics / Respuestas", count: 1850, percentage: 12.3, colorHex: "#a855f7", color: "text-purple-700", bg: "bg-purple-50" },
-      { stage: "4. Re-compras", count: 210, percentage: 1.4, colorHex: "#22c55e", color: "text-green-700", bg: "bg-green-50" }
+      { stage: "2. Mensajes Leídos", count: 12200, percentage: 81.3, colorHex: "#6366f1", color: "text-indigo-700", bg: "bg-indigo-50", dropoffAnalysis: "Ignorados: Muchos no abrieron el mensaje. Asegúrate de enviar mensajes en horarios pico (7pm - 9pm)." },
+      { stage: "3. Clics / Respuestas", count: 1850, percentage: 12.3, colorHex: "#a855f7", color: "text-purple-700", bg: "bg-purple-50", dropoffAnalysis: "Bajo Engagement: Leyeron pero no hicieron clic. Falta urgencia (Ej: 'Solo por 24 horas') o un Call to Action claro." },
+      { stage: "4. Re-compras", count: 210, percentage: 1.4, colorHex: "#22c55e", color: "text-green-700", bg: "bg-green-50", dropoffAnalysis: "Abandono Web: Hicieron clic pero la página cargó lento o el producto estaba agotado. Revisa la landing page." }
     ]
   }
 };
@@ -254,17 +254,24 @@ export function Dashboard() {
                   <div key={i} className="h-[100px] flex items-center justify-center relative w-full">
                     {/* Stage Title and Numbers centered inside the funnel layer */}
                     <div className="text-center z-10 flex flex-col items-center">
-                      <span className="text-white font-bold text-sm md:text-base drop-shadow-md">{stage.stage}</span>
-                      <span className="text-white font-black text-lg md:text-xl drop-shadow-md">
-                        {stage.count} <span className="text-white/80 text-xs md:text-sm font-semibold">({stage.percentage}%)</span>
+                      <span className="text-gray-900 font-bold text-sm md:text-base drop-shadow-md">{stage.stage}</span>
+                      <span className="text-gray-900 font-black text-lg md:text-xl drop-shadow-md">
+                        {stage.count} <span className="text-gray-800 text-xs md:text-sm font-semibold">({stage.percentage}%)</span>
                       </span>
                     </div>
 
                     {/* Drop-off Warning on the right side */}
                     {i > 0 && dropPercent > 0 && (
-                      <div className="absolute -top-[10px] right-0 translate-x-4 md:translate-x-12 bg-red-50 px-3 py-1.5 rounded-lg border border-red-100 shadow-sm flex items-center gap-1">
-                        <TrendingUp className="w-3 h-3 text-red-500 rotate-180" />
-                        <span className="text-red-700 font-bold text-[10px] md:text-xs">-{dropPercent}% abandonó</span>
+                      <div className="absolute -top-[10px] right-0 translate-x-4 md:translate-x-12 bg-red-50 px-3 py-2 rounded-lg border border-red-100 shadow-sm flex flex-col gap-1 w-48 z-20">
+                        <div className="flex items-center gap-1">
+                          <TrendingUp className="w-3 h-3 text-red-500 rotate-180 flex-shrink-0" />
+                          <span className="text-red-700 font-bold text-xs">-{dropPercent}% abandonó</span>
+                        </div>
+                        {stage.dropoffAnalysis && (
+                          <p className="text-[10px] leading-tight text-red-600 mt-0.5">
+                            {stage.dropoffAnalysis}
+                          </p>
+                        )}
                       </div>
                     )}
                   </div>
