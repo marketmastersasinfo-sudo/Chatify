@@ -15,11 +15,11 @@ export function TemplateManager() {
   async function loadData() {
     setLoading(true);
     // Load stores
-    const { data: storesData } = await supabase.from('stores').select('*');
+    const { data: storesData } = await (supabase as any).from('stores').select('*');
     setStores(storesData || []);
 
     // Load templates
-    const { data: templatesData } = await supabase.from('store_templates').select('*');
+    const { data: templatesData } = await (supabase as any).from('store_templates').select('*');
     setTemplates(templatesData || []);
     setLoading(false);
   }
@@ -71,14 +71,14 @@ export function TemplateManager() {
     
     if (existing) {
       // Update DB
-      await supabase.from('store_templates').update({ [field]: value } as any).eq('id', existing.id);
+      await (supabase as any).from('store_templates').update({ [field]: value }).eq('id', existing.id);
       // Update State
       updatedTemplates = updatedTemplates.map(t => t.id === existing.id ? { ...t, [field]: value } : t);
     } else {
       // Insert DB
       const newTemplate = { store_id: storeId, template_type: type, [field]: value, template_name: field === 'template_name' ? value : '' };
-      const { data } = await supabase.from('store_templates').insert(newTemplate as any).select().single();
-      if (data) updatedTemplates.push(data as any);
+      const { data } = await (supabase as any).from('store_templates').insert(newTemplate).select().single();
+      if (data) updatedTemplates.push(data);
     }
     
     setTemplates(updatedTemplates);
