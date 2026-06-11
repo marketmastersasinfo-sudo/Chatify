@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Store, Smartphone, Plus, ShoppingBag, Loader2, Save, X, BrainCircuit, TrendingDown, AlertTriangle, FileText } from 'lucide-react';
+import { Store, Smartphone, Target, Plus, ShoppingBag, Loader2, Save, X, BrainCircuit, TrendingDown, AlertTriangle, FileText } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 
@@ -477,20 +477,43 @@ export function Stores() {
 
               {/* RAG Prompt Builder */}
               <div className="bg-indigo-50 p-5 rounded-xl border border-indigo-100 mt-4">
-                <div className="flex items-center gap-2 mb-3">
+                <div className="flex items-center gap-2 mb-4">
                   <BrainCircuit className="w-5 h-5 text-indigo-600" />
-                  <h4 className="font-bold text-indigo-900">Entrenamiento del Agente IA (RAG)</h4>
+                  <h4 className="font-bold text-indigo-900">Entrenamiento del Agente IA (RAG por Canal)</h4>
                 </div>
-                <p className="text-xs text-indigo-700 mb-3">
-                  Escribe una descripción rápida con los ganchos de venta y garantías. Claude 3 usará esto para responder a objeciones y cerrar ventas automáticamente.
-                </p>
-                <textarea 
-                  rows={4} 
-                  className="w-full px-4 py-3 border border-indigo-200 rounded-lg text-sm focus:ring-indigo-500 focus:border-indigo-500 bg-white"
-                  placeholder="Ej: Es un reloj inteligente resistente al agua (IP68). La batería dura 3 días. Solo hay color negro y rosa. Tiene garantía de 3 meses. Ofrecer envío gratis si preguntan por descuento."
-                ></textarea>
-                <button className="mt-3 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm flex items-center gap-2 w-full justify-center">
-                  Generar Base de Conocimiento
+                
+                <div className="grid grid-cols-1 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-indigo-800 mb-1 flex items-center gap-1">
+                      <Smartphone className="w-3 h-3"/> Contexto para WhatsApp (Cierre de Ventas)
+                    </label>
+                    <p className="text-[11px] text-indigo-600 mb-2 leading-tight">
+                      Instrucciones sobre objeciones de precio, envíos, garantías y cómo empujar el cierre del carrito abandonado.
+                    </p>
+                    <textarea 
+                      rows={3} 
+                      className="w-full px-4 py-3 border border-indigo-200 rounded-lg text-sm focus:ring-indigo-500 focus:border-indigo-500 bg-white"
+                      placeholder="Ej: Es resistente al agua (IP68). Batería 3 días. Garantía de 3 meses. Ofrecer envío gratis si preguntan por descuento. El objetivo es que llenen el formulario de pago contra entrega."
+                    ></textarea>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-indigo-800 mb-1 flex items-center gap-1">
+                      <Target className="w-3 h-3"/> Contexto para Redes Sociales (Comentarios)
+                    </label>
+                    <p className="text-[11px] text-indigo-600 mb-2 leading-tight">
+                      Instrucciones sobre cómo responder a "Info", "Precio", o quejas públicas en Facebook/Instagram.
+                    </p>
+                    <textarea 
+                      rows={3} 
+                      className="w-full px-4 py-3 border border-indigo-200 rounded-lg text-sm focus:ring-indigo-500 focus:border-indigo-500 bg-white"
+                      placeholder="Ej: Si preguntan precio, decir '$120.000 COP con envío gratis'. Si piden info, dar un resumen corto e invitarlos a enviar un DM. Si hay una queja, pedir disculpas y solicitar el número de orden por interno."
+                    ></textarea>
+                  </div>
+                </div>
+
+                <button className="mt-5 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow-sm flex items-center gap-2 w-full justify-center transition-colors">
+                  Generar Base de Conocimiento (RAG)
                 </button>
               </div>
             </div>
