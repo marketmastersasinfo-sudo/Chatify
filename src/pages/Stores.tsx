@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Store, Smartphone, Target, Plus, ShoppingBag, Loader2, Save, X, BrainCircuit, TrendingDown, AlertTriangle, FileText, Eye, EyeOff } from 'lucide-react';
+import { Store, Smartphone, Target, Plus, ShoppingBag, Loader2, Save, X, BrainCircuit, TrendingDown, AlertTriangle, FileText, Eye, EyeOff, RefreshCw } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 
@@ -19,6 +19,7 @@ export function Stores() {
   const [newPixel, setNewPixel] = useState('');
   const [showToken, setShowToken] = useState(false);
   const [syncingStores, setSyncingStores] = useState(false);
+  const [importingCarts, setImportingCarts] = useState(false);
   
   // Products State
   const [products, setProducts] = useState<any[]>([]);
@@ -210,6 +211,64 @@ export function Stores() {
     setSyncingStores(false);
   }
 
+  async function handleImportAbandonedCarts() {
+    setImportingCarts(true);
+    try {
+      // 1. Obtener todas las tiendas de Supabase
+      const { data } = await supabase.from('stores').select('id, name, country');
+      const localStores: any[] = data || [];
+      if (!localStores.length) throw new Error("No hay tiendas locales para cruzar");
+
+      // 2. Llamar a la API de Shopyeasy
+      const response = await fetch('https://shopyeasy-seven.vercel.app/api/chatify/export-abandoned?secret=chatify_sync_2026_x');
+      if (!response.ok) throw new Error("Error fetching abandoned carts");
+      const result = await response.json();
+      if (!result.success || !result.data) throw new Error("Formato de respuesta invalido");
+
+      const countryMap: Record<string, string> = {
+        'CO': 'Colombia',
+        'MX': 'México',
+        'AR': 'Argentina',
+        'CL': 'Chile',
+        'PE': 'Perú',
+        'EC': 'Ecuador'
+      };
+
+      let imported = 0;
+      
+      for (const cart of result.data) {
+        const mappedCountry = countryMap[cart.storeCountry] || cart.storeCountry;
+        
+        // Buscar la tienda local
+        const store = localStores.find((s: any) => s.name === cart.storeName && s.country === mappedCountry);
+        if (!store) continue; // Si no encontramos la tienda, saltamos
+
+        // Formatear teléfono
+        let phone = cart.customerPhone.replace(/[^\d+]/g, '');
+        if (phone.length === 10) phone = `57${phone}`;
+
+        // Insertar Lead
+        const { error } = await supabase.from('leads').upsert({
+          store_id: store.id,
+          name: cart.customerName,
+          phone: phone,
+          traffic_source: 'Shopyeasy Webhook (Histórico)',
+          board_type: 'remarketing_carts',
+          status: 'contact_1', // Re-contacto 1
+          notes: `Order ID: ${cart.id || 'N/A'}\nCity: ${cart.city}\nAddress: ${cart.address}\nProduct: ${cart.productName}`
+        } as any, { onConflict: 'phone' });
+
+        if (!error) imported++;
+      }
+
+      alert(`Importación completada. Se importaron ${imported} carritos abandonados al CRM de Remarketing.`);
+    } catch (error: any) {
+      alert(`Error al importar: ${error.message}`);
+    } finally {
+      setImportingCarts(false);
+    }
+  }
+
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12 relative">
       <div className="sm:flex sm:items-center sm:justify-between">
@@ -225,6 +284,14 @@ export function Stores() {
             className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 shadow-sm"
           >
             <Plus className="w-4 h-4 mr-2" /> Agregar Tienda Manual
+          </button>
+          <button
+            onClick={handleImportAbandonedCarts}
+            disabled={importingCarts}
+            className="flex items-center gap-2 px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white text-sm font-medium rounded-lg shadow-sm transition-all"
+          >
+            {importingCarts ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+            {importingCarts ? 'Importando...' : 'Importar Carritos'}
           </button>
           <button 
             onClick={handleSyncStores}
