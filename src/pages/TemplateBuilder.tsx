@@ -1,0 +1,369 @@
+import { useState, useEffect } from 'react';
+import { RefreshCcw, Plus, Image as ImageIcon, MessageSquareDashed, AlertCircle, CheckCircle2, Loader2, Save, X } from 'lucide-react';
+import { supabase } from '../lib/supabase';
+
+export function TemplateBuilder() {
+  const [stores, setStores] = useState<any[]>([]);
+  const [selectedStore, setSelectedStore] = useState<any>(null);
+  
+  const [templates, setTemplates] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // New Template Form State
+  const [isCreating, setIsCreating] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [newTemplate, setNewTemplate] = useState({
+    name: '',
+    category: 'MARKETING',
+    language: 'es_CO',
+    headerType: 'NONE', // NONE, IMAGE
+    headerImageUrl: '', // Solo de uso interno si queremos preview
+    bodyText: 'Hola {{1}}, gracias por tu compra. Te enviaremos a la ciudad {{2}}.',
+  });
+
+  useEffect(() => {
+    loadStores();
+  }, []);
+
+  useEffect(() => {
+    if (selectedStore) {
+      fetchMetaTemplates(selectedStore.id);
+    } else {
+      setTemplates([]);
+    }
+  }, [selectedStore]);
+
+  async function loadStores() {
+    try {
+      const { data } = await supabase.from('stores').select('*');
+      setStores(data || []);
+      if (data && data.length > 0) setSelectedStore(data[0]);
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  async function fetchMetaTemplates(storeId: string) {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/meta/templates?storeId=${storeId}`);
+      const json = await res.json();
+      
+      if (!res.ok) {
+        throw new Error(json.details?.error?.message || json.error || 'Error desconocido');
+      }
+
+      setTemplates(json.data || []);
+    } catch (err: any) {
+      setError(err.message);
+    }
+    setLoading(false);
+  }
+
+  async function handleCreateTemplate() {
+    if (!selectedStore) return;
+    setSaving(true);
+    setError(null);
+
+    try {
+      // Validar nombre (solo letras minúsculas y guiones bajos)
+      if (!/^[a-z0-9_]+$/.test(newTemplate.name)) {
+        throw new Error("El nombre solo puede contener letras minúsculas, números y guiones bajos (_).");
+      }
+
+      // Armar el JSON estricto que pide Meta
+      const components: any[] = [
+        {
+          type: 'BODY',
+          text: newTemplate.bodyText
+          // Ejemplo: Si hay variables, Meta a veces requiere 'example', pero a menudo lo infiere si no hay media.
+          // Para texto puro, no es estrictamente necesario enviar examples a menos que sea estricto.
+          // Lo enviaremos sin examples por ahora para simplificar.
+        }
+      ];
+
+      if (newTemplate.headerType === 'IMAGE') {
+        components.push({
+          type: 'HEADER',
+          format: 'IMAGE',
+          // Meta requiere un handle o un URL de ejemplo para imágenes
+          // Aquí usaremos un ejemplo estático temporal requerido por Meta para la revisión
+          example: {
+            header_handle: [
+               "https://scontent.whatsapp.net/v/t61.24694-34/436662446_460613243171833_7612711019129598816_n.jpg"
+            ]
+          }
+        });
+      }
+
+      const payload = {
+        name: newTemplate.name,
+        category: newTemplate.category,
+        language: newTemplate.language,
+        components: components
+      };
+
+      const res = await fetch(`/api/meta/templates?storeId=${selectedStore.id}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      const json = await res.json();
+      if (!res.ok) {
+        throw new Error(json.details?.error?.message || json.error || 'Error creando plantilla');
+      }
+
+      // Éxito
+      setIsCreating(false);
+      setNewTemplate({ ...newTemplate, name: '', bodyText: '' });
+      fetchMetaTemplates(selectedStore.id); // Recargar la lista
+
+    } catch (err: any) {
+      setError(err.message);
+    }
+    setSaving(false);
+  }
+
+  const getStatusBadge = (status: string) => {
+    switch(status) {
+      case 'APPROVED': return <span className="bg-green-100 text-green-700 px-2 py-1 flex items-center gap-1 text-[10px] uppercase font-bold rounded-full"><CheckCircle2 className="w-3 h-3"/> Aprobada</span>;
+      case 'REJECTED': return <span className="bg-red-100 text-red-700 px-2 py-1 flex items-center gap-1 text-[10px] uppercase font-bold rounded-full"><AlertCircle className="w-3 h-3"/> Rechazada</span>;
+      case 'PENDING': return <span className="bg-yellow-100 text-yellow-700 px-2 py-1 flex items-center gap-1 text-[10px] uppercase font-bold rounded-full"><Loader2 className="w-3 h-3 animate-spin"/> En Revisión</span>;
+      default: return <span className="bg-gray-100 text-gray-700 px-2 py-1 flex items-center gap-1 text-[10px] uppercase font-bold rounded-full">{status}</span>;
+    }
+  };
+
+  return (
+    <div className="max-w-6xl mx-auto space-y-6 pb-12">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-gray-900">Creador de Plantillas Meta</h1>
+          <p className="mt-1 text-sm text-gray-500">Conexión directa con WhatsApp Cloud API para crear y aprobar plantillas.</p>
+        </div>
+        
+        {/* Selector de Tienda */}
+        {stores.length > 0 && (
+          <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-xl shadow-sm border border-gray-200">
+            <span className="text-sm font-semibold text-gray-600">Tienda:</span>
+            <select 
+              value={selectedStore?.id || ''} 
+              onChange={(e) => setSelectedStore(stores.find(s => s.id === e.target.value))}
+              className="text-sm font-bold text-blue-600 border-none focus:ring-0 bg-transparent cursor-pointer"
+            >
+              {stores.map(s => (
+                <option key={s.id} value={s.id}>{s.name} (WABA: {s.waba_id ? 'Conectado' : 'Falta WABA'})</option>
+              ))}
+            </select>
+          </div>
+        )}
+      </div>
+
+      {error && (
+        <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-r-xl flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+          <div>
+            <h3 className="text-sm font-bold text-red-800">Error de Meta API</h3>
+            <p className="text-xs text-red-700 mt-1">{error}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Editor Modal */}
+      {isCreating && (
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden mb-8 transition-all">
+          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4 flex justify-between items-center">
+            <h3 className="text-lg font-bold text-white flex items-center gap-2">
+              <Plus className="w-5 h-5"/> Crear Nueva Plantilla Oficial
+            </h3>
+            <button onClick={() => setIsCreating(false)} className="text-white/70 hover:text-white transition-colors">
+              <X className="w-6 h-6" />
+            </button>
+          </div>
+          
+          <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* Formulario Izquierdo */}
+            <div className="space-y-5">
+              <div>
+                <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">Nombre Interno (sin espacios)</label>
+                <input 
+                  type="text" 
+                  value={newTemplate.name}
+                  onChange={(e) => setNewTemplate({...newTemplate, name: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '_')})}
+                  placeholder="ej: carrito_oferta_v2" 
+                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:bg-white"
+                />
+                <p className="text-[10px] text-gray-400 mt-1">Solo letras minúsculas y guiones bajos.</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">Categoría</label>
+                  <select 
+                    value={newTemplate.category}
+                    onChange={(e) => setNewTemplate({...newTemplate, category: e.target.value})}
+                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="MARKETING">Marketing (Promos)</option>
+                    <option value="UTILITY">Utility (Confirmaciones)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">Idioma</label>
+                  <select 
+                    value={newTemplate.language}
+                    onChange={(e) => setNewTemplate({...newTemplate, language: e.target.value})}
+                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="es_CO">Español (Colombia)</option>
+                    <option value="es_MX">Español (México)</option>
+                    <option value="es">Español (General)</option>
+                    <option value="en_US">Inglés</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">Cabecera</label>
+                <select 
+                    value={newTemplate.headerType}
+                    onChange={(e) => setNewTemplate({...newTemplate, headerType: e.target.value})}
+                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="NONE">Sin Cabecera (Solo Texto)</option>
+                    <option value="IMAGE">Imagen (Se sube al enviar el mensaje)</option>
+                  </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">Texto del Mensaje</label>
+                <textarea 
+                  value={newTemplate.bodyText}
+                  onChange={(e) => setNewTemplate({...newTemplate, bodyText: e.target.value})}
+                  rows={5}
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:bg-white resize-none"
+                  placeholder="Hola {{1}}, ¿sigues interesado en {{2}}?"
+                />
+                <p className="text-[11px] text-gray-500 mt-2 font-medium">Usa <code className="bg-gray-100 text-blue-600 px-1 py-0.5 rounded">{'{{1}}'}</code>, <code className="bg-gray-100 text-blue-600 px-1 py-0.5 rounded">{'{{2}}'}</code> para inyectar variables automáticas.</p>
+              </div>
+
+              <div className="pt-4 flex justify-end gap-3">
+                <button onClick={() => setIsCreating(false)} className="px-5 py-2.5 text-sm font-bold text-gray-600 hover:text-gray-900 transition-colors">Cancelar</button>
+                <button 
+                  onClick={handleCreateTemplate}
+                  disabled={saving || !newTemplate.name || !newTemplate.bodyText}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl text-sm font-bold shadow-md shadow-blue-500/20 transition-all flex items-center gap-2 disabled:opacity-50"
+                >
+                  {saving ? <Loader2 className="w-4 h-4 animate-spin"/> : <Save className="w-4 h-4"/>}
+                  Enviar a Revisión de Meta
+                </button>
+              </div>
+            </div>
+
+            {/* Vista Previa Derecha (Estilo WhatsApp) */}
+            <div className="bg-gray-100/50 rounded-2xl p-6 border border-gray-200 flex flex-col items-center justify-center relative overflow-hidden">
+              <div className="absolute inset-0 bg-[url('https://transparenttextures.com/patterns/cubes.png')] opacity-5 mix-blend-overlay"></div>
+              
+              <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-6 relative z-10">Vista Previa Móvil</h4>
+              
+              <div className="bg-[#EFEAE2] w-[300px] h-auto min-h-[400px] rounded-[2rem] shadow-xl border-[6px] border-gray-900 relative z-10 overflow-hidden flex flex-col">
+                <div className="bg-[#075E54] text-white px-4 py-3 flex items-center gap-3">
+                  <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center"><MessageSquareDashed className="w-4 h-4 text-white"/></div>
+                  <div className="font-semibold text-sm">Chatify Test</div>
+                </div>
+                
+                <div className="flex-1 p-4 flex flex-col justify-start">
+                  <div className="bg-white rounded-xl rounded-tl-none p-2 shadow-sm max-w-[90%] self-start relative">
+                    {/* Flecha globito */}
+                    <div className="absolute top-0 -left-2 w-0 h-0 border-t-[0px] border-t-transparent border-r-[10px] border-r-white border-b-[10px] border-b-transparent"></div>
+                    
+                    {newTemplate.headerType === 'IMAGE' && (
+                      <div className="w-full h-32 bg-gray-200 rounded-lg mb-2 flex items-center justify-center overflow-hidden">
+                        <ImageIcon className="w-8 h-8 text-gray-400" />
+                      </div>
+                    )}
+                    
+                    <p className="text-sm text-gray-800 whitespace-pre-wrap break-words leading-relaxed font-[system-ui]">
+                      {/* Resaltar variables falsas en amarillo */}
+                      {newTemplate.bodyText.split(/(\{\{\d+\}\})/).map((part, i) => {
+                        if (part.match(/\{\{\d+\}\}/)) {
+                          return <span key={i} className="bg-yellow-200 text-yellow-800 px-1 rounded mx-0.5 font-bold">{part}</span>;
+                        }
+                        return part;
+                      })}
+                    </p>
+                    <div className="text-[10px] text-gray-400 text-right mt-1">12:00 PM</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Main List */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+          <div className="flex items-center gap-3">
+            <h2 className="text-lg font-bold text-gray-900">Plantillas Sincronizadas</h2>
+            {loading && <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />}
+          </div>
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={() => selectedStore && fetchMetaTemplates(selectedStore.id)}
+              disabled={loading || !selectedStore}
+              className="text-gray-500 hover:text-blue-600 font-semibold text-sm flex items-center gap-1.5 transition-colors"
+            >
+              <RefreshCcw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`}/> Sincronizar
+            </button>
+            <button 
+              onClick={() => setIsCreating(true)}
+              className="bg-gray-900 hover:bg-black text-white px-4 py-2 rounded-xl text-sm font-bold shadow-md transition-all flex items-center gap-1.5"
+            >
+              <Plus className="w-4 h-4" /> Nueva Plantilla
+            </button>
+          </div>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-white border-b border-gray-100 text-xs uppercase tracking-wider text-gray-500 font-bold">
+                <th className="p-4 pl-6">Nombre de Plantilla</th>
+                <th className="p-4">Categoría</th>
+                <th className="p-4">Idioma</th>
+                <th className="p-4">Estado (Meta)</th>
+                <th className="p-4 text-right pr-6">Acciones</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100 text-sm">
+              {templates.length === 0 && !loading ? (
+                <tr>
+                  <td colSpan={5} className="p-8 text-center text-gray-500">
+                    No se encontraron plantillas. Haz clic en "Sincronizar" o crea una nueva.
+                  </td>
+                </tr>
+              ) : (
+                templates.map((tpl: any) => (
+                  <tr key={tpl.id} className="hover:bg-gray-50/50 transition-colors">
+                    <td className="p-4 pl-6 font-bold text-gray-900">{tpl.name}</td>
+                    <td className="p-4 text-gray-600 font-medium text-xs">{tpl.category}</td>
+                    <td className="p-4 text-gray-500">{tpl.language}</td>
+                    <td className="p-4">
+                      {getStatusBadge(tpl.status)}
+                    </td>
+                    <td className="p-4 text-right pr-6">
+                      <button className="text-blue-600 font-bold hover:text-blue-800 transition-colors text-xs">Ver Detalles</button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}

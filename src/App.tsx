@@ -13,7 +13,7 @@ import { Broadcast } from './pages/Broadcast';
 import { CrmRemarketingCarts } from './pages/CrmRemarketingCarts';
 import { CrmRemarketingWa } from './pages/CrmRemarketingWa';
 import { VirtualSims } from './pages/VirtualSims';
-import { TemplateManager } from './pages/TemplateManager';
+import { TemplateBuilder } from './pages/TemplateBuilder';
 
 function App() {
   return (
@@ -33,7 +33,7 @@ function App() {
           <Route path="/comments" element={<Comments />} />
           <Route path="/broadcast" element={<Broadcast />} />
           <Route path="/settings" element={<Settings />} />
-          <Route path="/templates" element={<TemplateManager />} />
+          <Route path="/templates" element={<TemplateBuilder />} />
         </Route>
       </Routes>
     </Router>
