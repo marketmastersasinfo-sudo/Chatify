@@ -21,9 +21,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  // Esperamos que Shopyeasy nos envíe un JSON con:
-  // { eventType: 'order_confirmation' | 'abandoned_cart', storeName: 'Yacompro', customerName: 'Juan', customerPhone: '318...', orderId: '123' }
-  const { eventType, storeName, customerName, customerPhone, orderId } = req.body;
+  // { eventType: 'order_confirmation' | 'abandoned_cart', storeName: 'Yacompro', customerName: 'Juan', customerPhone: '318...', orderId: '123', productName: 'Zapatos', city: 'Bogota', address: 'Calle 1' }
+  const { eventType, storeName, customerName, customerPhone, orderId, productName, city, address } = req.body;
 
   if (!eventType || !storeName || !customerName || !customerPhone) {
     return res.status(400).json({ error: 'Missing required fields' });
@@ -62,7 +61,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         leadId: lead.id,
-        templateType: eventType
+        templateType: eventType,
+        variables: {
+          customerName: customerName,
+          productName: productName || 'tu pedido',
+          city: city || '',
+          address: address || ''
+        }
       })
     });
 

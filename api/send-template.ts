@@ -10,7 +10,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { leadId, templateType } = req.body;
+  const { leadId, templateType, variables } = req.body;
 
   if (!leadId || !templateType) {
     return res.status(400).json({ error: 'Missing leadId or templateType' });
@@ -45,18 +45,39 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     };
 
     // Si hay imagen configurada, la inyectamos como variable del header
+    const componentsArray: any[] = [];
+    
     if (template.image_url) {
-      metaPayload.template.components = [
-        {
-          type: 'header',
-          parameters: [
-            {
-              type: 'image',
-              image: { link: template.image_url }
-            }
-          ]
-        }
-      ];
+      componentsArray.push({
+        type: 'header',
+        parameters: [
+          {
+            type: 'image',
+            image: { link: template.image_url }
+          }
+        ]
+      });
+    }
+
+    // Inyectar variables de texto en el Body si vienen desde el Webhook
+    if (variables) {
+      const bodyParameters = [];
+      
+      if (variables.customerName) bodyParameters.push({ type: 'text', text: variables.customerName });
+      if (variables.productName) bodyParameters.push({ type: 'text', text: variables.productName });
+      if (variables.city) bodyParameters.push({ type: 'text', text: variables.city });
+      if (variables.address) bodyParameters.push({ type: 'text', text: variables.address });
+
+      if (bodyParameters.length > 0) {
+        componentsArray.push({
+          type: 'body',
+          parameters: bodyParameters
+        });
+      }
+    }
+
+    if (componentsArray.length > 0) {
+      metaPayload.template.components = componentsArray;
     }
 
     // 5. Disparar a Meta
