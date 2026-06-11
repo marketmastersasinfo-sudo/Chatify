@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Store, Upload, Image as ImageIcon, Save, Loader2, MessageSquareDashed } from 'lucide-react';
+import { Store, Image as ImageIcon, Loader2, MessageSquareDashed } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 export function TemplateManager() {
@@ -71,14 +71,14 @@ export function TemplateManager() {
     
     if (existing) {
       // Update DB
-      await supabase.from('store_templates').update({ [field]: value }).eq('id', existing.id);
+      await supabase.from('store_templates').update({ [field]: value } as any).eq('id', existing.id);
       // Update State
       updatedTemplates = updatedTemplates.map(t => t.id === existing.id ? { ...t, [field]: value } : t);
     } else {
       // Insert DB
       const newTemplate = { store_id: storeId, template_type: type, [field]: value, template_name: field === 'template_name' ? value : '' };
-      const { data } = await supabase.from('store_templates').insert(newTemplate).select().single();
-      if (data) updatedTemplates.push(data);
+      const { data } = await supabase.from('store_templates').insert(newTemplate as any).select().single();
+      if (data) updatedTemplates.push(data as any);
     }
     
     setTemplates(updatedTemplates);
