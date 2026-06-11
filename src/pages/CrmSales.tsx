@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { MessageSquare, AlertCircle, CheckCircle2, Store, Plus, Loader2, X, Send, Trash2, Ban } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { LeadChatPanel } from '../components/LeadChatPanel';
 
 const columns = [
   { id: 'new', title: 'Nuevo Lead', color: 'border-blue-500', bg: 'bg-blue-50' },
@@ -274,69 +275,16 @@ export function CrmSales() {
 
         {/* Floating Chat / Lead Details Pane */}
         {selectedLead && (
-          <div className="w-96 bg-white border border-gray-200 shadow-2xl rounded-2xl flex flex-col shrink-0 overflow-hidden">
-            <div className="p-4 bg-blue-600 text-white flex justify-between items-center">
-              <div>
-                <div className="flex items-center gap-2">
-                  <h3 className="font-bold">{selectedLead.name}</h3>
-                  {selectedLead.is_banned && <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded font-bold">Baneado</span>}
-                </div>
-                <p className="text-xs text-blue-100">{selectedLead.phone}</p>
-              </div>
-              <div className="flex items-center gap-1">
-                <button 
-                  onClick={() => handleBanLead(selectedLead.id, selectedLead.is_banned)} 
-                  title={selectedLead.is_banned ? "Quitar Baneo" : "Banear (Silenciar IA)"}
-                  className={`p-1.5 rounded-md transition-colors ${selectedLead.is_banned ? 'bg-red-500 hover:bg-red-400' : 'hover:bg-blue-500 text-blue-100'}`}
-                >
-                  <Ban className="w-4 h-4"/>
-                </button>
-                <button 
-                  onClick={() => handleDeleteLead(selectedLead.id)} 
-                  title="Eliminar permanentemente"
-                  className="hover:bg-red-500 text-blue-100 p-1.5 rounded-md transition-colors"
-                >
-                  <Trash2 className="w-4 h-4"/>
-                </button>
-                <button onClick={() => setSelectedLead(null)} className="hover:bg-blue-500 p-1.5 rounded-md transition-colors"><X className="w-5 h-5"/></button>
-              </div>
-            </div>
-            
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
-              {messages.length === 0 ? (
-                <p className="text-xs text-center text-gray-400 mt-10">No hay mensajes en el historial.</p>
-              ) : (
-                messages.map(msg => (
-                  <div key={msg.id} className={`flex flex-col ${msg.sender_type === 'human' || msg.sender_type === 'ai' ? 'items-end' : 'items-start'}`}>
-                    <div className={`px-4 py-2 rounded-2xl max-w-[85%] text-sm ${
-                      msg.sender_type === 'human' ? 'bg-blue-600 text-white rounded-br-none' : 
-                      msg.sender_type === 'ai' ? 'bg-purple-600 text-white rounded-br-none' : 
-                      'bg-white border border-gray-200 text-gray-800 rounded-bl-none'
-                    }`}>
-                      {msg.content}
-                    </div>
-                    <span className="text-[10px] text-gray-400 mt-1">
-                      {msg.sender_type === 'ai' ? 'Bot IA' : msg.sender_type === 'human' ? 'Agente' : 'Cliente'}
-                    </span>
-                  </div>
-                ))
-              )}
-            </div>
-
-            <div className="p-4 bg-white border-t border-gray-100 flex gap-2">
-              <input 
-                type="text"
-                value={newMessage}
-                onChange={e => setNewMessage(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleSendMessage()}
-                placeholder="Escribe un mensaje..."
-                className="flex-1 px-4 py-2 bg-gray-100 border-transparent focus:bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 rounded-xl text-sm"
-              />
-              <button onClick={handleSendMessage} className="bg-blue-600 text-white p-2 rounded-xl hover:bg-blue-700">
-                <Send className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
+          <LeadChatPanel 
+            lead={selectedLead} 
+            onClose={() => setSelectedLead(null)}
+            onBan={handleBanLead}
+            onDelete={handleDeleteLead}
+            onUpdateLead={(updated) => {
+              setLeads(leads.map(l => l.id === updated.id ? updated : l));
+              setSelectedLead(updated);
+            }}
+          />
         )}
       </div>
 
