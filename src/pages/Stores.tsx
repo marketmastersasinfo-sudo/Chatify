@@ -307,24 +307,50 @@ export function Stores() {
                           Conectar con Facebook
                         </button>
                       </div>
-                      <div className="bg-white p-4 rounded-lg border border-blue-100 opacity-60 relative">
-                        <div className="absolute inset-0 bg-white/30 flex items-center justify-center z-10 rounded-lg">
-                          <span className="bg-blue-100 text-blue-800 text-xs font-bold px-3 py-1.5 rounded-full border border-blue-200 shadow-sm backdrop-blur-sm">
-                            Haz clic en "Conectar con Facebook" para auto-llenar los tokens
-                          </span>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <div className="bg-white p-4 rounded-lg border border-blue-100 relative">
+                        <div className="absolute inset-0 bg-white/0 pointer-events-none z-10 rounded-lg"></div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-xs font-semibold text-blue-800 mb-1">WhatsApp Business Account ID (WABA)</label>
+                            <input 
+                              type="text" 
+                              value={selectedStore.waba_id || ''}
+                              onChange={async (e) => {
+                                const val = e.target.value;
+                                setSelectedStore({...selectedStore, waba_id: val});
+                                await supabase.from('stores').update({waba_id: val}).eq('id', selectedStore.id);
+                              }}
+                              placeholder="Ej: 104533035987112" 
+                              className="w-full px-3 py-2 border border-blue-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500" 
+                            />
+                          </div>
                           <div>
                             <label className="block text-xs font-semibold text-blue-800 mb-1">Phone Number ID</label>
-                            <input disabled type="password" placeholder="Esperando a Facebook..." className="w-full px-3 py-2 border border-blue-200 rounded-lg text-sm bg-gray-50" />
+                            <input 
+                              type="text" 
+                              value={selectedStore.waba_number || ''}
+                              onChange={async (e) => {
+                                const val = e.target.value;
+                                setSelectedStore({...selectedStore, waba_number: val});
+                                await supabase.from('stores').update({waba_number: val}).eq('id', selectedStore.id);
+                              }}
+                              placeholder="Ej: 102345678901234" 
+                              className="w-full px-3 py-2 border border-blue-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500" 
+                            />
                           </div>
-                          <div>
+                          <div className="md:col-span-2">
                             <label className="block text-xs font-semibold text-blue-800 mb-1">Permanent Access Token</label>
-                            <input disabled type="password" placeholder="Esperando a Facebook..." className="w-full px-3 py-2 border border-blue-200 rounded-lg text-sm bg-gray-50" />
-                          </div>
-                          <div>
-                            <label className="block text-xs font-semibold text-blue-800 mb-1">Webhook Verify Token</label>
-                            <input disabled type="text" placeholder="Esperando a Facebook..." className="w-full px-3 py-2 border border-blue-200 rounded-lg text-sm bg-gray-50" />
+                            <input 
+                              type="password" 
+                              value={selectedStore.meta_access_token || ''}
+                              onChange={async (e) => {
+                                const val = e.target.value;
+                                setSelectedStore({...selectedStore, meta_access_token: val});
+                                await supabase.from('stores').update({meta_access_token: val}).eq('id', selectedStore.id);
+                              }}
+                              placeholder="EAAGm0..." 
+                              className="w-full px-3 py-2 border border-blue-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500" 
+                            />
                           </div>
                         </div>
                       </div>
