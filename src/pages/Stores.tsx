@@ -250,8 +250,17 @@ export function Stores() {
         let phone = cart.customerPhone.replace(/[^\d+]/g, '');
         if (phone.length === 10) phone = `57${phone}`;
 
+        // Verificar si ya existe el lead para esta tienda específica
+        const { data: existing } = await supabase.from('leads')
+          .select('id')
+          .eq('store_id', store.id)
+          .eq('phone', phone)
+          .maybeSingle();
+
+        if (existing) continue; // Ya existe en el CRM
+
         // Insertar Lead
-        const { error } = await supabase.from('leads').upsert({
+        const { error } = await supabase.from('leads').insert({
           store_id: store.id,
           name: cart.customerName,
           phone: phone,
@@ -259,9 +268,10 @@ export function Stores() {
           board_type: 'remarketing_carts',
           status: 'contact_1', // Re-contacto 1
           notes: `Order ID: ${cart.id || 'N/A'}\nCity: ${cart.city}\nAddress: ${cart.address}\nProduct: ${cart.productName}`
-        } as any, { onConflict: 'phone' });
+        } as any);
 
         if (!error) imported++;
+        else console.error("Error insertando lead:", error);
       }
 
       alert(`Importación completada. Se importaron ${imported} carritos abandonados al CRM de Remarketing.`);
