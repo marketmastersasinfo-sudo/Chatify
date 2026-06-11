@@ -165,11 +165,15 @@ export function Stores() {
                   </div>
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-1">Línea Móvil Virtual Asignada</label>
-                    <select className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-blue-500">
+                    <select className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-blue-500 mb-2">
                       <option>Selecciona un número virtual...</option>
                       <option>+57 300 123 4567 (Colombia)</option>
                       <option>+52 55 1234 5678 (México)</option>
                     </select>
+                    <p className="text-[11px] text-gray-500 flex items-start gap-1">
+                      <AlertTriangle className="w-3 h-3 text-orange-500 flex-shrink-0 mt-0.5" />
+                      <span>¿No tienes línea? Compra un número en el menú <a href="/virtual-sims" className="text-blue-600 font-bold hover:underline">Líneas y SIMs Virtuales</a>.</span>
+                    </p>
                   </div>
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-1">ID del Píxel (Opcional)</label>
@@ -205,11 +209,15 @@ export function Stores() {
                     </div>
                     <div>
                       <label className="block text-xs font-semibold text-gray-500 mb-1">Línea Móvil Virtual Asignada</label>
-                      <select className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white text-gray-600 focus:ring-1 focus:ring-blue-500">
+                      <select className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white text-gray-600 focus:ring-1 focus:ring-blue-500 mb-2">
                         <option>Selecciona un número virtual...</option>
                         <option>+57 300 123 4567 (Colombia)</option>
                         <option>+52 55 1234 5678 (México)</option>
                       </select>
+                      <p className="text-[11px] text-gray-500 flex items-start gap-1">
+                        <AlertTriangle className="w-3 h-3 text-orange-500 flex-shrink-0 mt-0.5" />
+                        <span>¿No tienes línea? Compra un número en el menú <a href="/virtual-sims" className="text-blue-600 font-bold hover:underline">Líneas y SIMs Virtuales</a>.</span>
+                      </p>
                     </div>
                     <div>
                       <label className="block text-xs font-semibold text-gray-500 mb-1">ID del Pixel (Opcional)</label>
@@ -223,22 +231,31 @@ export function Stores() {
                       <div className="flex justify-between items-center mb-4">
                         <div>
                           <h5 className="font-bold text-blue-900 flex items-center gap-2"><Smartphone className="w-4 h-4"/> WhatsApp Business (Meta Cloud API)</h5>
-                          <p className="text-xs text-blue-700 mt-1">Conecta tu línea virtual directamente con Meta (Rápido, seguro y sin sobrecostos de BSPs).</p>
+                          <p className="text-xs text-blue-700 mt-1">La integración oficial requiere que inicies sesión. Extraeremos tus tokens automáticamente.</p>
                         </div>
-                        <button className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm hover:bg-blue-700">Meta for Developers</button>
+                        <button className="bg-[#1877F2] text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-sm hover:bg-[#0C63D4] flex items-center gap-2 transition-colors">
+                          Conectar con Facebook
+                        </button>
                       </div>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                        <div>
-                          <label className="block text-xs font-semibold text-blue-800 mb-1">Phone Number ID</label>
-                          <input type="password" placeholder="123456789..." className="w-full px-3 py-2 border border-blue-200 rounded-lg text-sm bg-white" />
+                      <div className="bg-white p-4 rounded-lg border border-blue-100 opacity-60 relative">
+                        <div className="absolute inset-0 bg-white/30 flex items-center justify-center z-10 rounded-lg">
+                          <span className="bg-blue-100 text-blue-800 text-xs font-bold px-3 py-1.5 rounded-full border border-blue-200 shadow-sm backdrop-blur-sm">
+                            Haz clic en "Conectar con Facebook" para auto-llenar los tokens
+                          </span>
                         </div>
-                        <div>
-                          <label className="block text-xs font-semibold text-blue-800 mb-1">Permanent Access Token</label>
-                          <input type="password" placeholder="EAAQx..." className="w-full px-3 py-2 border border-blue-200 rounded-lg text-sm bg-white" />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-semibold text-blue-800 mb-1">Webhook Verify Token</label>
-                          <input type="text" placeholder="chatify_token_..." className="w-full px-3 py-2 border border-blue-200 rounded-lg text-sm bg-white" />
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                          <div>
+                            <label className="block text-xs font-semibold text-blue-800 mb-1">Phone Number ID</label>
+                            <input disabled type="password" placeholder="Esperando a Facebook..." className="w-full px-3 py-2 border border-blue-200 rounded-lg text-sm bg-gray-50" />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-semibold text-blue-800 mb-1">Permanent Access Token</label>
+                            <input disabled type="password" placeholder="Esperando a Facebook..." className="w-full px-3 py-2 border border-blue-200 rounded-lg text-sm bg-gray-50" />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-semibold text-blue-800 mb-1">Webhook Verify Token</label>
+                            <input disabled type="text" placeholder="Esperando a Facebook..." className="w-full px-3 py-2 border border-blue-200 rounded-lg text-sm bg-gray-50" />
+                          </div>
                         </div>
                       </div>
                     </div>
