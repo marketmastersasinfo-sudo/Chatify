@@ -10,6 +10,7 @@ export function Stores() {
   
   // Modal/Form State
   const [isAdding, setIsAdding] = useState(false);
+  const [isAddingProduct, setIsAddingProduct] = useState(false);
   const [saving, setSaving] = useState(false);
   const [newStoreName, setNewStoreName] = useState('');
   const [newWaba, setNewWaba] = useState('');
@@ -159,18 +160,18 @@ export function Stores() {
                     <input value={newStoreName} onChange={e => setNewStoreName(e.target.value)} type="text" placeholder="Ej: Dropi Belleza" className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-blue-500" />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1">Logo URL (Opcional)</label>
-                    <input type="text" placeholder="https://..." className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-blue-500" />
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">Logo (Sube una Imagen)</label>
+                    <input type="file" accept="image/*" className="w-full px-4 py-1.5 border border-gray-200 rounded-lg text-sm focus:ring-blue-500 file:mr-4 file:py-1 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1">Número WABA</label>
-                    <input value={newWaba} onChange={e => setNewWaba(e.target.value)} type="text" placeholder="+57 300..." className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-blue-500" />
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">Línea Móvil Virtual Asignada</label>
+                    <select className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-blue-500">
+                      <option>Selecciona un número virtual...</option>
+                      <option>+57 300 123 4567 (Colombia)</option>
+                      <option>+52 55 1234 5678 (México)</option>
+                    </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1">SIM Card Asociada (Opcional)</label>
-                    <input type="text" placeholder="ICCID o Info" className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-blue-500" />
-                  </div>
-                  <div className="col-span-2">
                     <label className="block text-sm font-semibold text-gray-700 mb-1">ID del Píxel (Opcional)</label>
                     <input value={newPixel} onChange={e => setNewPixel(e.target.value)} type="text" placeholder="123456789" className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-blue-500" />
                   </div>
@@ -188,69 +189,71 @@ export function Stores() {
 
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* WhatsApp Config (BSP) */}
-                <div className="p-5 bg-gray-50 rounded-xl border border-gray-100">
+                <div className="col-span-1 lg:col-span-3 p-5 bg-gray-50 rounded-xl border border-gray-100">
                   <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2"><Smartphone className="w-4 h-4 text-green-600" /> WhatsApp & BSP</h3>
+                    <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2"><Smartphone className="w-4 h-4 text-green-600" /> WhatsApp & Integraciones</h3>
                     <button className="text-xs font-bold text-blue-600 hover:text-blue-800">Editar</button>
                   </div>
-                  <div className="space-y-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                     <div>
-                      <label className="block text-xs font-semibold text-gray-500 mb-1">Número WABA</label>
-                      <input type="text" readOnly className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white text-gray-600" value={selectedStore.waba_number || 'No configurado'} />
+                      <label className="block text-xs font-semibold text-gray-500 mb-1">Nombre de la Tienda</label>
+                      <input type="text" placeholder="Ej: Dropi Belleza" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white text-gray-600 focus:ring-1 focus:ring-blue-500" />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-gray-500 mb-1">Proveedor (BSP)</label>
-                      <select className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white text-gray-700 focus:ring-1 focus:ring-blue-500">
-                        <option>360Dialog</option>
-                        <option>Twilio</option>
-                        <option>Meta Cloud API (Nativo)</option>
+                      <label className="block text-xs font-semibold text-gray-500 mb-1">Logo (Sube una Imagen)</label>
+                      <input type="file" accept="image/*" className="w-full px-3 py-1.5 border border-gray-200 rounded-lg text-sm bg-white text-gray-600 focus:ring-1 focus:ring-blue-500 file:mr-4 file:py-1 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 mb-1">Línea Móvil Virtual Asignada</label>
+                      <select className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white text-gray-600 focus:ring-1 focus:ring-blue-500">
+                        <option>Selecciona un número virtual...</option>
+                        <option>+57 300 123 4567 (Colombia)</option>
+                        <option>+52 55 1234 5678 (México)</option>
                       </select>
                     </div>
                     <div>
-                      <label className="flex justify-between text-xs font-semibold text-gray-500 mb-1">
-                        <span>API Key / Token BSP</span>
-                        <a href="#" className="text-blue-500 hover:underline">¿Cómo obtenerlo?</a>
-                      </label>
-                      <input type="password" placeholder="D3A-..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white text-gray-600 focus:ring-1 focus:ring-blue-500" />
+                      <label className="block text-xs font-semibold text-gray-500 mb-1">ID del Pixel (Opcional)</label>
+                      <input type="text" placeholder="123456789" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white text-gray-600 focus:ring-1 focus:ring-blue-500" />
                     </div>
                   </div>
-                </div>
 
-                {/* Fan Pages Config */}
-                <div className="p-5 bg-gray-50 rounded-xl border border-gray-100">
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2"><Target className="w-4 h-4 text-blue-600" /> Redes Sociales (Meta)</h3>
-                    <button className="text-xs font-bold text-blue-600 hover:text-blue-800">Editar</button>
-                  </div>
-                  <div className="space-y-3">
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-500 mb-1">Page ID (Facebook)</label>
-                      <input type="text" placeholder="103847593..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white text-gray-600 focus:ring-1 focus:ring-blue-500" />
+                  <h4 className="font-bold text-gray-900 mt-6 mb-3 border-b pb-2">Integraciones y APIs (Webhooks)</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="col-span-1 md:col-span-2 bg-blue-50 p-4 rounded-xl border border-blue-100 mb-2">
+                      <div className="flex justify-between items-center mb-4">
+                        <div>
+                          <h5 className="font-bold text-blue-900 flex items-center gap-2"><Smartphone className="w-4 h-4"/> WhatsApp Business (Meta Cloud API)</h5>
+                          <p className="text-xs text-blue-700 mt-1">Conecta tu línea virtual directamente con Meta (Rápido, seguro y sin sobrecostos de BSPs).</p>
+                        </div>
+                        <button className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm hover:bg-blue-700">Meta for Developers</button>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <div>
+                          <label className="block text-xs font-semibold text-blue-800 mb-1">Phone Number ID</label>
+                          <input type="password" placeholder="123456789..." className="w-full px-3 py-2 border border-blue-200 rounded-lg text-sm bg-white" />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-semibold text-blue-800 mb-1">Permanent Access Token</label>
+                          <input type="password" placeholder="EAAQx..." className="w-full px-3 py-2 border border-blue-200 rounded-lg text-sm bg-white" />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-semibold text-blue-800 mb-1">Webhook Verify Token</label>
+                          <input type="text" placeholder="chatify_token_..." className="w-full px-3 py-2 border border-blue-200 rounded-lg text-sm bg-white" />
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-500 mb-1">Instagram Account ID</label>
-                      <input type="text" placeholder="178414..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white text-gray-600 focus:ring-1 focus:ring-blue-500" />
-                    </div>
-                    <div>
-                      <label className="flex justify-between text-xs font-semibold text-gray-500 mb-1">
-                        <span>Page Access Token</span>
-                        <a href="#" className="text-blue-500 hover:underline">¿Cómo obtenerlo?</a>
-                      </label>
-                      <input type="password" placeholder="EAAQx..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white text-gray-600 focus:ring-1 focus:ring-blue-500" />
-                    </div>
-                  </div>
-                </div>
 
-                {/* Pixel Config */}
-                <div className="p-5 bg-gray-50 rounded-xl border border-gray-100">
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2"><Target className="w-4 h-4 text-purple-600" /> Píxel de Meta</h3>
-                    <button className="text-xs font-bold text-blue-600 hover:text-blue-800">Editar</button>
-                  </div>
-                  <div className="space-y-3">
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-500 mb-1">ID Píxel</label>
-                      <input type="text" readOnly className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white text-gray-600" value={selectedStore.meta_pixel_id || 'No configurado'} />
+                    <div className="col-span-1 md:col-span-2 bg-green-50 p-4 rounded-xl border border-green-100 mb-4">
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <h5 className="font-bold text-green-900 flex items-center gap-2"><ShoppingBag className="w-4 h-4"/> ShopyEasy (Recuperación de Carritos)</h5>
+                          <p className="text-xs text-green-700 mt-1">Copia esta URL y pégala en la sección de Webhooks de tu panel de ShopyEasy.</p>
+                        </div>
+                      </div>
+                      <div className="mt-3 flex gap-2">
+                        <input type="text" readOnly value="https://chatify.com/api/webhook/shopyeasy/store_987654321" className="flex-1 px-3 py-2 border border-green-200 rounded-lg text-sm bg-white text-gray-600 font-mono" />
+                        <button className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm hover:bg-green-700">Copiar URL</button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -327,9 +330,9 @@ export function Stores() {
               <div className="mt-6 space-y-4">
                 <div className="flex justify-between items-center">
                   <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                    <ShoppingBag className="w-5 h-5 text-blue-600" /> Catálogo y Retroalimentación IA
+                    <ShoppingBag className="w-5 h-5 text-indigo-600" /> Catálogo y Prompt IA
                   </h3>
-                  <button className="text-sm font-semibold text-blue-600 hover:text-blue-800 flex items-center gap-1">
+                  <button onClick={() => setIsAddingProduct(true)} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-soft flex items-center gap-2">
                     <Plus className="w-4 h-4" /> Nuevo Producto
                   </button>
                 </div>
@@ -409,6 +412,71 @@ export function Stores() {
           )}
         </div>
       </div>
+
+      {/* Modal Nuevo Producto */}
+      {isAddingProduct && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
+            <div className="sticky top-0 bg-white border-b border-gray-100 p-6 flex justify-between items-center rounded-t-3xl z-10">
+              <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                <ShoppingBag className="w-6 h-6 text-indigo-600" /> Nuevo Producto
+              </h2>
+              <button onClick={() => setIsAddingProduct(false)} className="text-gray-400 hover:text-red-500 transition-colors">
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">Nombre del Producto</label>
+                  <input type="text" placeholder="Ej: Smartwatch X8 Pro" className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-indigo-500 focus:border-indigo-500" />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">SKU / Referencia</label>
+                  <input type="text" placeholder="Ej: SW-X8-PRO" className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-indigo-500 focus:border-indigo-500" />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">Precio de Venta</label>
+                  <input type="number" placeholder="$ 0.00" className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-indigo-500 focus:border-indigo-500" />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">Fotos del Producto</label>
+                  <input type="file" multiple accept="image/*" className="w-full px-4 py-1.5 border border-gray-200 rounded-lg text-sm focus:ring-indigo-500 file:mr-4 file:py-1 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100" />
+                </div>
+              </div>
+
+              {/* RAG Prompt Builder */}
+              <div className="bg-indigo-50 p-5 rounded-xl border border-indigo-100 mt-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <BrainCircuit className="w-5 h-5 text-indigo-600" />
+                  <h4 className="font-bold text-indigo-900">Entrenamiento del Agente IA (RAG)</h4>
+                </div>
+                <p className="text-xs text-indigo-700 mb-3">
+                  Escribe una descripción rápida con los ganchos de venta y garantías. Claude 3 usará esto para responder a objeciones y cerrar ventas automáticamente.
+                </p>
+                <textarea 
+                  rows={4} 
+                  className="w-full px-4 py-3 border border-indigo-200 rounded-lg text-sm focus:ring-indigo-500 focus:border-indigo-500 bg-white"
+                  placeholder="Ej: Es un reloj inteligente resistente al agua (IP68). La batería dura 3 días. Solo hay color negro y rosa. Tiene garantía de 3 meses. Ofrecer envío gratis si preguntan por descuento."
+                ></textarea>
+                <button className="mt-3 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm flex items-center gap-2 w-full justify-center">
+                  Generar Base de Conocimiento
+                </button>
+              </div>
+            </div>
+
+            <div className="border-t border-gray-100 p-6 flex justify-end gap-3 bg-gray-50 rounded-b-3xl">
+              <button onClick={() => setIsAddingProduct(false)} className="px-6 py-2.5 rounded-xl font-bold text-gray-700 border border-gray-300 hover:bg-gray-100">
+                Cancelar
+              </button>
+              <button className="bg-green-600 hover:bg-green-700 text-white px-8 py-2.5 rounded-xl font-bold shadow-soft flex items-center gap-2">
+                <Save className="w-4 h-4" /> Guardar Producto
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

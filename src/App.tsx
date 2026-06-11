@@ -12,6 +12,7 @@ import { Comments } from './pages/Comments';
 import { Broadcast } from './pages/Broadcast';
 import { CrmRemarketingCarts } from './pages/CrmRemarketingCarts';
 import { CrmRemarketingWa } from './pages/CrmRemarketingWa';
+import { VirtualSims } from './pages/VirtualSims';
 
 function App() {
   return (
@@ -27,6 +28,7 @@ function App() {
           <Route path="/database" element={<DB />} />
           <Route path="/orders" element={<Orders />} />
           <Route path="/stores" element={<Stores />} />
+          <Route path="/virtual-sims" element={<VirtualSims />} />
           <Route path="/comments" element={<Comments />} />
           <Route path="/broadcast" element={<Broadcast />} />
           <Route path="/settings" element={<Settings />} />

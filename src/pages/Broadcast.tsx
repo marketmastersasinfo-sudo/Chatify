@@ -41,7 +41,7 @@ export function Broadcast() {
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
             <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2"><Filter className="w-5 h-5 text-indigo-600"/> 1. Segmentar Audiencia</h2>
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1">Tienda de Origen</label>
                 <select className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500">
@@ -62,6 +62,32 @@ export function Broadcast() {
                 <select className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500">
                   <option>Clientes VIP (Compraron Smartwatch)</option>
                   <option>Todos los contactos</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Ubicación (Geografía)</label>
+                <select className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500">
+                  <option>Todo el país</option>
+                  <option>Solo ciudades principales (Bogotá, Medellín, Cali)</option>
+                  <option>Zonas con cobertura Servientrega</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Monto Gastado (LTV)</label>
+                <select className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500">
+                  <option>Cualquier monto</option>
+                  <option>Más de $50 USD (Compradores recurrentes)</option>
+                  <option>Más de $100 USD (Ballenas)</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Estado de Pago Histórico</label>
+                <select className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500">
+                  <option>Solo pedidos entregados y pagados</option>
+                  <option>Incluir devoluciones (Riesgoso)</option>
                 </select>
               </div>
             </div>
