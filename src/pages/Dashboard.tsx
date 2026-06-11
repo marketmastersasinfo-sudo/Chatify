@@ -204,9 +204,9 @@ export function Dashboard() {
             <h3 className="text-lg font-bold text-gray-900">Embudo de Retención Real (Drop-off)</h3>
           </div>
           
-          <div className="relative w-full max-w-[600px] h-[400px]">
+          <div className="relative w-full max-w-[750px] h-[560px]">
             {/* SVG Data-Driven Funnel */}
-            <svg viewBox="0 0 1000 400" className="w-full h-full drop-shadow-sm" preserveAspectRatio="none">
+            <svg viewBox="0 0 1000 560" className="w-full h-full drop-shadow-sm" preserveAspectRatio="none">
               {currentData.funnel.map((stage, i) => {
                 // Determine top and bottom widths for trapezoid
                 // We map percentage (0-100) to width (0-1000)
@@ -225,9 +225,9 @@ export function Dashboard() {
                 const bottomLeftX = 500 - bottomWidth / 2;
                 const bottomRightX = 500 + bottomWidth / 2;
                 
-                // Height is 100 per stage
-                const topY = i * 100;
-                const bottomY = (i + 1) * 100 - 4; // -4px gap between layers
+                // Height is 140 per stage
+                const topY = i * 140;
+                const bottomY = (i + 1) * 140 - 6; // -6px gap between layers
                 
                 const points = `${topLeftX},${topY} ${topRightX},${topY} ${bottomRightX},${bottomY} ${bottomLeftX},${bottomY}`;
                 
@@ -251,24 +251,24 @@ export function Dashboard() {
                 const dropPercent = prevStage ? Math.round(((prevStage.count - stage.count) / prevStage.count) * 100) : 0;
 
                 return (
-                  <div key={i} className="h-[100px] flex items-center justify-center relative w-full">
+                  <div key={i} className="h-[140px] flex items-center justify-center relative w-full">
                     {/* Stage Title and Numbers centered inside the funnel layer */}
                     <div className="text-center z-10 flex flex-col items-center">
                       <span className="text-gray-900 font-bold text-sm md:text-base drop-shadow-md">{stage.stage}</span>
-                      <span className="text-gray-900 font-black text-lg md:text-xl drop-shadow-md">
+                      <span className="text-gray-900 font-black text-lg md:text-2xl drop-shadow-md">
                         {stage.count} <span className="text-gray-800 text-xs md:text-sm font-semibold">({stage.percentage}%)</span>
                       </span>
                     </div>
 
                     {/* Drop-off Warning on the right side */}
                     {i > 0 && dropPercent > 0 && (
-                      <div className="absolute -top-[10px] right-0 translate-x-4 md:translate-x-12 bg-red-50 px-3 py-2 rounded-lg border border-red-100 shadow-sm flex flex-col gap-1 w-48 z-20">
-                        <div className="flex items-center gap-1">
-                          <TrendingUp className="w-3 h-3 text-red-500 rotate-180 flex-shrink-0" />
-                          <span className="text-red-700 font-bold text-xs">-{dropPercent}% abandonó</span>
+                      <div className="absolute top-4 md:top-6 right-0 translate-x-2 md:translate-x-12 bg-red-50 px-4 py-3 rounded-xl border border-red-100 shadow-sm flex flex-col gap-1 w-60 md:w-72 z-20">
+                        <div className="flex items-center gap-1 mb-1">
+                          <TrendingUp className="w-4 h-4 text-red-500 rotate-180 flex-shrink-0" />
+                          <span className="text-red-700 font-black text-sm">-{dropPercent}% abandonó</span>
                         </div>
                         {stage.dropoffAnalysis && (
-                          <p className="text-[10px] leading-tight text-red-600 mt-0.5">
+                          <p className="text-xs leading-relaxed text-red-600">
                             {stage.dropoffAnalysis}
                           </p>
                         )}
