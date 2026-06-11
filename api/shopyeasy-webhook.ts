@@ -21,18 +21,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  // { eventType: 'order_confirmation' | 'abandoned_cart', storeName: 'Yacompro', customerName: 'Juan', customerPhone: '318...', orderId: '123', productName: 'Zapatos', city: 'Bogota', address: 'Calle 1' }
-  const { eventType, storeName, customerName, customerPhone, orderId, productName, city, address } = req.body;
+  // { eventType: 'order_confirmation' | 'abandoned_cart', storeName: 'Yacompro', storeCountry: 'CO', customerName: 'Juan', customerPhone: '318...', orderId: '123', productName: 'Zapatos', city: 'Bogota', address: 'Calle 1' }
+  const { eventType, storeName, storeCountry, customerName, customerPhone, orderId, productName, city, address } = req.body;
 
   if (!eventType || !storeName || !customerName || !customerPhone) {
     return res.status(400).json({ error: 'Missing required fields' });
   }
 
   try {
-    // 1. Buscar el ID de la tienda por su nombre
-    const { data: store } = await supabase.from('stores').select('id').eq('name', storeName).single();
+    // 1. Buscar el ID de la tienda por su nombre Y país
+    const country = storeCountry || 'CO';
+    const { data: store } = await supabase.from('stores').select('id').eq('name', storeName).eq('country', country).single();
     if (!store) {
-      return res.status(404).json({ error: `Tienda no encontrada: ${storeName}` });
+      return res.status(404).json({ error: `Tienda no encontrada: ${storeName} en ${country}` });
     }
 
     // 2. Formatear el teléfono
