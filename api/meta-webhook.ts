@@ -36,7 +36,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const entry = body.entry?.[0];
         const changes = entry?.changes?.[0];
         const value = changes?.value;
-        const waba_number = value?.metadata?.display_phone_number;
+        const waba_number = value?.metadata?.phone_number_id;
 
         if (value?.messages && value?.messages[0] && waba_number) {
           const message = value.messages[0];
