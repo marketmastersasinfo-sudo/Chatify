@@ -75,7 +75,7 @@ export function Stores() {
           .eq('organization_id', orgId);
           
         if (allStoresData) {
-          const uniqueCountries = Array.from(new Set(allStoresData.map(s => s.country))).sort();
+          const uniqueCountries = Array.from(new Set(allStoresData.map((s: any) => s.country))).sort();
           if (uniqueCountries.length > 0) {
             setActiveCountries(uniqueCountries);
             
@@ -90,7 +90,7 @@ export function Stores() {
           }
 
           // Filtrar tiendas solo para el país seleccionado
-          const filtered = allStoresData.filter(s => s.country === selectedCountry);
+          const filtered = allStoresData.filter((s: any) => s.country === selectedCountry);
           setStores(filtered);
           if (filtered && filtered.length > 0) {
             setSelectedStore(filtered[0]);
