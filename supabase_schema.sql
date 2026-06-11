@@ -16,6 +16,8 @@ CREATE TABLE public.stores (
     waba_number TEXT,
     meta_pixel_id TEXT,
     meta_capi_token TEXT,
+    meta_access_token TEXT,
+    meta_verify_token TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
@@ -64,5 +66,7 @@ CREATE POLICY "Enable all actions for public" ON public.products FOR ALL USING (
 CREATE POLICY "Enable all actions for public" ON public.leads FOR ALL USING (true);
 CREATE POLICY "Enable all actions for public" ON public.messages FOR ALL USING (true);
 
--- Si ya creaste las tablas antes, ejecuta esto en tu SQL Editor para agregar la columna de Baneo:
+-- Si ya creaste las tablas antes, ejecuta esto en tu SQL Editor para agregar la columna de Baneo y Meta:
 -- ALTER TABLE public.leads ADD COLUMN is_banned BOOLEAN DEFAULT false;
+-- ALTER TABLE public.stores ADD COLUMN meta_access_token TEXT;
+-- ALTER TABLE public.stores ADD COLUMN meta_verify_token TEXT;
