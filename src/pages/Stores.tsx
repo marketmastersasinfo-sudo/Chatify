@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Store, Smartphone, Plus, ShoppingBag, Loader2, Save, X, BrainCircuit, TrendingDown, AlertTriangle, FileText } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 
 export function Stores() {
@@ -172,12 +173,23 @@ export function Stores() {
                     </select>
                     <p className="text-[11px] text-gray-500 flex items-start gap-1">
                       <AlertTriangle className="w-3 h-3 text-orange-500 flex-shrink-0 mt-0.5" />
-                      <span>¿No tienes línea? Compra un número en el menú <a href="/virtual-sims" className="text-blue-600 font-bold hover:underline">Líneas y SIMs Virtuales</a>.</span>
+                      <span>¿No tienes línea? Compra un número en el menú <Link to="/virtual-sims" className="text-blue-600 font-bold hover:underline">Líneas y SIMs Virtuales</Link>.</span>
                     </p>
                   </div>
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-1">ID del Píxel (Opcional)</label>
                     <input value={newPixel} onChange={e => setNewPixel(e.target.value)} type="text" placeholder="123456789" className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-blue-500" />
+                  </div>
+                  <div className="col-span-1 md:col-span-2 bg-blue-50 p-4 rounded-xl border border-blue-100 mt-2">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <h5 className="font-bold text-blue-900 flex items-center gap-2"><Smartphone className="w-4 h-4"/> WhatsApp API (Meta)</h5>
+                        <p className="text-xs text-blue-700 mt-1">Conecta con Facebook para autollenar los permisos de Meta Cloud API.</p>
+                      </div>
+                      <button className="bg-[#1877F2] text-white px-4 py-2 rounded-xl text-xs font-bold shadow-sm hover:bg-[#0C63D4] flex items-center gap-2 transition-colors">
+                        Conectar con Facebook
+                      </button>
+                    </div>
                   </div>
                 </div>
                 <button onClick={handleSaveStore} disabled={saving} className="mt-4 w-full flex justify-center items-center gap-2 bg-green-600 text-white py-2 rounded-lg font-bold hover:bg-green-700 disabled:opacity-50">
@@ -216,7 +228,7 @@ export function Stores() {
                       </select>
                       <p className="text-[11px] text-gray-500 flex items-start gap-1">
                         <AlertTriangle className="w-3 h-3 text-orange-500 flex-shrink-0 mt-0.5" />
-                        <span>¿No tienes línea? Compra un número en el menú <a href="/virtual-sims" className="text-blue-600 font-bold hover:underline">Líneas y SIMs Virtuales</a>.</span>
+                        <span>¿No tienes línea? Compra un número en el menú <Link to="/virtual-sims" className="text-blue-600 font-bold hover:underline">Líneas y SIMs Virtuales</Link>.</span>
                       </p>
                     </div>
                     <div>
