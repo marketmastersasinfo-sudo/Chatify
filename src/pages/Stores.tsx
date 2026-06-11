@@ -225,7 +225,7 @@ export function Stores() {
           <div className="glass-card rounded-2xl p-4">
             <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">🌎 Paises Activos</h3>
             <div className="space-y-1">
-              {['Colombia', 'México', 'Argentina', 'Chile'].map(country => (
+              {['Colombia', 'México', 'Argentina', 'Chile', 'Perú', 'Ecuador', 'Costa Rica', 'Venezuela', 'Guatemala'].map((country) => (
                 <button 
                   key={country}
                   onClick={() => setSelectedCountry(country)}
