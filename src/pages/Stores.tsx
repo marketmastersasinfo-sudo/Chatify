@@ -16,7 +16,6 @@ export function Stores() {
   const [newStoreName, setNewStoreName] = useState('');
   const [newWaba, setNewWaba] = useState('');
   const [newPixel, setNewPixel] = useState('');
-  const [newPixel, setNewPixel] = useState('');
   
   // Products State
   const [products, setProducts] = useState<any[]>([]);
@@ -521,7 +520,6 @@ export function Stores() {
                   </div>
                 </div>
               </div>
-            </div>
           ) : (
             <div className="flex flex-col items-center justify-center h-64 border-2 border-dashed border-gray-200 rounded-2xl bg-gray-50">
               <Store className="w-12 h-12 text-gray-300 mb-3" />
