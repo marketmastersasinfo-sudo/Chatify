@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Megaphone, Users, Filter, FileText, Send, CheckCircle2, AlertCircle, Search } from 'lucide-react';
+import { Megaphone, Users, Filter, FileText, Send, AlertCircle } from 'lucide-react';
 
 export function Broadcast() {
   const [step, setStep] = useState(1);

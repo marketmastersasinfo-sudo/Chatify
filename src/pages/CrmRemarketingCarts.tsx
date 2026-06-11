@@ -1,4 +1,4 @@
-import { RefreshCcw, Clock, AlertCircle, FileText, CheckCircle2, XCircle, Search, Filter, ShoppingCart } from 'lucide-react';
+import { Clock, AlertCircle, FileText, CheckCircle2, XCircle, Search, Filter, ShoppingCart } from 'lucide-react';
 
 export function CrmRemarketingCarts() {
   const columns = [
