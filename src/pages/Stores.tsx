@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase';
 
 export function Stores() {
   const [selectedCountry, setSelectedCountry] = useState('Colombia');
+  const [activeCountries, setActiveCountries] = useState<string[]>(['Colombia']);
   const [stores, setStores] = useState<any[]>([]);
   const [selectedStore, setSelectedStore] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -66,19 +67,36 @@ export function Stores() {
         orgId = (orgs as any)[0].id;
       }
 
-      // 2. Traer las tiendas de ese país
+      // 2. Traer TODAS las tiendas para extraer los países únicos
       if (orgId) {
-        const { data: storesData } = await supabase
+        const { data: allStoresData } = await supabase
           .from('stores')
           .select('*')
-          .eq('country', selectedCountry)
           .eq('organization_id', orgId);
           
-        setStores(storesData || []);
-        if (storesData && storesData.length > 0) {
-          setSelectedStore(storesData[0]);
-        } else {
-          setSelectedStore(null);
+        if (allStoresData) {
+          const uniqueCountries = Array.from(new Set(allStoresData.map(s => s.country))).sort();
+          if (uniqueCountries.length > 0) {
+            setActiveCountries(uniqueCountries);
+            
+            // Si el país seleccionado actual no está en la lista (por ejemplo, al borrar), selecciona el primero
+            if (!uniqueCountries.includes(selectedCountry)) {
+              setSelectedCountry(uniqueCountries[0]);
+              // La actualización de selectedCountry disparará el useEffect de nuevo
+              return;
+            }
+          } else {
+            setActiveCountries(['Colombia']);
+          }
+
+          // Filtrar tiendas solo para el país seleccionado
+          const filtered = allStoresData.filter(s => s.country === selectedCountry);
+          setStores(filtered);
+          if (filtered && filtered.length > 0) {
+            setSelectedStore(filtered[0]);
+          } else {
+            setSelectedStore(null);
+          }
         }
       }
     } catch (error) {
@@ -225,7 +243,7 @@ export function Stores() {
           <div className="glass-card rounded-2xl p-4">
             <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">🌎 Paises Activos</h3>
             <div className="space-y-1">
-              {['Colombia', 'México', 'Argentina', 'Chile', 'Perú', 'Ecuador', 'Costa Rica', 'Venezuela', 'Guatemala'].map((country) => (
+              {activeCountries.map((country) => (
                 <button 
                   key={country}
                   onClick={() => setSelectedCountry(country)}
