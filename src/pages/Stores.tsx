@@ -29,6 +29,9 @@ export function Stores() {
   const [newProductPromptWA, setNewProductPromptWA] = useState('');
   const [newProductPromptSocial, setNewProductPromptSocial] = useState('');
 
+  // Templates State
+  const [storeTemplates, setStoreTemplates] = useState<any[]>([]);
+
   useEffect(() => {
     loadStores();
   }, [selectedCountry]);
@@ -36,10 +39,45 @@ export function Stores() {
   useEffect(() => {
     if (selectedStore) {
       loadProducts(selectedStore.id);
+      loadTemplates(selectedStore.id);
     } else {
       setProducts([]);
+      setStoreTemplates([]);
     }
   }, [selectedStore]);
+
+  async function loadTemplates(storeId: string) {
+    try {
+      const { data } = await supabase.from('store_templates').select('*').eq('store_id', storeId);
+      setStoreTemplates(data || []);
+    } catch (err) {
+      console.error("Error loading templates", err);
+    }
+  }
+
+  async function handleAssignTemplate(templateId: string, triggerType: string) {
+    try {
+      // First, remove the trigger from any other template in this store
+      await (supabase as any).from('store_templates')
+        .update({ template_type: 'custom' })
+        .eq('store_id', selectedStore.id)
+        .eq('template_type', triggerType);
+        
+      // Now set it on the selected template
+      if (templateId) {
+        await (supabase as any).from('store_templates')
+          .update({ template_type: triggerType })
+          .eq('id', templateId);
+      }
+      
+      // Reload templates to reflect changes
+      loadTemplates(selectedStore.id);
+      alert(`Trigger de automatización actualizado correctamente.`);
+    } catch (err) {
+      console.error("Error assigning template", err);
+      alert("Error al asignar la plantilla.");
+    }
+  }
 
   async function loadProducts(storeId: string) {
     setLoadingProducts(true);
@@ -655,16 +693,28 @@ export function Stores() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-xs font-semibold text-gray-700 mb-1">Trigger: Confirmación de Pedido</label>
-                        <select className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-1 focus:ring-blue-500 bg-white">
-                          <option>Plantilla: Confirmación V1 (Con Foto)</option>
-                          <option>Plantilla: Confirmación V2 (Urgencia)</option>
+                        <select 
+                          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-1 focus:ring-blue-500 bg-white"
+                          value={storeTemplates.find(t => t.template_type === 'order_confirmation')?.id || ''}
+                          onChange={(e) => handleAssignTemplate(e.target.value, 'order_confirmation')}
+                        >
+                          <option value="">-- Sin automatización --</option>
+                          {storeTemplates.map(t => (
+                            <option key={t.id} value={t.id}>{t.template_name}</option>
+                          ))}
                         </select>
                       </div>
                       <div>
                         <label className="block text-xs font-semibold text-gray-700 mb-1">Trigger: Carrito Abandonado</label>
-                        <select className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-1 focus:ring-blue-500 bg-white">
-                          <option>Plantilla: Carrito Abandonado V1</option>
-                          <option>Plantilla: Carrito V2 (Oferta 10%)</option>
+                        <select 
+                          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-1 focus:ring-blue-500 bg-white"
+                          value={storeTemplates.find(t => t.template_type === 'abandoned_cart')?.id || ''}
+                          onChange={(e) => handleAssignTemplate(e.target.value, 'abandoned_cart')}
+                        >
+                          <option value="">-- Sin automatización --</option>
+                          {storeTemplates.map(t => (
+                            <option key={t.id} value={t.id}>{t.template_name}</option>
+                          ))}
                         </select>
                       </div>
                     </div>
