@@ -7,6 +7,10 @@ export function Database() {
   const [dateFilter, setDateFilter] = useState('all');
   const [leads, setLeads] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // Paginación
+  const [currentPage, setCurrentPage] = useState(1);
+  const leadsPerPage = 50;
 
   useEffect(() => {
     loadLeads();
@@ -85,8 +89,11 @@ export function Database() {
     }
   };
 
+  const totalPages = Math.ceil(leads.length / leadsPerPage);
+  const displayedLeads = leads.slice((currentPage - 1) * leadsPerPage, currentPage * leadsPerPage);
+
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-12">
+    <div className="space-y-6 max-w-7xl mx-auto pb-12 px-4 sm:px-6 lg:px-8">
       <div className="sm:flex sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-gray-900">Base de Datos de Contactos</h1>
@@ -119,29 +126,28 @@ export function Database() {
                 <Filter className="w-4 h-4 text-blue-600" /> Constructor de Audiencias (Filtros Cruzados)
               </h3>
               <button onClick={() => setShowFilters(false)} className="text-gray-400 hover:text-gray-600">
-                <X className="w-4 h-4" />
+                <X className="w-5 h-5" />
               </button>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              {/* Date Filters */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {/* Date Filter */}
               <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Fecha de Creación</label>
-                <div className="flex flex-wrap gap-2">
-                  <button onClick={() => setDateFilter('today')} className={`px-3 py-1.5 text-xs font-semibold rounded-lg border ${dateFilter === 'today' ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'}`}>Hoy</button>
-                  <button onClick={() => setDateFilter('yesterday')} className={`px-3 py-1.5 text-xs font-semibold rounded-lg border ${dateFilter === 'yesterday' ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'}`}>Ayer</button>
-                  <button onClick={() => setDateFilter('7days')} className={`px-3 py-1.5 text-xs font-semibold rounded-lg border ${dateFilter === '7days' ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'}`}>Últimos 7 días</button>
-                  <div className="flex items-center gap-2 flex-1">
-                    <div className="relative flex-1 min-w-[120px]">
-                      <Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
-                      <input type="date" className="w-full pl-8 pr-2 py-1.5 text-xs border border-gray-200 rounded-lg text-gray-600 focus:ring-1 focus:ring-blue-500" title="Desde" />
-                    </div>
-                    <span className="text-xs font-bold text-gray-400">a</span>
-                    <div className="relative flex-1 min-w-[120px]">
-                      <Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
-                      <input type="date" className="w-full pl-8 pr-2 py-1.5 text-xs border border-gray-200 rounded-lg text-gray-600 focus:ring-1 focus:ring-blue-500" title="Hasta" />
-                    </div>
-                  </div>
+                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Rango de Fechas</label>
+                <div className="relative">
+                  <select 
+                    value={dateFilter}
+                    onChange={(e) => setDateFilter(e.target.value)}
+                    className="w-full pl-3 pr-8 py-2 text-sm border border-gray-200 rounded-lg text-gray-700 appearance-none focus:ring-1 focus:ring-blue-500 bg-white"
+                  >
+                    <option value="all">Todo el tiempo</option>
+                    <option value="today">Hoy</option>
+                    <option value="yesterday">Ayer</option>
+                    <option value="7days">Últimos 7 días</option>
+                    <option value="30days">Últimos 30 días</option>
+                    <option value="month">Este Mes</option>
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                 </div>
               </div>
 
@@ -202,7 +208,7 @@ export function Database() {
             />
           </div>
           <div className="text-sm text-gray-500 font-medium">
-            Mostrando {leads.length} contactos
+            Mostrando {displayedLeads.length} de {leads.length} contactos
           </div>
         </div>
 
@@ -246,7 +252,7 @@ export function Database() {
                   </td>
                 </tr>
               ) : (
-                leads.map((row) => (
+                displayedLeads.map((row) => (
                   <tr key={row.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-bold text-gray-900">{row.name}</div>
@@ -276,6 +282,40 @@ export function Database() {
             </tbody>
           </table>
         </div>
+        
+        {/* Pagination Footer */}
+        {totalPages > 1 && (
+          <div className="bg-white px-4 py-3 border-t border-gray-200 flex items-center justify-between sm:px-6">
+            <div className="flex-1 flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-700">
+                  Mostrando <span className="font-bold">{(currentPage - 1) * leadsPerPage + 1}</span> a <span className="font-bold">{Math.min(currentPage * leadsPerPage, leads.length)}</span> de <span className="font-bold">{leads.length}</span> resultados
+                </p>
+              </div>
+              <div>
+                <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                  <button
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className="relative inline-flex items-center px-3 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+                  >
+                    Anterior
+                  </button>
+                  <span className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-gray-50 text-sm font-bold text-gray-700">
+                    Página {currentPage} de {totalPages}
+                  </span>
+                  <button
+                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                    className="relative inline-flex items-center px-3 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+                  >
+                    Siguiente
+                  </button>
+                </nav>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
