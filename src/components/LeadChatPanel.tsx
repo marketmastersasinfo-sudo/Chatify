@@ -139,11 +139,14 @@ export function LeadChatPanel({
         })
       });
       
-      if (!res.ok) throw new Error('Error al enviar plantilla');
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Error desconocido de Twilio');
+      }
       
-    } catch(e) {
+    } catch(e: any) {
       console.error(e);
-      alert('Error al enviar la plantilla. Revisa consola.');
+      alert(`Error al enviar la plantilla:\n${e.message}`);
     }
     setSendingTemplate(null);
     setShowTemplates(false);

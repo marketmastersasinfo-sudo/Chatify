@@ -40,22 +40,37 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: 'La tienda no tiene una plantilla configurada en Twilio (Content API) para este tipo o ID.' });
     }
 
-    // 4. Construir Payload para Twilio Content API
-    // Las variables en Content API suelen ser mapeadas como 1, 2, 3... o el nombre de la variable. 
-    // Usaremos un mapeo básico. Si la IA generó variables genéricas, las inyectaremos aquí.
+    // 4. Obtener la definición de la plantilla desde Twilio para saber qué variables exige
     const twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+    let templateVariablesKeys: string[] = [];
+    
+    try {
+      const content = await twilioClient.content.v1.contents(template.twilio_content_sid).fetch();
+      if (content.variables) {
+        templateVariablesKeys = Object.keys(content.variables);
+      }
+    } catch (e) {
+      console.error('No se pudo obtener variables de la plantilla Twilio', e);
+    }
 
-    // Mapeo dinámico: Construimos un objeto de variables JSON compatible con Twilio
-    // Twilio usa llaves de string para las variables en Content API.
+    // 5. Construir Payload asegurando que NO mandamos variables sobrantes que hagan crashear la API
     const contentVariables: any = {};
     if (variables) {
-      if (variables.customerName) contentVariables['1'] = variables.customerName;
-      if (variables.productName) contentVariables['2'] = variables.productName;
-      if (variables.city) contentVariables['3'] = variables.city;
-      if (variables.address) contentVariables['4'] = variables.address;
-      if (variables.department) contentVariables['5'] = variables.department;
-      if (variables.totalPrice) contentVariables['6'] = variables.totalPrice;
-      if (variables.orderId) contentVariables['7'] = variables.orderId;
+      // Mapeo por defecto según el orden estándar (1: nombre, 2: producto, etc.)
+      const mapping: Record<string, string> = {
+        '1': variables.customerName || '',
+        '2': variables.productName || 'tu pedido',
+        '3': variables.city || '',
+        '4': variables.address || '',
+        '5': variables.department || '',
+        '6': variables.totalPrice || '',
+        '7': variables.orderId || ''
+      };
+
+      // SOLO agregar las variables que la plantilla realmente pide
+      for (const key of templateVariablesKeys) {
+        contentVariables[key] = mapping[key] || '';
+      }
     }
 
     // 5. Disparar a Twilio
