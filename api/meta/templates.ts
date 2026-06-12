@@ -93,9 +93,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const content = await twilioClient.content.v1.contents.create(twilioContentPayload);
 
       // 2. Enviar a aprobación de WhatsApp
-      const approval = await twilioClient.content.v1.contents(content.sid).approvalFetch.create({
+      const approval = await twilioClient.content.v1.contents(content.sid).approvalCreate.create({
         category: payload.category || 'UTILITY',
-        contentType: 'twilio/text',
         name: payload.name
       });
 
