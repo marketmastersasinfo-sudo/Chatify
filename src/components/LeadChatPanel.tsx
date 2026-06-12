@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Send, User, MapPin, Mail, AlignLeft, Phone, Building2, Ban, Trash2, CheckCircle2 } from 'lucide-react';
+import { X, Send, User, MapPin, Mail, AlignLeft, Phone, Building2, Ban, Trash2, CheckCircle2, FileText, Loader2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 interface Message {
@@ -43,9 +43,15 @@ export function LeadChatPanel({
   const [savingForm, setSavingForm] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
+  // Templates State
+  const [templates, setTemplates] = useState<any[]>([]);
+  const [showTemplates, setShowTemplates] = useState(false);
+  const [sendingTemplate, setSendingTemplate] = useState<string | null>(null);
+
   useEffect(() => {
     if (lead) {
       loadMessages();
+      loadTemplates();
       // Sync form if lead changes
       setFormData({
         name: lead.name || '',
@@ -88,6 +94,60 @@ export function LeadChatPanel({
     const { data } = await supabase.from('messages').select('*').eq('lead_id', lead.id).order('created_at', { ascending: true });
     if (data) setMessages(data);
     setLoading(false);
+  }
+
+  async function loadTemplates() {
+    try {
+      const { data } = await supabase
+        .from('store_templates')
+        .select('*')
+        .eq('store_id', lead.store_id)
+        .eq('twilio_approval_status', 'APPROVED');
+      setTemplates(data || []);
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  async function handleSendTemplate(templateId: string, templateName: string) {
+    setSendingTemplate(templateId);
+    try {
+      // Registrar mensaje en BD primero
+      const { data: insertedMsg } = await (supabase as any).from('messages').insert({
+        lead_id: lead.id,
+        sender_type: 'human',
+        content: `[Plantilla Meta Enviada: ${templateName}]`
+      }).select().single();
+      
+      if (insertedMsg) setMessages(prev => [...prev, insertedMsg]);
+
+      // Call API
+      const res = await fetch('/api/send-template', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          leadId: lead.id,
+          templateId: templateId,
+          templateType: 'custom', // fallback
+          variables: {
+            customerName: lead.name,
+            productName: lead.product_name || 'tu pedido',
+            city: lead.city || '',
+            address: lead.address || '',
+            totalPrice: lead.total_price || '',
+            orderId: lead.notes?.split('Order ID:')[1]?.split('\n')[0]?.trim() || ''
+          }
+        })
+      });
+      
+      if (!res.ok) throw new Error('Error al enviar plantilla');
+      
+    } catch(e) {
+      console.error(e);
+      alert('Error al enviar la plantilla. Revisa consola.');
+    }
+    setSendingTemplate(null);
+    setShowTemplates(false);
   }
 
   async function handleSendMessage() {
@@ -203,14 +263,47 @@ export function LeadChatPanel({
 
           {/* Input Area */}
           <div className="p-4 bg-white border-t border-gray-100">
-             <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-2xl p-2 focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500 transition-all">
+             <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-2xl p-2 focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500 transition-all relative">
+               
+               {/* Templates Menu */}
+               <div className="relative">
+                 <button 
+                   onClick={() => setShowTemplates(!showTemplates)}
+                   className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-colors"
+                   title="Plantillas Oficiales de WhatsApp"
+                 >
+                   <FileText className="w-5 h-5" />
+                 </button>
+                 
+                 {showTemplates && (
+                   <div className="absolute bottom-full left-0 mb-2 w-64 bg-white rounded-xl shadow-xl border border-gray-200 py-2 z-50">
+                     <div className="px-3 pb-2 mb-2 border-b border-gray-100 text-xs font-bold text-gray-400 uppercase">Plantillas Aprobadas</div>
+                     {templates.length === 0 ? (
+                       <div className="px-4 py-2 text-sm text-gray-500">No hay plantillas aprobadas.</div>
+                     ) : (
+                       templates.map(t => (
+                         <button 
+                           key={t.id}
+                           onClick={() => handleSendTemplate(t.id, t.template_name)}
+                           disabled={sendingTemplate === t.id}
+                           className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-colors flex items-center justify-between"
+                         >
+                           <span className="truncate">{t.template_name}</span>
+                           {sendingTemplate === t.id && <Loader2 className="w-3 h-3 animate-spin text-blue-600" />}
+                         </button>
+                       ))
+                     )}
+                   </div>
+                 )}
+               </div>
+
                <input 
                  type="text"
                  value={newMessage}
                  onChange={e => setNewMessage(e.target.value)}
                  onKeyDown={e => e.key === 'Enter' && handleSendMessage()}
                  placeholder="Escribe un mensaje aquí..."
-                 className="flex-1 bg-transparent border-none outline-none px-4 py-2 text-[15px] text-gray-700 placeholder-gray-400"
+                 className="flex-1 bg-transparent border-none outline-none px-2 py-2 text-[15px] text-gray-700 placeholder-gray-400"
                />
                <button 
                  onClick={handleSendMessage} 

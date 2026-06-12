@@ -27,10 +27,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (!store || !store.twilio_phone_number) return res.status(400).json({ error: 'Tienda sin número de Twilio configurado' });
 
     // 3. Buscar la plantilla configurada para esta tienda y tipo
-    const { data: template } = await supabase.from('store_templates').select('twilio_content_sid, template_name').eq('store_id', lead.store_id).eq('template_type', templateType).single();
+    let template;
+    if (req.body.templateId) {
+      const { data } = await supabase.from('store_templates').select('twilio_content_sid, template_name').eq('id', req.body.templateId).single();
+      template = data;
+    } else {
+      const { data } = await supabase.from('store_templates').select('twilio_content_sid, template_name').eq('store_id', lead.store_id).eq('template_type', templateType).single();
+      template = data;
+    }
     
     if (!template || !template.twilio_content_sid) {
-      return res.status(400).json({ error: 'La tienda no tiene una plantilla configurada en Twilio (Content API) para este tipo.' });
+      return res.status(400).json({ error: 'La tienda no tiene una plantilla configurada en Twilio (Content API) para este tipo o ID.' });
     }
 
     // 4. Construir Payload para Twilio Content API
