@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, Filter, Download, UserCircle, Phone, Tag, Calendar, LayoutGrid, ChevronDown, Megaphone, X, Loader2 } from 'lucide-react';
+import { Search, Filter, Download, UserCircle, Phone, Calendar, LayoutGrid, ChevronDown, Megaphone, X, Loader2, MapPin, ShoppingBag, DollarSign } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 export function Database() {
@@ -224,10 +224,13 @@ export function Database() {
                   <div className="flex items-center gap-2"><Phone className="w-4 h-4" /> Teléfono</div>
                 </th>
                 <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                  <div className="flex items-center gap-2"><Tag className="w-4 h-4" /> Origen (Tráfico)</div>
+                  <div className="flex items-center gap-2"><LayoutGrid className="w-4 h-4" /> Tienda Asociada</div>
                 </th>
                 <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                  <div className="flex items-center gap-2"><LayoutGrid className="w-4 h-4" /> Tienda Asociada</div>
+                  <div className="flex items-center gap-2"><ShoppingBag className="w-4 h-4" /> Producto & Precio</div>
+                </th>
+                <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  <div className="flex items-center gap-2"><MapPin className="w-4 h-4" /> Ubicación</div>
                 </th>
                 <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                   <div className="flex items-center gap-2"><Calendar className="w-4 h-4" /> Fecha Creación</div>
@@ -247,7 +250,7 @@ export function Database() {
                 </tr>
               ) : leads.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
+                  <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
                     No se encontraron contactos en la base de datos.
                   </td>
                 </tr>
@@ -260,13 +263,30 @@ export function Database() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-600">
                       +{row.phone}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-gray-100 text-gray-800 border border-gray-200">
-                        {row.traffic_source || 'Manual'}
-                      </span>
-                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-medium">
                       {row.store?.name || 'Desconocida'}
+                      <div className="text-xs text-gray-400 mt-0.5">
+                        {row.traffic_source || 'Manual'}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-semibold text-gray-800 flex items-center gap-1">
+                        <ShoppingBag className="w-3.5 h-3.5 text-blue-500" />
+                        {row.product_name || 'N/A'}
+                      </div>
+                      <div className="text-xs font-bold text-green-600 mt-1 flex items-center gap-1">
+                        <DollarSign className="w-3.5 h-3.5" />
+                        {row.total_price ? `$${Number(row.total_price).toLocaleString()}` : 'N/A'}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-700 flex items-center gap-1">
+                        <MapPin className="w-3.5 h-3.5 text-red-400" />
+                        {row.city || 'Ciudad N/A'}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-0.5 pl-4">
+                        {row.department || 'Depto N/A'}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {new Date(row.created_at).toLocaleDateString('es-CO', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}

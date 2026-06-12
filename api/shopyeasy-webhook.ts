@@ -22,7 +22,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   // { eventType: 'order_confirmation' | 'abandoned_cart', storeName: 'Yacompro', storeCountry: 'CO', customerName: 'Juan', customerPhone: '318...', orderId: '123', productName: 'Zapatos', city: 'Bogota', address: 'Calle 1' }
-  const { eventType, storeName, storeCountry, customerName, customerPhone, orderId, productName, city, address } = req.body;
+  const { eventType, storeName, storeCountry, customerName, customerPhone, orderId, productName, city, address, department, totalPrice } = req.body;
 
   if (!eventType || !storeName || !customerName || !customerPhone) {
     return res.status(400).json({ error: 'Missing required fields' });
@@ -102,6 +102,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         status: targetStatus,
         city: realCity || null,
         address: realAddress || null,
+        department: department || null,
+        total_price: totalPrice || null,
         product_name: realProductName || null,
         notes: `Order ID: ${realOrderId}`
       }).select().single();
@@ -121,6 +123,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // Actualizar datos de la venta si llegaron ahora (en carritos a veces no llegan)
       if (realCity && !existingLead.city) updates.city = realCity;
       if (realAddress && !existingLead.address) updates.address = realAddress;
+      if (department && !existingLead.department) updates.department = department;
+      if (totalPrice && !existingLead.total_price) updates.total_price = totalPrice;
       if (realProductName && !existingLead.product_name) updates.product_name = realProductName;
       
       if (Object.keys(updates).length > 0) {
