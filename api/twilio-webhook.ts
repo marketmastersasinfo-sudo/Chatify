@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
+import twilio from 'twilio';
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL;
 const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY;
@@ -25,7 +26,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // 1. Find the store that owns this Twilio number
     const { data: store } = await supabase
       .from('stores')
-      .select('id')
+      .select('id, organization_id, organizations(google_maps_api_key)')
       .eq('twilio_phone_number', storeTwilioPhone)
       .single();
 
@@ -36,15 +37,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // 2. Find or create the lead
     let leadId = null;
+    let leadStatus = '';
+    let leadBoard = '';
+    let leadAddress = '';
+    let leadCity = '';
+
     const { data: existingLead } = await supabase
       .from('leads')
-      .select('id')
+      .select('id, status, board_type, address, city')
       .eq('phone', customerPhone)
       .eq('store_id', store.id)
       .single();
 
     if (existingLead) {
       leadId = existingLead.id;
+      leadStatus = existingLead.status;
+      leadBoard = existingLead.board_type;
+      leadAddress = existingLead.address || '';
+      leadCity = existingLead.city || '';
     } else {
       // Create new lead
       const { data: newLead } = await supabase
@@ -64,7 +74,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (newLead) leadId = newLead.id;
     }
 
-    // 3. Save the message to the CRM
+      // 3. Save the message to the CRM
     if (leadId) {
       await supabase.from('messages').insert({
         lead_id: leadId,
@@ -79,8 +89,51 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
       });
       
-      // Update the lead's updated_at timestamp to bring them to the top
-      await supabase.from('leads').update({ updated_at: new Date().toISOString() }).eq('id', leadId);
+      const leadUpdates: any = { updated_at: new Date().toISOString() };
+
+      // 4. GOOGLE STREET VIEW AUTOMATION
+      // Si el lead de logística responde por primera vez (su estado era 'nuevo')
+      // le enviamos automáticamente la fachada si tenemos la API key.
+      if (leadBoard === 'logistics' && leadStatus === 'nuevo') {
+        leadUpdates.status = 'client_replied'; // Movemos de estado
+        
+        // TypeScript safe access for nested join
+        const apiKey = (store.organizations as any)?.google_maps_api_key;
+        
+        if (apiKey && leadAddress && leadCity) {
+          const mapQuery = encodeURIComponent(`${leadAddress}, ${leadCity}`);
+          const streetViewUrl = `https://maps.googleapis.com/maps/api/streetview?size=600x400&location=${mapQuery}&key=${apiKey}`;
+          
+          try {
+            const twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+            await twilioClient.messages.create({
+              from: `whatsapp:${storeTwilioPhone}`,
+              to: `whatsapp:${customerPhone}`,
+              body: '¡Excelente! Para asegurar que la transportadora no se pierda, ¿nos confirmas si esta es la fachada de la dirección de entrega?',
+              mediaUrl: [streetViewUrl]
+            });
+            
+            // Guardar el mensaje del bot en el CRM
+            await supabase.from('messages').insert({
+              lead_id: leadId,
+              store_id: store.id,
+              direction: 'outbound',
+              message_type: 'image',
+              sender_type: 'ai',
+              content: '¡Excelente! Para asegurar que la transportadora no se pierda, ¿nos confirmas si esta es la fachada de la dirección de entrega?',
+              status: 'sent',
+              metadata: {
+                image_url: streetViewUrl
+              }
+            });
+          } catch (e) {
+            console.error('Error sending Street View image via Twilio:', e);
+          }
+        }
+      }
+
+      // Update the lead's status and updated_at timestamp
+      await supabase.from('leads').update(leadUpdates).eq('id', leadId);
     }
 
     // Twilio expects an empty TwiML response or a 200 OK

@@ -14,16 +14,19 @@ export interface Database {
           id: string
           name: string
           created_at: string
+          google_maps_api_key: string | null
         }
         Insert: {
           id?: string
           name: string
           created_at?: string
+          google_maps_api_key?: string | null
         }
         Update: {
           id?: string
           name?: string
           created_at?: string
+          google_maps_api_key?: string | null
         }
       }
       stores: {

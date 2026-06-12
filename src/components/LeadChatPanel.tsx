@@ -6,6 +6,7 @@ interface Message {
   id: string;
   sender_type: string;
   content: string;
+  metadata?: any;
 }
 
 export function LeadChatPanel({ 
@@ -187,6 +188,9 @@ export function LeadChatPanel({
                       msg.sender_type === 'ai' ? 'bg-purple-600 text-white rounded-tr-none' : 
                       'bg-white border border-gray-100 text-gray-800 rounded-tl-none'
                     }`}>
+                      {msg.metadata?.image_url && (
+                        <img src={msg.metadata.image_url} alt="Media" className="w-full h-auto rounded-xl mb-2 object-cover" />
+                      )}
                       <p className="text-[15px] leading-relaxed">{msg.content}</p>
                    </div>
                    <span className="text-[10px] font-medium text-gray-400 mt-1.5 px-1">

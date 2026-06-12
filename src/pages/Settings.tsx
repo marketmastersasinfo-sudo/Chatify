@@ -1,6 +1,46 @@
-import { Key, MapPin, Target, Plus, Save } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Key, MapPin, Target, Plus, Save, Loader2, CheckCircle2 } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
 export function Settings() {
+  const [orgId, setOrgId] = useState<string | null>(null);
+  const [googleMapsKey, setGoogleMapsKey] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+
+  useEffect(() => {
+    loadSettings();
+  }, []);
+
+  async function loadSettings() {
+    try {
+      const { data } = await (supabase as any).from('organizations').select('*').limit(1).single();
+      if (data) {
+        setOrgId(data.id);
+        setGoogleMapsKey(data.google_maps_api_key || '');
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  async function handleSaveSettings() {
+    if (!orgId) return;
+    setSaving(true);
+    try {
+      await (supabase as any).from('organizations').update({
+        google_maps_api_key: googleMapsKey
+      }).eq('id', orgId);
+      
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (e) {
+      console.error(e);
+      alert('Error guardando configuración');
+    }
+    setSaving(false);
+  }
+
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
       <div className="sm:flex sm:items-center sm:justify-between">
@@ -11,9 +51,13 @@ export function Settings() {
           </p>
         </div>
         <div className="mt-4 sm:mt-0 flex gap-3">
-          <button className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white shadow-soft hover:bg-blue-500">
-            <Save className="h-4 w-4" />
-            Guardar Cambios
+          <button 
+            onClick={handleSaveSettings}
+            disabled={saving}
+            className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white shadow-soft hover:bg-blue-500 disabled:opacity-70"
+          >
+            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : saveSuccess ? <CheckCircle2 className="h-4 w-4" /> : <Save className="h-4 w-4" />}
+            {saveSuccess ? '¡Guardado!' : 'Guardar Cambios'}
           </button>
         </div>
       </div>
@@ -124,12 +168,21 @@ export function Settings() {
             </div>
             <div>
               <h2 className="text-xl font-bold text-gray-900">Google Maps Integration</h2>
-              <p className="text-sm text-gray-500">Para validación de direcciones y Street View.</p>
+              <p className="text-sm text-gray-500">Para validación de direcciones y Street View automático por WhatsApp.</p>
             </div>
           </div>
           <div className="max-w-xl">
             <label className="block text-sm font-semibold text-gray-900 mb-2">Google Maps API Key</label>
-            <input type="password" placeholder="AIzaSy..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500" defaultValue="AIzaSyAABCDEF12345" />
+            <input 
+              type="password" 
+              placeholder="AIzaSy..." 
+              value={googleMapsKey}
+              onChange={(e) => setGoogleMapsKey(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500" 
+            />
+            <p className="text-xs text-gray-500 mt-2">
+              Se requiere habilitar la <b>Street View Static API</b> en tu proyecto de Google Cloud para que funcione el bot de envío de fachadas por WhatsApp.
+            </p>
           </div>
         </div>
 
