@@ -124,7 +124,7 @@ export function CrmLogistics() {
                       draggable
                       onDragStart={(e) => handleDragStart(e, lead.id)}
                       onClick={() => setSelectedLead(lead)}
-                      className={`p-4 bg-white rounded-xl shadow-sm border-l-4 ${col.color} cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow`}
+                      className={`p-4 bg-white rounded-xl shadow-sm border-l-4 ${col.color} cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow shrink-0`}
                     >
                       <div className="flex justify-between items-start mb-2">
                         <div className="flex gap-1.5 items-center">

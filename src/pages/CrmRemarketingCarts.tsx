@@ -182,13 +182,13 @@ export function CrmRemarketingCarts() {
                 {loading ? (
                   <div className="flex justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-gray-400"/></div>
                 ) : columnLeads.map(lead => (
-                  <div 
-                    key={lead.id}
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, lead.id)}
-                    onClick={() => setSelectedLead(lead)}
-                    className="bg-white p-4 rounded-xl shadow-sm border border-red-200 cursor-grab active:cursor-grabbing hover:border-red-400 transition-colors relative overflow-hidden"
-                  >
+                    <div 
+                      key={lead.id}
+                      draggable
+                      onDragStart={(e) => handleDragStart(e, lead.id)}
+                      onClick={() => setSelectedLead(lead)}
+                      className="bg-white p-4 rounded-xl shadow-sm border border-red-200 cursor-grab active:cursor-grabbing hover:border-red-400 transition-colors relative overflow-hidden shrink-0"
+                    >
                     <div className="absolute right-0 top-0 w-2 h-full bg-red-500"></div>
                     <div className="flex justify-between items-start mb-2">
                       <div className="flex gap-1.5 items-center">

@@ -139,7 +139,7 @@ export function CrmRemarketingWa() {
                     draggable
                     onDragStart={(e) => handleDragStart(e, lead.id)}
                     onClick={() => setSelectedLead(lead)}
-                    className="bg-white p-4 rounded-xl shadow-sm border border-blue-200 cursor-grab active:cursor-grabbing hover:border-blue-400 transition-colors relative overflow-hidden"
+                    className="bg-white p-4 rounded-xl shadow-sm border border-blue-200 cursor-grab active:cursor-grabbing hover:border-blue-400 transition-colors relative overflow-hidden shrink-0"
                   >
                     <div className="flex justify-between items-start mb-2">
                       <div className="flex gap-1.5 items-center">
