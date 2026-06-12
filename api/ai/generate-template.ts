@@ -1,56 +1,57 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { GoogleGenAI } from '@google/genai';
+import OpenAI from 'openai';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { prompt } = req.body;
-
-  if (!prompt) {
-    return res.status(400).json({ error: 'Prompt is required' });
-  }
-
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = process.env.OPENAI_API_KEY;
 
   if (!apiKey) {
-    return res.status(500).json({ error: 'GEMINI_API_KEY is not set in environment variables.' });
+    return res.status(500).json({ error: 'OPENAI_API_KEY is not set in environment variables.' });
   }
-
+  
   try {
-    const ai = new GoogleGenAI({ apiKey });
+    const openai = new OpenAI({ apiKey });
+    const { prompt } = req.body;
 
-    const systemInstruction = `Eres un experto en Marketing para WhatsApp Cloud API. 
-Tu tarea es generar plantillas de WhatsApp (WhatsApp Templates) altamente persuasivas, enfocadas en e-commerce (Dropi/Shopify) para Colombia y Latinoamérica, basadas en lo que pide el usuario.
+    if (!prompt) {
+      return res.status(400).json({ error: 'Prompt is required' });
+    }
 
-REGLAS ESTRICTAS DE FORMATO:
-1. "name": El nombre de la plantilla SOLO puede contener letras minúsculas y guiones bajos (_). No números al principio. Debe ser descriptivo (ej: confirmacion_compra_oferta).
-2. "category": Siempre debe ser "MARKETING" o "UTILITY" dependiendo del contexto. (Ventas/Ofertas/Carritos = MARKETING. Confirmaciones de envío = UTILITY).
-3. "bodyText": El texto del mensaje. Debe ser persuasivo, usar emojis, sonar humano pero profesional.
-   - Las variables OBLIGATORIAMENTE deben tener el formato {{1}}, {{2}}, {{3}}, etc. (usando dobles llaves). NO USES [Nombre] ni {nombre}.
-   - Sé conciso y directo, la gente en WhatsApp no lee textos gigantes.
-4. "variableExamples": Un diccionario clave-valor con ejemplos REALES y cortos de qué irá en cada variable usada. (ej: {"1": "Juan", "2": "Bogotá", "3": "10% de descuento"}). IMPORTANTE: Solo pon ejemplos de las variables que realmente usaste en el bodyText.
+    const systemInstruction = `Eres un experto redactor de marketing para WhatsApp. El usuario te dará una idea para un mensaje y tú debes redactar una plantilla oficial de WhatsApp Business.
+Debes devolver el resultado como un JSON con esta estructura exacta:
+{
+  "name": "nombre_de_plantilla_en_minusculas_y_guiones_bajos",
+  "category": "MARKETING" o "UTILITY",
+  "bodyText": "El texto persuasivo del mensaje. Usa variables como {{1}}, {{2}} donde sea necesario inyectar nombres, precios o fechas.",
+  "variableExamples": {
+    "body_text": [
+      ["Juan", "50% de descuento"]
+    ]
+  }
+}
+Importante: "variableExamples.body_text" debe ser un array que contenga un array con ejemplos reales de palabras para las variables {{1}}, {{2}} etc que hayas usado en "bodyText". Si usas 2 variables, debe haber 2 palabras de ejemplo en el array interno.
+Responde ÚNICAMENTE con un JSON válido, sin Markdown (\`\`\`json), sin texto extra, solo el objeto JSON puro.`;
 
-Responde ÚNICAMENTE con un JSON válido, sin Markdown (\`\`\`json), sin texto extra, solo el objeto JSON puro con las propiedades "name", "category", "bodyText", y "variableExamples".`;
-
-    const response = await ai.models.generateContent({
-        model: 'gemini-2.0-flash',
-        contents: prompt,
-        config: {
-            systemInstruction: systemInstruction,
-            temperature: 0.7,
-            responseMimeType: 'application/json'
-        }
+    const response = await openai.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: [
+            { role: 'system', content: systemInstruction },
+            { role: 'user', content: prompt }
+        ],
+        temperature: 0.7,
+        response_format: { type: "json_object" }
     });
 
-    const textResponse = response.text || "{}";
+    const textResponse = response.choices[0]?.message?.content || "{}";
     const jsonResult = JSON.parse(textResponse);
 
     return res.status(200).json({ success: true, data: jsonResult });
 
   } catch (error: any) {
-    console.error('Error generating template:', error);
-    return res.status(500).json({ error: error.message || 'Error communicating with AI' });
+    console.error('OpenAI Error:', error);
+    return res.status(500).json({ error: error.message || 'Error comunicándose con OpenAI' });
   }
 }
