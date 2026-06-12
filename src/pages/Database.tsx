@@ -1,9 +1,69 @@
-import { useState } from 'react';
-import { Search, Filter, Download, UserCircle, Phone, Tag, Calendar, LayoutGrid, ChevronDown, Megaphone, X } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Search, Filter, Download, UserCircle, Phone, Tag, Calendar, LayoutGrid, ChevronDown, Megaphone, X, Loader2 } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
 export function Database() {
   const [showFilters, setShowFilters] = useState(false);
   const [dateFilter, setDateFilter] = useState('all');
+  const [leads, setLeads] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadLeads();
+  }, []);
+
+  async function loadLeads() {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('leads')
+        .select(`
+          *,
+          store:stores(name)
+        `)
+        .order('created_at', { ascending: false });
+        
+      if (error) throw error;
+      setLeads(data || []);
+    } catch (e) {
+      console.error('Error loading leads:', e);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const getStatusStyle = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'nuevo':
+      case 'contact_1':
+        return 'bg-blue-100 text-blue-700 border-blue-200';
+      case 'confirmado':
+      case 'contact_2':
+        return 'bg-green-100 text-green-700 border-green-200';
+      case 'despachado':
+      case 'contact_3':
+        return 'bg-purple-100 text-purple-700 border-purple-200';
+      case 'falsa':
+        return 'bg-red-100 text-red-700 border-red-200';
+      default:
+        return 'bg-gray-100 text-gray-700 border-gray-200';
+    }
+  };
+
+  const getStatusName = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'nuevo': return 'Nuevo Lead';
+      case 'confirmado': return 'Confirmado';
+      case 'despachado': return 'Despachado';
+      case 'falsa': return 'Venta Falsa';
+      case 'contact_1': return 'Intento 1';
+      case 'contact_2': return 'Intento 2';
+      case 'contact_3': return 'Intento 3';
+      case 'recovered': return 'Recuperado';
+      case 'lost': return 'Perdido';
+      default: return status;
+    }
+  };
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
@@ -71,9 +131,6 @@ export function Database() {
                 <div className="relative">
                   <select className="w-full pl-3 pr-8 py-2 text-sm border border-gray-200 rounded-lg text-gray-700 appearance-none focus:ring-1 focus:ring-blue-500 bg-white">
                     <option value="all">Todos los países</option>
-                    <option value="CO">Colombia</option>
-                    <option value="MX">México</option>
-                    <option value="AR">Argentina</option>
                   </select>
                   <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                 </div>
@@ -85,9 +142,6 @@ export function Database() {
                 <div className="relative">
                   <select className="w-full pl-3 pr-8 py-2 text-sm border border-gray-200 rounded-lg text-gray-700 appearance-none focus:ring-1 focus:ring-blue-500 bg-white">
                     <option value="all">Todas las tiendas</option>
-                    <option value="dropi_co">Dropi Colombia</option>
-                    <option value="belleza_co">Nicho Belleza CO</option>
-                    <option value="dropi_ar">Dropi Argentina</option>
                   </select>
                   <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                 </div>
@@ -99,9 +153,6 @@ export function Database() {
                 <div className="relative">
                   <select className="w-full pl-3 pr-8 py-2 text-sm border border-gray-200 rounded-lg text-gray-700 appearance-none focus:ring-1 focus:ring-blue-500 bg-white">
                     <option value="all">Todos los productos</option>
-                    <option value="p1">Smartwatch X8</option>
-                    <option value="p2">Joggers UrbanFit</option>
-                    <option value="p3">Serum Facial</option>
                   </select>
                   <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                 </div>
@@ -110,7 +161,7 @@ export function Database() {
 
             <div className="mt-5 pt-4 border-t border-gray-100 flex justify-between items-center bg-blue-50/50 -mx-5 -mb-5 p-5 rounded-b-lg">
               <span className="text-sm font-semibold text-blue-800">
-                1,245 leads encontrados con estos filtros
+                {leads.length} leads encontrados con estos filtros
               </span>
               <button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg text-sm font-bold shadow-soft transition-all">
                 <Megaphone className="w-4 h-4" />
@@ -126,12 +177,12 @@ export function Database() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
             <input 
               type="text" 
-              placeholder="Buscar por nombre, teléfono o email..." 
+              placeholder="Buscar por nombre o teléfono..." 
               className="w-full pl-10 pr-4 py-2 border-gray-200 rounded-xl text-sm focus:ring-1 focus:ring-blue-500 bg-white shadow-sm"
             />
           </div>
           <div className="text-sm text-gray-500 font-medium">
-            Mostrando 1-10 de 1,245 contactos
+            Mostrando {leads.length} contactos
           </div>
         </div>
 
@@ -161,36 +212,47 @@ export function Database() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-100">
-              {[
-                { name: 'Andrés López', phone: '+57 320 123 4567', source: 'Facebook Ads', store: 'Dropi Colombia', date: '10 Jun 2026', status: 'Pedido Confirmado', statusColor: 'bg-purple-100 text-purple-700 border-purple-200' },
-                { name: 'María Gómez', phone: '+57 311 987 6543', source: 'TikTok Ads', store: 'Dropi Colombia', date: '09 Jun 2026', status: 'Despachado', statusColor: 'bg-green-100 text-green-700 border-green-200' },
-                { name: 'Carlos Ruíz', phone: '+54 9 11 1234 5678', source: 'Instagram DM', store: 'Dropi Argentina', date: '08 Jun 2026', status: 'Recolectando Datos', statusColor: 'bg-indigo-100 text-indigo-700 border-indigo-200' },
-              ].map((row, idx) => (
-                <tr key={idx} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">{row.name}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {row.phone}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-gray-100 text-gray-800 border border-gray-200">
-                      {row.source}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {row.store}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {row.date}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-semibold border ${row.statusColor}`}>
-                      {row.status}
-                    </span>
+              {loading ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-12 text-center">
+                    <Loader2 className="w-8 h-8 text-indigo-500 animate-spin mx-auto" />
+                    <p className="mt-2 text-sm text-gray-500">Cargando contactos...</p>
                   </td>
                 </tr>
-              ))}
+              ) : leads.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
+                    No se encontraron contactos en la base de datos.
+                  </td>
+                </tr>
+              ) : (
+                leads.map((row) => (
+                  <tr key={row.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-bold text-gray-900">{row.name}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-600">
+                      +{row.phone}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-gray-100 text-gray-800 border border-gray-200">
+                        {row.traffic_source || 'Manual'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-medium">
+                      {row.store?.name || 'Desconocida'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {new Date(row.created_at).toLocaleDateString('es-CO', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-bold border ${getStatusStyle(row.status)}`}>
+                        {getStatusName(row.status)}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
