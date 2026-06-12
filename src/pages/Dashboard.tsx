@@ -62,10 +62,25 @@ const funnels = {
       { stage: "3. Clics / Respuestas", count: 1850, percentage: 12.3, colorHex: "#a855f7", color: "text-purple-700", bg: "bg-purple-50", dropoffAnalysis: "Bajo Engagement: Leyeron pero no hicieron clic. Falta urgencia (Ej: 'Solo por 24 horas') o un Call to Action claro." },
       { stage: "4. Re-compras", count: 210, percentage: 1.4, colorHex: "#22c55e", color: "text-green-700", bg: "bg-green-50", dropoffAnalysis: "Abandono Web: Hicieron clic pero la página cargó lento o el producto estaba agotado. Revisa la landing page." }
     ]
+  },
+  logistics: {
+    title: "Confirmación de Pedidos (Logística)",
+    kpis: [
+      { label: "Nuevos Pedidos", value: "850", trend: "+5%", icon: ShoppingCart, color: "text-blue-600", bg: "bg-blue-50" },
+      { label: "Confirmados", value: "720", trend: "84% Conv", icon: Target, color: "text-green-600", bg: "bg-green-50" },
+      { label: "Despachados", value: "690", trend: "95% Envío", icon: Activity, color: "text-indigo-600", bg: "bg-indigo-50" },
+      { label: "Cancelados", value: "30", trend: "4% Fuga", icon: Target, color: "text-red-600", bg: "bg-red-50" }
+    ],
+    funnel: [
+      { stage: "1. Nuevos Pedidos", count: 850, percentage: 100, colorHex: "#3b82f6", color: "text-blue-700", bg: "bg-blue-50" },
+      { stage: "2. Solicitud Enviada", count: 820, percentage: 96.4, colorHex: "#6366f1", color: "text-indigo-700", bg: "bg-indigo-50", dropoffAnalysis: "Falla de Contacto: El número de WhatsApp no existe o bloqueó al bot." },
+      { stage: "3. Confirmados 100%", count: 720, percentage: 84.7, colorHex: "#a855f7", color: "text-purple-700", bg: "bg-purple-50", dropoffAnalysis: "Dudas sin Resolver: El cliente pidió modificar la dirección o se arrepintió antes de despachar." },
+      { stage: "4. Despachados", count: 690, percentage: 81.1, colorHex: "#22c55e", color: "text-green-700", bg: "bg-green-50", dropoffAnalysis: "Novedad en Transportadora: Pedido devuelto por zona de difícil acceso o cliente ausente." }
+    ]
   }
 };
 
-type TabType = 'whatsapp' | 'carts' | 'remarketing' | 'broadcast';
+type TabType = 'whatsapp' | 'carts' | 'remarketing' | 'broadcast' | 'logistics';
 
 export function Dashboard() {
   const [activeTab, setActiveTab] = useState<TabType>('whatsapp');
@@ -163,6 +178,15 @@ export function Dashboard() {
           )}
         >
           4. Difusión Masiva
+        </button>
+        <button
+          onClick={() => setActiveTab('logistics')}
+          className={cn(
+            "px-6 py-3 text-sm font-bold border-b-2 transition-colors whitespace-nowrap",
+            activeTab === 'logistics' ? "border-blue-600 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+          )}
+        >
+          5. Confirmación de Pedidos
         </button>
       </div>
 

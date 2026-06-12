@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Clock, AlertCircle, FileText, CheckCircle2, XCircle, Search, ShoppingCart, Loader2 } from 'lucide-react';
+import { Clock, AlertCircle, FileText, CheckCircle2, XCircle, Search, ShoppingCart, Loader2, MessageSquare, Handshake } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { CrmFilters } from '../components/CrmFilters';
 import type { CrmFilterState } from '../components/CrmFilters';
@@ -7,44 +7,52 @@ import { LeadChatPanel } from '../components/LeadChatPanel';
 
 const columns = [
   {
-    id: 'cooling',
-    title: 'Enfriados (< 24h)',
-    icon: Clock,
+    id: 'abandoned',
+    title: 'Carrito Abandonado',
+    icon: ShoppingCart,
     color: 'border-blue-200 bg-blue-50/30',
     headerColor: 'bg-blue-100 text-blue-800',
-    tooltip: 'Plantilla requerida (Iniciado por Empresa).'
+    tooltip: 'Acaba de abandonar el carrito.'
   },
   {
-    id: 'contact_1',
-    title: 'Re-contacto 1 (> 24h)',
-    icon: AlertCircle,
+    id: 'bot_sent',
+    title: 'Bot Inició Contacto',
+    icon: MessageSquare,
     color: 'border-orange-200 bg-orange-50/30',
     headerColor: 'bg-orange-100 text-orange-800',
-    tooltip: 'Plantilla de Meta obligatoria.'
+    tooltip: 'Plantilla de Meta enviada.'
   },
   {
-    id: 'contact_2',
-    title: 'Re-contacto 2 (Oferta)',
-    icon: FileText,
+    id: 'client_replied',
+    title: 'Cliente Respondió',
+    icon: AlertCircle,
+    color: 'border-yellow-200 bg-yellow-50/30',
+    headerColor: 'bg-yellow-100 text-yellow-800',
+    tooltip: 'El cliente interactuó.'
+  },
+  {
+    id: 'negotiating',
+    title: 'Negociación / Dudas',
+    icon: Handshake,
     color: 'border-purple-200 bg-purple-50/30',
     headerColor: 'bg-purple-100 text-purple-800',
-    tooltip: 'Plantilla de Meta obligatoria.'
+    tooltip: 'A punto de cerrar.'
   },
   {
     id: 'recovered',
-    title: 'Recuperados',
+    title: 'Venta Recuperada',
     icon: CheckCircle2,
     color: 'border-green-200 bg-green-50/30',
     headerColor: 'bg-green-100 text-green-800',
-    tooltip: 'Saltaron de nuevo a Ventas.'
+    tooltip: 'Compra finalizada.'
   },
   {
     id: 'lost',
-    title: 'Perdidos Definitivos',
+    title: 'Venta Perdida',
     icon: XCircle,
     color: 'border-gray-200 bg-gray-50/30',
     headerColor: 'bg-gray-100 text-gray-800',
-    tooltip: 'No respondieron tras 48h.'
+    tooltip: 'Mandar a Ráfagas.'
   }
 ];
 

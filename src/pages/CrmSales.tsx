@@ -8,8 +8,8 @@ import type { CrmFilterState } from '../components/CrmFilters';
 
 const columns = [
   { id: 'new', title: 'Nuevo Lead', color: 'border-blue-500', bg: 'bg-blue-50' },
-  { id: 'contact', title: 'Contacto Inicial', color: 'border-purple-500', bg: 'bg-purple-50' },
-  { id: 'interaction', title: 'Interacción', color: 'border-orange-500', bg: 'bg-orange-50' },
+  { id: 'inquiry', title: 'Interesado / Preguntando', color: 'border-purple-500', bg: 'bg-purple-50' },
+  { id: 'negotiating', title: 'En Cierre / Cotizando', color: 'border-orange-500', bg: 'bg-orange-50' },
   { id: 'closed', title: 'Cierre Exitoso', color: 'border-green-500', bg: 'bg-green-50' },
   { id: 'lost', title: 'Venta Perdida', color: 'border-gray-500', bg: 'bg-gray-50' },
   { id: 'human', title: '🛑 Intervención Humana', color: 'border-red-500', bg: 'bg-red-50' },

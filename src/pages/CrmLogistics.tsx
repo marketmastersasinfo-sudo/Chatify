@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Truck, AlertCircle, MapPin, CheckCircle2, Loader2, Ban } from 'lucide-react';
+import { Truck, AlertCircle, MapPin, CheckCircle2, Loader2, Ban, MessageSquare, Handshake } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { CrmFilters } from '../components/CrmFilters';
 import type { CrmFilterState } from '../components/CrmFilters';
@@ -7,11 +7,11 @@ import { LeadChatPanel } from '../components/LeadChatPanel';
 
 const columns = [
   { id: 'nuevo', title: 'Nuevo Pedido Web', color: 'border-blue-500', bg: 'bg-blue-50' },
-  { id: 'foto', title: 'Foto Fachada Enviada', color: 'border-purple-500', bg: 'bg-purple-50' },
-  { id: 'modificacion', title: 'Charla Activa', color: 'border-orange-500', bg: 'bg-orange-50' },
-  { id: 'confirmado', title: 'Dirección 100% Confirmada', color: 'border-green-500', bg: 'bg-green-50' },
+  { id: 'confirmation_sent', title: 'Confirmación Solicitada', color: 'border-orange-500', bg: 'bg-orange-50' },
+  { id: 'client_replied', title: 'Cliente Respondió', color: 'border-yellow-500', bg: 'bg-yellow-50' },
+  { id: 'confirmado', title: 'Confirmado 100%', color: 'border-green-500', bg: 'bg-green-50' },
   { id: 'despachado', title: 'Despachado / En Ruta', color: 'border-teal-500', bg: 'bg-teal-50' },
-  { id: 'falsa', title: '🛑 Dir. Falsa / Cancelado', color: 'border-red-500', bg: 'bg-red-50' },
+  { id: 'cancelled', title: '🛑 Cancelado / Falso', color: 'border-red-500', bg: 'bg-red-50' },
 ];
 
 export function CrmLogistics() {
