@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Store, Smartphone, Target, Plus, ShoppingBag, Loader2, Save, X, BrainCircuit, TrendingDown, AlertTriangle, FileText, RefreshCw } from 'lucide-react';
+import { Store, Smartphone, Target, Plus, ShoppingBag, Loader2, Save, X, BrainCircuit, TrendingDown, AlertTriangle, FileText, RefreshCw, CheckCircle2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 
@@ -471,7 +471,12 @@ export function Stores() {
                           <input 
                             type="text" 
                             value={selectedStore.twilio_phone_number || ''}
-                            onChange={(e) => updateStoreField('twilio_phone_number', e.target.value)}
+                            onChange={async (e) => {
+                              const val = e.target.value;
+                              setSelectedStore({...selectedStore, twilio_phone_number: val});
+                              // @ts-ignore
+                              await supabase.from('stores').update({twilio_phone_number: val}).eq('id', selectedStore.id);
+                            }}
                             onBlur={() => {
                               const el = document.getElementById('toast-success');
                               if (el) {
