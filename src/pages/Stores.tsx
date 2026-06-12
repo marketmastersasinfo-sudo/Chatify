@@ -455,32 +455,39 @@ export function Stores() {
                     <div className="col-span-1 md:col-span-2 bg-blue-50 p-4 rounded-xl border border-blue-100 mb-2">
                       <div className="flex justify-between items-center mb-4">
                         <div>
-                          <h5 className="font-bold text-blue-900 flex items-center gap-2"><Smartphone className="w-4 h-4"/> WhatsApp API (Twilio Partner)</h5>
-                          <p className="text-xs text-blue-700 mt-1">Ingresa el número telefónico que compraste y conectaste en la consola de Twilio.</p>
+                          <h5 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                            <Smartphone className="w-4 h-4 text-blue-600" /> WhatsApp API (Twilio Partner)
+                          </h5>
+                          <p className="text-xs text-gray-500 mt-1">Ingresa el número telefónico que compraste y conectaste en la consola de Twilio.</p>
                         </div>
-                        <a href="https://console.twilio.com/us1/develop/sms/senders/whatsapp-senders" target="_blank" rel="noreferrer" className="bg-[#F22F46] text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-sm hover:bg-[#D1263A] flex items-center gap-2 transition-colors">
+                        <a href="https://console.twilio.com" target="_blank" rel="noopener noreferrer" className="bg-red-500 text-white px-4 py-1.5 rounded-lg text-xs font-bold hover:bg-red-600 shadow-sm transition-colors">
                           Abrir Consola Twilio
                         </a>
                       </div>
-                      <div className="bg-white p-4 rounded-lg border border-blue-100 relative">
-                        <div className="grid grid-cols-1 gap-3">
-                          <div>
-                            <label className="block text-xs font-semibold text-blue-800 mb-1">Número Telefónico de Twilio</label>
-                            <input 
-                              type="text" 
-                              value={selectedStore.twilio_phone_number || ''}
-                              onChange={async (e) => {
-                                const val = e.target.value;
-                                setSelectedStore({...selectedStore, twilio_phone_number: val});
-                                // @ts-ignore
-                                await supabase.from('stores').update({twilio_phone_number: val}).eq('id', selectedStore.id);
-                              }}
-                              placeholder="Ej: +18106666654" 
-                              className="w-full px-3 py-2 border border-blue-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500" 
-                            />
-                            <p className="text-[11px] text-gray-500 mt-1">Asegúrate de incluir el código de país (ej. +1 o +57).</p>
-                          </div>
+
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-xs font-bold text-blue-800 uppercase tracking-wider mb-1.5">Número Telefónico de Twilio</label>
+                          <input 
+                            type="text" 
+                            value={selectedStore.twilio_phone_number || ''}
+                            onChange={(e) => updateStoreField('twilio_phone_number', e.target.value)}
+                            onBlur={() => {
+                              const el = document.getElementById('toast-success');
+                              if (el) {
+                                el.classList.remove('hidden');
+                                setTimeout(() => el.classList.add('hidden'), 3000);
+                              }
+                            }}
+                            placeholder="+18106666654"
+                            className="w-full px-4 py-3 bg-white border border-blue-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 font-medium text-gray-900"
+                          />
+                          <p className="text-[10px] text-gray-500 mt-1">Asegúrate de incluir el código de país (ej. +1 o +57).</p>
                         </div>
+                      </div>
+                      
+                      <div id="toast-success" className="hidden mt-3 bg-green-50 border border-green-200 text-green-700 px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-all">
+                        <CheckCircle2 className="w-4 h-4" /> ¡Número guardado exitosamente en la base de datos!
                       </div>
                     </div>
 
