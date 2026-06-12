@@ -101,8 +101,7 @@ export function LeadChatPanel({
       const { data } = await supabase
         .from('store_templates')
         .select('*')
-        .eq('store_id', lead.store_id)
-        .in('twilio_approval_status', ['APPROVED', 'approved']);
+        .eq('store_id', lead.store_id);
       setTemplates(data || []);
     } catch (e) {
       console.error(e);
@@ -277,9 +276,9 @@ export function LeadChatPanel({
                  
                  {showTemplates && (
                    <div className="absolute bottom-full left-0 mb-2 w-64 bg-white rounded-xl shadow-xl border border-gray-200 py-2 z-50">
-                     <div className="px-3 pb-2 mb-2 border-b border-gray-100 text-xs font-bold text-gray-400 uppercase">Plantillas Aprobadas</div>
+                     <div className="px-3 pb-2 mb-2 border-b border-gray-100 text-xs font-bold text-gray-400 uppercase">Plantillas Disponibles</div>
                      {templates.length === 0 ? (
-                       <div className="px-4 py-2 text-sm text-gray-500">No hay plantillas aprobadas.</div>
+                       <div className="px-4 py-2 text-sm text-gray-500">No hay plantillas disponibles.</div>
                      ) : (
                        templates.map(t => (
                          <button 
