@@ -38,12 +38,11 @@ export function CrmFilters({ onFilterChange, initialStoreId }: CrmFiltersProps) 
         const uniqueCountries = Array.from(new Set(data.map((s: any) => s.country).filter(Boolean))).sort() as string[];
         setCountries(uniqueCountries);
 
-        // Si no hay tienda seleccionada, auto-seleccionar la primera (o 'all' si queremos ver todo, pero el usuario pidió multitienda organizada)
-        if (!selectedStoreId && data[0]) {
-          const firstStoreId = (data[0] as any).id.toString();
-          setSelectedStoreId(firstStoreId);
+        // Si no hay tienda seleccionada, dejar en "Todas" ('') por defecto
+        if (!selectedStoreId) {
+          setSelectedStoreId('');
           // Disparar cambio inicial
-          triggerFilterChange(firstStoreId, '', 'all', '', '');
+          triggerFilterChange('', '', 'all', '', '');
         }
       }
     } catch (e) {
