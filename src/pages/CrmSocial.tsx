@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase';
 import { CrmFilters } from '../components/CrmFilters';
 import type { CrmFilterState } from '../components/CrmFilters';
 import { LeadChatPanel } from '../components/LeadChatPanel';
-import { getCountryFlag } from '../utils/flags';
+import { CountryFlag } from '../utils/flags';
 
 const columns = [
   { id: 'comentario', title: 'Comentario Público', color: 'border-blue-500', bg: 'bg-blue-50' },
@@ -134,8 +134,8 @@ export function CrmSocial() {
                             {lead.traffic_source?.includes('instagram') ? 'Instagram' : 'Messenger'}
                           </span>
                           {lead.stores?.country && (
-                            <span className="text-lg leading-none" title={lead.stores.country}>
-                              {getCountryFlag(lead.stores.country)}
+                            <span className="leading-none" title={lead.stores.country}>
+                              <CountryFlag country={lead.stores.country} />
                             </span>
                           )}
                         </div>

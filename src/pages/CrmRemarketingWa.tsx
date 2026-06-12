@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase';
 import { CrmFilters } from '../components/CrmFilters';
 import type { CrmFilterState } from '../components/CrmFilters';
 import { LeadChatPanel } from '../components/LeadChatPanel';
-import { getCountryFlag } from '../utils/flags';
+import { CountryFlag } from '../utils/flags';
 
 const columns = [
   { id: 'abandoned', title: 'Lead Frío (Entrada)', icon: Clock, color: 'border-blue-200 bg-blue-50/30', headerColor: 'bg-blue-100 text-blue-800', tooltip: 'Llegan después de caerse de Ventas.' },
@@ -147,8 +147,8 @@ export function CrmRemarketingWa() {
                           {lead.traffic_source}
                         </span>
                         {lead.stores?.country && (
-                          <span className="text-lg leading-none" title={lead.stores.country}>
-                            {getCountryFlag(lead.stores.country)}
+                          <span className="leading-none" title={lead.stores.country}>
+                            <CountryFlag country={lead.stores.country} />
                           </span>
                         )}
                       </div>
