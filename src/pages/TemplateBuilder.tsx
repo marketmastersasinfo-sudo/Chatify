@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { RefreshCcw, Plus, Image as ImageIcon, MessageSquareDashed, AlertCircle, CheckCircle2, Loader2, Save, X } from 'lucide-react';
+import { RefreshCcw, Plus, Image as ImageIcon, MessageSquareDashed, AlertCircle, CheckCircle2, Loader2, Save, X, Sparkles, Wand2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 export function TemplateBuilder() {
@@ -23,6 +23,40 @@ export function TemplateBuilder() {
     bodyText: 'Hola {{1}}, gracias por tu compra. Te enviaremos a la ciudad {{2}}.',
     variableExamples: { '1': 'Juan', '2': 'Bogotá' } as Record<string, string>
   });
+
+  // AI Form State
+  const [isAIPromptOpen, setIsAIPromptOpen] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  async function handleGenerateAI() {
+    if (!aiPrompt) return;
+    setIsGenerating(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/ai/generate-template', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: aiPrompt })
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Error de la IA');
+      
+      const { name, category, bodyText, variableExamples } = json.data;
+      setNewTemplate({
+        ...newTemplate,
+        name: name || '',
+        category: category || 'MARKETING',
+        bodyText: bodyText || '',
+        variableExamples: variableExamples || {}
+      });
+      setIsAIPromptOpen(false);
+      setAiPrompt('');
+    } catch (err: any) {
+      setError(err.message);
+    }
+    setIsGenerating(false);
+  }
 
   useEffect(() => {
     loadStores();
@@ -144,7 +178,14 @@ export function TemplateBuilder() {
     switch(status) {
       case 'APPROVED': return <span className="bg-green-100 text-green-700 px-2 py-1 flex items-center gap-1 text-[10px] uppercase font-bold rounded-full"><CheckCircle2 className="w-3 h-3"/> Aprobada</span>;
       case 'REJECTED': return <span className="bg-red-100 text-red-700 px-2 py-1 flex items-center gap-1 text-[10px] uppercase font-bold rounded-full"><AlertCircle className="w-3 h-3"/> Rechazada</span>;
-      case 'PENDING': return <span className="bg-yellow-100 text-yellow-700 px-2 py-1 flex items-center gap-1 text-[10px] uppercase font-bold rounded-full"><Loader2 className="w-3 h-3 animate-spin"/> En Revisión</span>;
+      case 'PENDING': return (
+        <div className="flex flex-col gap-0.5">
+          <span className="bg-yellow-100 text-yellow-700 px-2 py-1 flex items-center gap-1 text-[10px] uppercase font-bold rounded-full w-fit">
+            <Loader2 className="w-3 h-3 animate-spin"/> En Revisión
+          </span>
+          <span className="text-[9px] text-gray-400">Meta puede tardar hasta 24h</span>
+        </div>
+      );
       default: return <span className="bg-gray-100 text-gray-700 px-2 py-1 flex items-center gap-1 text-[10px] uppercase font-bold rounded-full">{status}</span>;
     }
   };
@@ -196,9 +237,44 @@ export function TemplateBuilder() {
             </button>
           </div>
           
-          <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8 relative">
             {/* Formulario Izquierdo */}
             <div className="space-y-5">
+              <div className="bg-gradient-to-r from-purple-50 to-fuchsia-50 rounded-xl p-4 border border-purple-100 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div>
+                  <h4 className="text-sm font-bold text-purple-900 flex items-center gap-1.5"><Sparkles className="w-4 h-4 text-purple-600"/> Generación con IA</h4>
+                  <p className="text-xs text-purple-700 mt-0.5">Describe qué plantilla necesitas y la IA redactará el texto y ejemplos requeridos por Meta.</p>
+                </div>
+                <button onClick={() => setIsAIPromptOpen(!isAIPromptOpen)} className="bg-purple-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm shadow-purple-500/20 hover:bg-purple-700 transition-colors shrink-0">
+                  {isAIPromptOpen ? 'Cerrar IA' : 'Usar IA'}
+                </button>
+              </div>
+
+              {isAIPromptOpen && (
+                <div className="bg-white p-4 rounded-xl shadow-inner border-2 border-purple-100 mb-6 relative">
+                  <div className="absolute -top-2 left-8 w-4 h-4 bg-purple-100 rotate-45"></div>
+                  <div className="relative z-10">
+                    <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-2">¿Qué quieres decir en la plantilla?</label>
+                    <textarea 
+                      value={aiPrompt}
+                      onChange={e => setAiPrompt(e.target.value)}
+                      placeholder="Ej: Quiero una plantilla para cobrar carritos abandonados diciendo que tenemos 10% de descuento y envío gratis hoy..."
+                      className="w-full px-4 py-3 bg-gray-50 border border-purple-200 rounded-xl text-sm focus:ring-2 focus:ring-purple-500 focus:bg-white resize-none"
+                      rows={3}
+                    />
+                    <div className="mt-3 flex justify-end">
+                      <button 
+                        onClick={handleGenerateAI}
+                        disabled={!aiPrompt || isGenerating}
+                        className="bg-purple-600 hover:bg-purple-700 text-white px-5 py-2 rounded-lg text-sm font-bold flex items-center gap-2 disabled:opacity-50 transition-colors shadow-sm"
+                      >
+                        {isGenerating ? <Loader2 className="w-4 h-4 animate-spin"/> : <Wand2 className="w-4 h-4"/>}
+                        Generar Magia
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
               <div>
                 <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">Nombre Interno (sin espacios)</label>
                 <input 
