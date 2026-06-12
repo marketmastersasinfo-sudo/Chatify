@@ -62,6 +62,17 @@ export function LeadChatPanel({
     }
   }, [lead]);
 
+  // Handle board changes to set the correct default status
+  useEffect(() => {
+    if (lead && formData.board_type !== lead.board_type) {
+      let defaultStatus = 'new';
+      if (formData.board_type === 'remarketing_wa') defaultStatus = 'cold_lead';
+      else if (formData.board_type === 'remarketing_carts') defaultStatus = 'abandoned';
+      else if (formData.board_type === 'logistics') defaultStatus = 'nuevo';
+      setFormData(prev => ({ ...prev, status: defaultStatus }));
+    }
+  }, [formData.board_type, lead]);
+
   useEffect(() => {
     if (!lead) return;
     const channel = supabase.channel(`messages-${lead.id}`)
