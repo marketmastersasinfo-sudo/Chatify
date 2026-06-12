@@ -58,7 +58,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (eventType === 'abandoned_cart') {
       targetBoard = 'remarketing_carts';
-      targetStatus = 'contact_1';
+      targetStatus = 'abandoned';
     }
 
     // 4. Revisar si el lead ya existe para esta tienda (Prevención global del error 42P10)
