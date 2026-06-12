@@ -5,6 +5,7 @@ import { CrmFilters } from '../components/CrmFilters';
 import type { CrmFilterState } from '../components/CrmFilters';
 import { LeadChatPanel } from '../components/LeadChatPanel';
 import { CountryFlag } from '../utils/flags';
+import { TrafficBadge } from '../components/TrafficBadge';
 
 const columns = [
   { id: 'abandoned', title: 'Lead Frío (Entrada)', icon: Clock, color: 'border-blue-200 bg-blue-50/30', headerColor: 'bg-blue-100 text-blue-800', tooltip: 'Llegan después de caerse de Ventas.' },
@@ -143,9 +144,7 @@ export function CrmRemarketingWa() {
                   >
                     <div className="flex justify-between items-start mb-2">
                       <div className="flex gap-1.5 items-center">
-                        <span className="text-xs font-semibold px-2 py-1 bg-gray-100 text-gray-700 rounded-md">
-                          {lead.traffic_source}
-                        </span>
+                        <TrafficBadge source={lead.traffic_source} />
                         {lead.stores?.country && (
                           <span className="leading-none" title={lead.stores.country}>
                             <CountryFlag country={lead.stores.country} />

@@ -28,6 +28,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: 'Missing required fields' });
   }
 
+  // Auto-parse payload if the user stuffed everything into orderId
+  let realOrderId = orderId || 'N/A';
+  let realCity = city;
+  let realAddress = address;
+  let realProductName = productName;
+
+  if (typeof orderId === 'string' && (orderId.includes('City:') || orderId.includes('Product:'))) {
+    const lines = orderId.split('\n').map(l => l.trim());
+    realOrderId = lines[0] || 'N/A';
+    
+    const cityLine = lines.find(l => l.startsWith('City:'));
+    if (cityLine && !realCity) realCity = cityLine.replace('City:', '').trim();
+    
+    const addressLine = lines.find(l => l.startsWith('Address:'));
+    if (addressLine && !realAddress) realAddress = addressLine.replace('Address:', '').trim();
+    
+    const productLine = lines.find(l => l.startsWith('Product:'));
+    if (productLine && !realProductName) realProductName = productLine.replace('Product:', '').trim();
+  }
+
   try {
     // 1. Buscar el ID de la tienda por su nombre Y país
     const rawCountry = storeCountry || 'CO';
@@ -80,10 +100,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         traffic_source: 'Shopyeasy Webhook',
         board_type: targetBoard,
         status: targetStatus,
-        city: city || null,
-        address: address || null,
-        product_name: productName || null,
-        notes: `Order ID: ${orderId || 'N/A'}`
+        city: realCity || null,
+        address: realAddress || null,
+        product_name: realProductName || null,
+        notes: `Order ID: ${realOrderId}`
       }).select().single();
 
       if (insertError) throw insertError;
@@ -99,9 +119,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
       
       // Actualizar datos de la venta si llegaron ahora (en carritos a veces no llegan)
-      if (city && !existingLead.city) updates.city = city;
-      if (address && !existingLead.address) updates.address = address;
-      if (productName && !existingLead.product_name) updates.product_name = productName;
+      if (realCity && !existingLead.city) updates.city = realCity;
+      if (realAddress && !existingLead.address) updates.address = realAddress;
+      if (realProductName && !existingLead.product_name) updates.product_name = realProductName;
       
       if (Object.keys(updates).length > 0) {
         await supabase.from('leads').update(updates).eq('id', existingLead.id);
@@ -121,9 +141,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         templateType: eventType,
         variables: {
           customerName: customerName,
-          productName: productName || 'tu pedido',
-          city: city || '',
-          address: address || ''
+          productName: realProductName || 'tu pedido',
+          city: realCity || '',
+          address: realAddress || ''
         }
       })
     });

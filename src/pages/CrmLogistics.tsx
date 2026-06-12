@@ -5,6 +5,7 @@ import { CrmFilters } from '../components/CrmFilters';
 import type { CrmFilterState } from '../components/CrmFilters';
 import { LeadChatPanel } from '../components/LeadChatPanel';
 import { CountryFlag } from '../utils/flags';
+import { TrafficBadge } from '../components/TrafficBadge';
 
 const columns = [
   { id: 'nuevo', title: 'Nuevo Pedido Web', color: 'border-blue-500', bg: 'bg-blue-50' },
@@ -128,9 +129,7 @@ export function CrmLogistics() {
                     >
                       <div className="flex justify-between items-start mb-2">
                         <div className="flex gap-1.5 items-center">
-                          <span className="text-xs font-semibold px-2 py-1 bg-indigo-100 text-indigo-700 rounded-md">
-                            {lead.traffic_source}
-                          </span>
+                          <TrafficBadge source={lead.traffic_source} />
                           {lead.stores?.country && (
                             <span className="leading-none" title={lead.stores.country}>
                               <CountryFlag country={lead.stores.country} />

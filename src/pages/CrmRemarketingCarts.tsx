@@ -5,6 +5,7 @@ import { CrmFilters } from '../components/CrmFilters';
 import type { CrmFilterState } from '../components/CrmFilters';
 import { LeadChatPanel } from '../components/LeadChatPanel';
 import { CountryFlag } from '../utils/flags';
+import { TrafficBadge } from '../components/TrafficBadge';
 
 const columns = [
   {
@@ -192,7 +193,8 @@ export function CrmRemarketingCarts() {
                     <div className="absolute right-0 top-0 w-2 h-full bg-red-500"></div>
                     <div className="flex justify-between items-start mb-2">
                       <div className="flex gap-1.5 items-center">
-                        <span className="text-[10px] font-bold bg-orange-100 text-orange-700 px-2 py-0.5 rounded uppercase flex items-center gap-1">
+                        <TrafficBadge source={lead.traffic_source} />
+                        <span className="text-[10px] font-bold bg-orange-100 text-orange-700 px-2 py-0.5 rounded uppercase flex items-center gap-1 shrink-0">
                           <AlertCircle className="w-3 h-3"/> +24h Bloqueo
                         </span>
                         {lead.stores?.country && (
@@ -214,7 +216,7 @@ export function CrmRemarketingCarts() {
                       </p>
                     )}
                     {lead.product_name && (
-                      <p className="text-xs font-semibold text-blue-600 mt-1.5 bg-blue-50 w-fit px-2 py-0.5 rounded">
+                      <p className="text-xs font-semibold text-blue-600 bg-blue-50 w-fit px-2 py-0.5 rounded mt-1.5">
                         🛍️ {lead.product_name}
                       </p>
                     )}

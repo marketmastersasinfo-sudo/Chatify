@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { MessageCircle, AlertCircle, Link, Loader2, Ban, MessageSquare, Store } from 'lucide-react';
+import { MessageCircle, AlertCircle, Link, Loader2, Ban, Store } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { CrmFilters } from '../components/CrmFilters';
 import type { CrmFilterState } from '../components/CrmFilters';
 import { LeadChatPanel } from '../components/LeadChatPanel';
 import { CountryFlag } from '../utils/flags';
+import { TrafficBadge } from '../components/TrafficBadge';
 
 const columns = [
   { id: 'comentario', title: 'Comentario Público', color: 'border-blue-500', bg: 'bg-blue-50' },
@@ -129,10 +130,7 @@ export function CrmSocial() {
                     >
                       <div className="flex justify-between items-start mb-2">
                         <div className="flex gap-1.5 items-center">
-                          <span className={`text-xs font-semibold px-2 py-1 rounded-md flex items-center gap-1 ${lead.traffic_source?.includes('instagram') ? 'bg-pink-100 text-pink-700' : 'bg-blue-100 text-blue-700'}`}>
-                            {lead.traffic_source?.includes('instagram') ? <MessageCircle className="w-3 h-3" /> : <MessageSquare className="w-3 h-3" />}
-                            {lead.traffic_source?.includes('instagram') ? 'Instagram' : 'Messenger'}
-                          </span>
+                          <TrafficBadge source={lead.traffic_source?.includes('instagram') ? 'Instagram' : 'Messenger'} />
                           {lead.stores?.country && (
                             <span className="leading-none" title={lead.stores.country}>
                               <CountryFlag country={lead.stores.country} />
