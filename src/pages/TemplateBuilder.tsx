@@ -111,18 +111,7 @@ export function TemplateBuilder() {
 
       const metaData = json.data || [];
 
-      // Fetch our custom creation times
-      const { data: localData } = await (supabase as any)
-        .from('meta_templates')
-        .select('name, created_at')
-        .eq('store_id', storeId);
-
-      const mergedTemplates = metaData.map((t: any) => {
-        const local = localData?.find((l: any) => l.name === t.name);
-        return { ...t, created_at: local ? local.created_at : null };
-      });
-
-      setTemplates(mergedTemplates);
+      setTemplates(metaData);
     } catch (err: any) {
       setError(err.message);
     }

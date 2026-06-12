@@ -32,19 +32,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // ==========================================
     if (req.method === 'GET') {
       const contents = await twilioClient.content.v1.contents.list({ limit: 100 });
-      // Formatear para que el frontend no se rompa tanto (simular estructura de Meta)
-      const formattedData = contents.map(c => ({
-        id: c.sid,
-        name: c.friendlyName,
-        language: c.language,
-        status: 'APPROVED', // En Twilio Content API el estado está en las aprobaciones, por simplicidad asumimos aprobado o hay que hacer fetch de approval_fetch
-        components: [
-          {
-            type: 'BODY',
-            text: c.types['twilio/text']?.body || c.types['twilio/media']?.body || ''
-          }
-        ]
-      }));
+      
+      // Fetch our local templates to get the proper names and categories
+      const { data: localTemplates } = await supabase
+        .from('store_templates')
+        .select('*')
+        .eq('store_id', storeId as string);
+
+      // Formatear para que el frontend no se rompa tanto
+      const formattedData = contents.map(c => {
+        const local = localTemplates?.find(l => l.twilio_content_sid === c.sid);
+        return {
+          id: c.sid,
+          name: local?.template_name || c.friendlyName || 'Sin Nombre',
+          category: local?.template_type === 'custom' ? 'UTILITY' : 'MARKETING', // Fallback simplificado
+          language: c.language,
+          status: local?.twilio_approval_status || 'APPROVED', 
+          created_at: local?.created_at || null,
+          components: [
+            {
+              type: 'BODY',
+              text: c.types['twilio/text']?.body || c.types['twilio/media']?.body || ''
+            }
+          ]
+        };
+      });
 
       return res.status(200).json({ success: true, data: formattedData });
     }
