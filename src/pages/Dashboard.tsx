@@ -77,10 +77,25 @@ const funnels = {
       { stage: "3. Confirmados 100%", count: 720, percentage: 84.7, colorHex: "#a855f7", color: "text-purple-700", bg: "bg-purple-50", dropoffAnalysis: "Dudas sin Resolver: El cliente pidió modificar la dirección o se arrepintió antes de despachar." },
       { stage: "4. Despachados", count: 690, percentage: 81.1, colorHex: "#22c55e", color: "text-green-700", bg: "bg-green-50", dropoffAnalysis: "Novedad en Transportadora: Pedido devuelto por zona de difícil acceso o cliente ausente." }
     ]
+  },
+  social: {
+    title: "Redes Sociales (IG & Messenger)",
+    kpis: [
+      { label: "Comentarios Públicos", value: "3,200", trend: "+12%", icon: MessageSquare, color: "text-blue-600", bg: "bg-blue-50" },
+      { label: "DMs Enviados", value: "2,850", trend: "89% Conv", icon: Activity, color: "text-indigo-600", bg: "bg-indigo-50" },
+      { label: "Ventas Instagram", value: "450", trend: "15% Cierre", icon: Target, color: "text-pink-600", bg: "bg-pink-50" },
+      { label: "Ventas Messenger", value: "120", trend: "4% Cierre", icon: Target, color: "text-blue-600", bg: "bg-blue-50" }
+    ],
+    funnel: [
+      { stage: "1. Comentarios Detectados", count: 3200, percentage: 100, colorHex: "#3b82f6", color: "text-blue-700", bg: "bg-blue-50" },
+      { stage: "2. DMs Enviados (Bot)", count: 2850, percentage: 89.0, colorHex: "#6366f1", color: "text-indigo-700", bg: "bg-indigo-50", dropoffAnalysis: "Filtro de IA: Comentarios que eran spam, insultos, o no requerían respuesta." },
+      { stage: "3. Conversación Activa", count: 1850, percentage: 57.8, colorHex: "#a855f7", color: "text-purple-700", bg: "bg-purple-50", dropoffAnalysis: "Visto Bueno: Recibieron el DM pero no respondieron. Revisa el gancho del mensaje automático." },
+      { stage: "4. Ventas Directas DM", count: 570, percentage: 17.8, colorHex: "#22c55e", color: "text-green-700", bg: "bg-green-50", dropoffAnalysis: "Derivados a WA: Muchos prefirieron pasarse a WhatsApp para cerrar o abandonaron por fricción de pago." }
+    ]
   }
 };
 
-type TabType = 'whatsapp' | 'carts' | 'remarketing' | 'broadcast' | 'logistics';
+type TabType = 'whatsapp' | 'carts' | 'remarketing' | 'broadcast' | 'logistics' | 'social';
 
 export function Dashboard() {
   const [activeTab, setActiveTab] = useState<TabType>('whatsapp');
@@ -187,6 +202,15 @@ export function Dashboard() {
           )}
         >
           5. Confirmación de Pedidos
+        </button>
+        <button
+          onClick={() => setActiveTab('social')}
+          className={cn(
+            "px-6 py-3 text-sm font-bold border-b-2 transition-colors whitespace-nowrap",
+            activeTab === 'social' ? "border-blue-600 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+          )}
+        >
+          6. Redes Sociales
         </button>
       </div>
 

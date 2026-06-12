@@ -41,6 +41,11 @@ CREATE TABLE public.leads (
     board_type TEXT NOT NULL CHECK (board_type IN ('sales_wa', 'social_media', 'logistics')),
     status TEXT NOT NULL,
     is_banned BOOLEAN DEFAULT false,
+    document_id TEXT,
+    email TEXT,
+    city TEXT,
+    address TEXT,
+    product_name TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 

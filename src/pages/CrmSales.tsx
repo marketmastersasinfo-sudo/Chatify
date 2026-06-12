@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { MessageSquare, AlertCircle, CheckCircle2, Plus, Loader2, X, Ban } from 'lucide-react';
+import { MessageSquare, AlertCircle, CheckCircle2, Plus, Loader2, X, Ban, Store } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { LeadChatPanel } from '../components/LeadChatPanel';
 import { formatPhoneNumber } from '../utils/phoneFormatter';
 import { CrmFilters } from '../components/CrmFilters';
 import type { CrmFilterState } from '../components/CrmFilters';
+import { getCountryFlag } from '../utils/flags';
 
 const columns = [
   { id: 'new', title: 'Nuevo Lead', color: 'border-blue-500', bg: 'bg-blue-50' },
@@ -42,7 +43,7 @@ export function CrmSales() {
     try {
       let query = supabase
         .from('leads')
-        .select('*')
+        .select('*, stores(name, country)')
         .eq('board_type', 'sales_wa');
         
       if (f.storeId) {
@@ -205,9 +206,16 @@ export function CrmSales() {
                       className={`p-4 bg-white rounded-xl shadow-sm border-l-4 ${col.color} cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow`}
                     >
                       <div className="flex justify-between items-start mb-2">
-                        <span className="text-xs font-semibold px-2 py-1 bg-gray-100 text-gray-700 rounded-md">
-                          {lead.traffic_source}
-                        </span>
+                        <div className="flex gap-1.5 items-center">
+                          <span className="text-xs font-semibold px-2 py-1 bg-gray-100 text-gray-700 rounded-md">
+                            {lead.traffic_source}
+                          </span>
+                          {lead.stores?.country && (
+                            <span className="text-lg leading-none" title={lead.stores.country}>
+                              {getCountryFlag(lead.stores.country)}
+                            </span>
+                          )}
+                        </div>
                         {lead.is_banned && (
                           <span className="bg-red-100 text-red-600 px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1">
                             <Ban className="w-3 h-3"/> Baneado
@@ -215,6 +223,16 @@ export function CrmSales() {
                         )}
                       </div>
                       <h4 className="font-bold text-gray-900 text-sm">{lead.name}</h4>
+                      {lead.stores?.name && (
+                        <p className="text-[10px] font-bold text-gray-400 mt-0.5 flex items-center gap-1 uppercase tracking-wider">
+                          <Store className="w-3 h-3" /> {lead.stores.name}
+                        </p>
+                      )}
+                      {lead.product_name && (
+                        <p className="text-xs font-semibold text-blue-600 mt-1.5 bg-blue-50 w-fit px-2 py-0.5 rounded">
+                          🛍️ {lead.product_name}
+                        </p>
+                      )}
                       <p className="text-xs text-gray-500 mt-1">{lead.phone}</p>
                       <div className="mt-3 pt-3 border-t border-gray-100 flex items-center gap-2">
                         {col.id === 'human' ? (

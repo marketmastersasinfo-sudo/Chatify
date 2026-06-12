@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { AlertCircle, FileText, CheckCircle2, XCircle, Search, ShoppingCart, Loader2, MessageSquare, Handshake } from 'lucide-react';
+import { AlertCircle, FileText, CheckCircle2, XCircle, Search, ShoppingCart, Loader2, MessageSquare, Handshake, Store, Ban } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { CrmFilters } from '../components/CrmFilters';
 import type { CrmFilterState } from '../components/CrmFilters';
 import { LeadChatPanel } from '../components/LeadChatPanel';
+import { getCountryFlag } from '../utils/flags';
 
 const columns = [
   {
@@ -76,7 +77,7 @@ export function CrmRemarketingCarts() {
     try {
       let query = supabase
         .from('leads')
-        .select('*')
+        .select('*, stores(name, country)')
         .eq('board_type', 'remarketing_carts');
         
       if (f.storeId) {
@@ -190,11 +191,33 @@ export function CrmRemarketingCarts() {
                   >
                     <div className="absolute right-0 top-0 w-2 h-full bg-red-500"></div>
                     <div className="flex justify-between items-start mb-2">
-                      <span className="text-[10px] font-bold bg-orange-100 text-orange-700 px-2 py-0.5 rounded uppercase flex items-center gap-1">
-                        <AlertCircle className="w-3 h-3"/> +24h Bloqueo
-                      </span>
+                      <div className="flex gap-1.5 items-center">
+                        <span className="text-[10px] font-bold bg-orange-100 text-orange-700 px-2 py-0.5 rounded uppercase flex items-center gap-1">
+                          <AlertCircle className="w-3 h-3"/> +24h Bloqueo
+                        </span>
+                        {lead.stores?.country && (
+                          <span className="text-lg leading-none" title={lead.stores.country}>
+                            {getCountryFlag(lead.stores.country)}
+                          </span>
+                        )}
+                      </div>
+                      {lead.is_banned && (
+                        <span className="bg-red-100 text-red-600 px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1">
+                          <Ban className="w-3 h-3"/> Baneado
+                        </span>
+                      )}
                     </div>
                     <h4 className="font-bold text-gray-900">{lead.name}</h4>
+                    {lead.stores?.name && (
+                      <p className="text-[10px] font-bold text-gray-400 mt-0.5 flex items-center gap-1 uppercase tracking-wider">
+                        <Store className="w-3 h-3" /> {lead.stores.name}
+                      </p>
+                    )}
+                    {lead.product_name && (
+                      <p className="text-xs font-semibold text-blue-600 mt-1.5 bg-blue-50 w-fit px-2 py-0.5 rounded">
+                        🛍️ {lead.product_name}
+                      </p>
+                    )}
                     <p className="text-xs text-gray-500 mt-1">{lead.phone}</p>
                     {lead.notes && (
                       <p className="text-xs text-gray-400 mt-2 bg-gray-50 p-2 rounded line-clamp-2">{lead.notes}</p>

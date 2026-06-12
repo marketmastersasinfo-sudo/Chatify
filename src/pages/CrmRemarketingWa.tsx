@@ -1,16 +1,18 @@
 import { useState, useEffect } from 'react';
-import { RefreshCcw, Clock, AlertCircle, FileText, CheckCircle2, XCircle, Search, MessageSquare, Loader2 } from 'lucide-react';
+import { RefreshCcw, Clock, AlertCircle, CheckCircle2, XCircle, Search, MessageSquare, Loader2, Handshake, Store, Ban } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { CrmFilters } from '../components/CrmFilters';
 import type { CrmFilterState } from '../components/CrmFilters';
 import { LeadChatPanel } from '../components/LeadChatPanel';
+import { getCountryFlag } from '../utils/flags';
 
 const columns = [
-  { id: 'cooling', title: 'Enfriados (< 24h)', icon: Clock, color: 'border-blue-200 bg-blue-50/30', headerColor: 'bg-blue-100 text-blue-800', tooltip: 'Permite mensajes de texto libre.' },
-  { id: 'contact_1', title: 'Re-contacto 1 (> 24h)', icon: AlertCircle, color: 'border-orange-200 bg-orange-50/30', headerColor: 'bg-orange-100 text-orange-800', tooltip: 'Plantilla de Meta obligatoria.' },
-  { id: 'contact_2', title: 'Re-contacto 2 (Oferta)', icon: FileText, color: 'border-purple-200 bg-purple-50/30', headerColor: 'bg-purple-100 text-purple-800', tooltip: 'Plantilla de Meta obligatoria.' },
-  { id: 'recovered', title: 'Recuperados', icon: CheckCircle2, color: 'border-green-200 bg-green-50/30', headerColor: 'bg-green-100 text-green-800', tooltip: 'Saltaron de nuevo a Ventas.' },
-  { id: 'lost', title: 'Perdidos Definitivos', icon: XCircle, color: 'border-gray-200 bg-gray-50/30', headerColor: 'bg-gray-100 text-gray-800', tooltip: 'No respondieron tras 48h.' }
+  { id: 'abandoned', title: 'Lead Frío (Entrada)', icon: Clock, color: 'border-blue-200 bg-blue-50/30', headerColor: 'bg-blue-100 text-blue-800', tooltip: 'Llegan después de caerse de Ventas.' },
+  { id: 'bot_sent', title: 'Bot Retomó Contacto', icon: AlertCircle, color: 'border-orange-200 bg-orange-50/30', headerColor: 'bg-orange-100 text-orange-800', tooltip: 'Mensaje promocional enviado.' },
+  { id: 'client_replied', title: 'Cliente Respondió', icon: MessageSquare, color: 'border-purple-200 bg-purple-50/30', headerColor: 'bg-purple-100 text-purple-800', tooltip: 'El cliente mostró interés de nuevo.' },
+  { id: 'negotiating', title: 'Negociando Oferta', icon: Handshake, color: 'border-yellow-200 bg-yellow-50/30', headerColor: 'bg-yellow-100 text-yellow-800', tooltip: 'Se está ofreciendo descuento.' },
+  { id: 'recovered', title: 'Venta Recuperada', icon: CheckCircle2, color: 'border-green-200 bg-green-50/30', headerColor: 'bg-green-100 text-green-800', tooltip: '¡El cliente compró!' },
+  { id: 'lost', title: 'Venta Perdida', icon: XCircle, color: 'border-gray-200 bg-gray-50/30', headerColor: 'bg-gray-100 text-gray-800', tooltip: 'No quiso comprar, mandar a base masiva.' }
 ];
 
 export function CrmRemarketingWa() {
@@ -33,7 +35,7 @@ export function CrmRemarketingWa() {
     try {
       let query = supabase
         .from('leads')
-        .select('*')
+        .select('*, stores(name, country)')
         .eq('board_type', 'remarketing');
         
       if (f.storeId) {
@@ -140,10 +142,33 @@ export function CrmRemarketingWa() {
                     className="bg-white p-4 rounded-xl shadow-sm border border-blue-200 cursor-grab active:cursor-grabbing hover:border-blue-400 transition-colors relative overflow-hidden"
                   >
                     <div className="flex justify-between items-start mb-2">
-                      <span className="text-[10px] font-bold bg-blue-100 text-blue-700 px-2 py-0.5 rounded uppercase">Visto hace 2h</span>
-                      <span className="text-xs font-semibold text-gray-400 flex items-center gap-1"><MessageSquare className="w-3 h-3" /> WhatsApp</span>
+                      <div className="flex gap-1.5 items-center">
+                        <span className="text-xs font-semibold px-2 py-1 bg-gray-100 text-gray-700 rounded-md">
+                          {lead.traffic_source}
+                        </span>
+                        {lead.stores?.country && (
+                          <span className="text-lg leading-none" title={lead.stores.country}>
+                            {getCountryFlag(lead.stores.country)}
+                          </span>
+                        )}
+                      </div>
+                      {lead.is_banned && (
+                        <span className="bg-red-100 text-red-600 px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1">
+                          <Ban className="w-3 h-3"/> Baneado
+                        </span>
+                      )}
                     </div>
                     <h4 className="font-bold text-gray-900">{lead.name}</h4>
+                    {lead.stores?.name && (
+                      <p className="text-[10px] font-bold text-gray-400 mt-0.5 flex items-center gap-1 uppercase tracking-wider">
+                        <Store className="w-3 h-3" /> {lead.stores.name}
+                      </p>
+                    )}
+                    {lead.product_name && (
+                      <p className="text-xs font-semibold text-blue-600 mt-1.5 bg-blue-50 w-fit px-2 py-0.5 rounded">
+                        🛍️ {lead.product_name}
+                      </p>
+                    )}
                     <p className="text-xs text-gray-500 mt-1">{lead.phone}</p>
                     {lead.notes && (
                       <p className="text-xs text-gray-400 mt-2 bg-gray-50 p-2 rounded line-clamp-2">{lead.notes}</p>

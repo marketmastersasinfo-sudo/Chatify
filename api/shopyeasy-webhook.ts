@@ -80,6 +80,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         traffic_source: 'Shopyeasy Webhook',
         board_type: targetBoard,
         status: targetStatus,
+        city: city || null,
+        address: address || null,
+        product_name: productName || null,
         notes: `Order ID: ${orderId || 'N/A'}`
       }).select().single();
 
