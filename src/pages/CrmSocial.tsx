@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { MessageCircle, AlertCircle, Link, Loader2, Ban, Store } from 'lucide-react';
+import { MessageCircle, AlertCircle, Link, Loader2, Ban, Store, Camera } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { CrmFilters } from '../components/CrmFilters';
 import type { CrmFilterState } from '../components/CrmFilters';
@@ -130,7 +130,17 @@ export function CrmSocial() {
                     >
                       <div className="flex justify-between items-start mb-2">
                         <div className="flex gap-1.5 items-center">
-                          <TrafficBadge source={lead.traffic_source?.includes('instagram') ? 'Instagram' : 'Messenger'} />
+                          <TrafficBadge source={lead.traffic_source} />
+                          {lead.social_platform === 'messenger' && (
+                            <span className="text-[#00B2FF]" title="Facebook Messenger">
+                              <MessageCircle className="w-5 h-5 fill-current" />
+                            </span>
+                          )}
+                          {lead.social_platform === 'instagram' && (
+                            <span className="text-[#E1306C]" title="Instagram DM">
+                              <Camera className="w-5 h-5" />
+                            </span>
+                          )}
                           {lead.stores?.country && (
                             <span className="leading-none" title={lead.stores.country}>
                               <CountryFlag country={lead.stores.country} />
@@ -155,6 +165,12 @@ export function CrmSocial() {
                         </p>
                       )}
                       <p className="text-xs text-gray-500 mt-1">{lead.phone || 'Sin número'}</p>
+                      {lead.comment_content && (
+                        <div className={`mt-2 p-2 rounded text-xs border-l-2 ${lead.comment_status === 'deleted' ? 'bg-red-50 border-red-400 text-red-700' : 'bg-pink-50 border-pink-400 text-pink-700'}`}>
+                          <p className="font-bold mb-0.5">{lead.comment_status === 'deleted' ? '🗑️ Comentario Eliminado:' : '💬 Comentario:'}</p>
+                          <p className="line-clamp-2 italic">"{lead.comment_content}"</p>
+                        </div>
+                      )}
                       {lead.notes && (
                         <p className="text-xs text-gray-400 mt-2 bg-gray-50 p-2 rounded line-clamp-2">{lead.notes}</p>
                       )}

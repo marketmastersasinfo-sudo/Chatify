@@ -33,7 +33,11 @@ export function LeadChatPanel({
     address: lead?.address || '',
     document_id: lead?.document_id || '',
     notes: lead?.notes || '',
-    status: lead?.status || 'new'
+    status: lead?.status || 'new',
+    board_type: lead?.board_type || 'sales_wa',
+    social_platform: lead?.social_platform || '',
+    comment_content: lead?.comment_content || '',
+    comment_status: lead?.comment_status || ''
   });
   const [savingForm, setSavingForm] = useState(false);
 
@@ -48,7 +52,11 @@ export function LeadChatPanel({
         address: lead.address || '',
         document_id: lead.document_id || '',
         notes: lead.notes || '',
-        status: lead.status || 'new'
+        status: lead.status || 'new',
+        board_type: lead.board_type || 'sales_wa',
+        social_platform: lead.social_platform || '',
+        comment_content: lead.comment_content || '',
+        comment_status: lead.comment_status || ''
       });
     }
   }, [lead]);
@@ -131,6 +139,8 @@ export function LeadChatPanel({
                 <h2 className="font-bold text-gray-900 flex items-center gap-2">
                   {lead.name}
                   {lead.is_banned && <span className="bg-red-100 text-red-600 text-[10px] px-2 py-0.5 rounded font-bold">BANEADO</span>}
+                  {lead.social_platform === 'instagram' && <span className="bg-pink-100 text-pink-700 text-[10px] px-2 py-0.5 rounded font-bold uppercase">Instagram</span>}
+                  {lead.social_platform === 'messenger' && <span className="bg-blue-100 text-blue-700 text-[10px] px-2 py-0.5 rounded font-bold uppercase">Messenger</span>}
                 </h2>
                 <p className="text-xs text-gray-500 font-medium">{lead.phone}</p>
               </div>
@@ -216,6 +226,22 @@ export function LeadChatPanel({
 
             {/* Edit Form */}
             <div className="space-y-4">
+
+              <div className="p-3 bg-indigo-50 border border-indigo-100 rounded-xl">
+                <label className="text-xs font-bold text-indigo-700 uppercase tracking-wider mb-1.5 block">Tablero (Pestaña)</label>
+                <select 
+                  value={formData.board_type} 
+                  onChange={e => setFormData({...formData, board_type: e.target.value})}
+                  className="w-full px-3 py-2 bg-white border border-indigo-200 rounded-lg text-sm font-semibold text-indigo-900 focus:ring-2 focus:ring-indigo-500 outline-none cursor-pointer"
+                >
+                  <option value="sales_wa">Ventas (WhatsApp)</option>
+                  <option value="sales_social">Redes Sociales (DM/Comentarios)</option>
+                  <option value="remarketing_wa">Remarketing (Chats WA)</option>
+                  <option value="remarketing_carts">Remarketing (Carritos Abandonados)</option>
+                  <option value="logistics">Logística y Despachos</option>
+                  <option value="customer_service">Atención al Cliente</option>
+                </select>
+              </div>
               
               <div className="p-3 bg-blue-50 border border-blue-100 rounded-xl">
                 <label className="text-xs font-bold text-blue-700 uppercase tracking-wider mb-1.5 block">Etapa del Embudo (Columna)</label>
@@ -224,14 +250,87 @@ export function LeadChatPanel({
                   onChange={e => setFormData({...formData, status: e.target.value})}
                   className="w-full px-3 py-2 bg-white border border-blue-200 rounded-lg text-sm font-semibold text-blue-900 focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer"
                 >
-                  <option value="new">Nuevo Lead</option>
-                  <option value="contacted">Contacto Inicial</option>
-                  <option value="interaction">Interacción</option>
-                  <option value="closed">Cierre Exitoso</option>
-                  <option value="lost">Venta Perdida</option>
-                  <option value="human">Intervención Humana</option>
+                  {formData.board_type === 'remarketing_wa' ? (
+                    <>
+                      <option value="cold_lead">Prospecto Inicial</option>
+                      <option value="qualifying">En Cualificación</option>
+                      <option value="hot_lead">Alta Intención</option>
+                      <option value="negotiating">Negociación</option>
+                      <option value="recovered">Venta Cerrada</option>
+                      <option value="lost">Descartado</option>
+                    </>
+                  ) : formData.board_type === 'remarketing_carts' ? (
+                    <>
+                      <option value="abandoned">Carrito Abandonado</option>
+                      <option value="contacting">Contactando</option>
+                      <option value="negotiating">Negociando Oferta</option>
+                      <option value="recovered">Venta Recuperada</option>
+                      <option value="lost">Venta Perdida</option>
+                    </>
+                  ) : formData.board_type === 'logistics' ? (
+                    <>
+                      <option value="nuevo">Nuevo Pedido</option>
+                      <option value="confirmado">Confirmado / Aprobado</option>
+                      <option value="en_ruta">En Ruta</option>
+                      <option value="entregado">Entregado Exitoso</option>
+                      <option value="novedad">Novedad / Retraso</option>
+                      <option value="devolucion">Devolución</option>
+                      <option value="falsa">Venta Falsa / Caída</option>
+                    </>
+                  ) : (
+                    <>
+                      <option value="new">Nuevo Lead</option>
+                      <option value="contacted">Contacto Inicial</option>
+                      <option value="interaction">Interacción</option>
+                      <option value="closed">Cierre Exitoso</option>
+                      <option value="lost">Venta Perdida</option>
+                      <option value="human">Intervención Humana</option>
+                    </>
+                  )}
                 </select>
               </div>
+
+              {(formData.board_type === 'sales_social' || formData.comment_content) && (
+                <div className="p-3 bg-pink-50 border border-pink-100 rounded-xl space-y-3">
+                  <h4 className="text-xs font-bold text-pink-700 uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                     Datos de Redes Sociales
+                  </h4>
+                  <div>
+                    <label className="text-[10px] font-bold text-pink-600 uppercase">Plataforma</label>
+                    <select 
+                      value={formData.social_platform} 
+                      onChange={e => setFormData({...formData, social_platform: e.target.value})}
+                      className="w-full px-3 py-1.5 bg-white border border-pink-200 rounded text-sm outline-none"
+                    >
+                      <option value="">Desconocido / Otro</option>
+                      <option value="messenger">Facebook Messenger</option>
+                      <option value="instagram">Instagram Direct</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-pink-600 uppercase">Comentario del Cliente</label>
+                    <textarea 
+                      value={formData.comment_content} 
+                      onChange={e => setFormData({...formData, comment_content: e.target.value})}
+                      rows={2}
+                      className="w-full px-3 py-2 bg-white border border-pink-200 rounded text-sm outline-none resize-none"
+                      placeholder="Ej. Precio por favor"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-pink-600 uppercase">Estado del Comentario</label>
+                    <select 
+                      value={formData.comment_status} 
+                      onChange={e => setFormData({...formData, comment_status: e.target.value})}
+                      className={`w-full px-3 py-1.5 bg-white border border-pink-200 rounded text-sm font-semibold outline-none ${formData.comment_status === 'deleted' ? 'text-red-600' : 'text-green-600'}`}
+                    >
+                      <option value="">Sin revisar</option>
+                      <option value="active">Activo (Público)</option>
+                      <option value="deleted">Eliminado (Por el bot)</option>
+                    </select>
+                  </div>
+                </div>
+              )}
 
               <div>
                 <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 flex items-center gap-1"><User className="w-3 h-3"/> Nombre Completo</label>

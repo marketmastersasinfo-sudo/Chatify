@@ -8,12 +8,12 @@ import { CountryFlag } from '../utils/flags';
 import { TrafficBadge } from '../components/TrafficBadge';
 
 const columns = [
-  { id: 'abandoned', title: 'Lead Frío (Entrada)', icon: Clock, color: 'border-blue-200 bg-blue-50/30', headerColor: 'bg-blue-100 text-blue-800', tooltip: 'Llegan después de caerse de Ventas.' },
-  { id: 'bot_sent', title: 'Bot Retomó Contacto', icon: AlertCircle, color: 'border-orange-200 bg-orange-50/30', headerColor: 'bg-orange-100 text-orange-800', tooltip: 'Mensaje promocional enviado.' },
-  { id: 'client_replied', title: 'Cliente Respondió', icon: MessageSquare, color: 'border-purple-200 bg-purple-50/30', headerColor: 'bg-purple-100 text-purple-800', tooltip: 'El cliente mostró interés de nuevo.' },
-  { id: 'negotiating', title: 'Negociando Oferta', icon: Handshake, color: 'border-yellow-200 bg-yellow-50/30', headerColor: 'bg-yellow-100 text-yellow-800', tooltip: 'Se está ofreciendo descuento.' },
-  { id: 'recovered', title: 'Venta Recuperada', icon: CheckCircle2, color: 'border-green-200 bg-green-50/30', headerColor: 'bg-green-100 text-green-800', tooltip: '¡El cliente compró!' },
-  { id: 'lost', title: 'Venta Perdida', icon: XCircle, color: 'border-gray-200 bg-gray-50/30', headerColor: 'bg-gray-100 text-gray-800', tooltip: 'No quiso comprar, mandar a base masiva.' }
+  { id: 'cold_lead', title: 'Prospecto Inicial', icon: Clock, color: 'border-blue-200 bg-blue-50/30', headerColor: 'bg-blue-100 text-blue-800', tooltip: 'Contacto nuevo, sin calificar.' },
+  { id: 'qualifying', title: 'En Cualificación', icon: AlertCircle, color: 'border-orange-200 bg-orange-50/30', headerColor: 'bg-orange-100 text-orange-800', tooltip: 'Interactuando y determinando interés.' },
+  { id: 'hot_lead', title: 'Alta Intención', icon: MessageSquare, color: 'border-purple-200 bg-purple-50/30', headerColor: 'bg-purple-100 text-purple-800', tooltip: 'Cliente muy interesado, listo para cerrar.' },
+  { id: 'negotiating', title: 'Negociación', icon: Handshake, color: 'border-yellow-200 bg-yellow-50/30', headerColor: 'bg-yellow-100 text-yellow-800', tooltip: 'Resolviendo objeciones o detalles finales.' },
+  { id: 'recovered', title: 'Venta Cerrada', icon: CheckCircle2, color: 'border-green-200 bg-green-50/30', headerColor: 'bg-green-100 text-green-800', tooltip: '¡El cliente compró!' },
+  { id: 'lost', title: 'Descartado', icon: XCircle, color: 'border-gray-200 bg-gray-50/30', headerColor: 'bg-gray-100 text-gray-800', tooltip: 'No califica o no está interesado.' }
 ];
 
 export function CrmRemarketingWa() {
@@ -94,10 +94,10 @@ export function CrmRemarketingWa() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-gray-900 flex items-center gap-2">
-            <RefreshCcw className="w-6 h-6 text-blue-600" /> CRM Remarketing (Chats de Venta)
+            <RefreshCcw className="w-6 h-6 text-blue-600" /> CRM Cualificación de Leads (WA)
           </h1>
           <p className="mt-1 text-sm text-gray-500">
-            Rescata ventas caídas de WhatsApp. <span className="font-semibold text-blue-600">Regla Meta:</span> Texto Libre permitido si es menor a 24h.
+            Gestiona y cualifica a tus prospectos de WhatsApp. <span className="font-semibold text-blue-600">Regla Meta:</span> Texto Libre permitido si es menor a 24h.
           </p>
         </div>
 
