@@ -52,15 +52,35 @@ export function Database() {
 
   const getStatusName = (status: string) => {
     switch (status.toLowerCase()) {
-      case 'nuevo': return 'Nuevo Lead';
-      case 'confirmado': return 'Confirmado';
-      case 'despachado': return 'Despachado';
+      // Logistics
+      case 'nuevo': return 'Nuevo Pedido';
+      case 'confirmado': return 'Pedido Confirmado';
+      case 'en_ruta': return 'En Ruta';
+      case 'entregado': return 'Entregado';
+      case 'novedad': return 'Novedad';
+      case 'devolucion': return 'Devolución';
       case 'falsa': return 'Venta Falsa';
-      case 'contact_1': return 'Intento 1';
-      case 'contact_2': return 'Intento 2';
-      case 'contact_3': return 'Intento 3';
-      case 'recovered': return 'Recuperado';
-      case 'lost': return 'Perdido';
+      
+      // Remarketing Carts
+      case 'abandoned': return 'Carrito Abandonado';
+      case 'contacting': return 'Contactando (Carrito)';
+      case 'negotiating': return 'Negociando';
+      case 'recovered': return 'Recuperado (Venta)';
+      case 'lost': return 'Perdido (Descartado)';
+
+      // Remarketing WA
+      case 'cold_lead': return 'Prospecto Inicial (Rem. WA)';
+      case 'qualifying': return 'En Cualificación';
+      case 'hot_lead': return 'Alta Intención';
+
+      // Sales WA / Social
+      case 'new': return 'Nuevo Chat (Ventas)';
+      case 'contacted': return 'Contacto Inicial';
+      case 'interaction': return 'Interacción';
+      case 'closed': return 'Cierre Exitoso';
+      case 'human': return 'Asesor Humano';
+
+      // Fallback
       default: return status;
     }
   };
