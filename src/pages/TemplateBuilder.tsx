@@ -58,6 +58,24 @@ export function TemplateBuilder() {
     setIsGenerating(false);
   }
 
+  const [now, setNow] = useState(new Date());
+
+  useEffect(() => {
+    const interval = setInterval(() => setNow(new Date()), 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  function formatTimeElapsed(createdAt: string) {
+    if (!createdAt) return 'Meta puede tardar hasta 24h';
+    const diff = now.getTime() - new Date(createdAt).getTime();
+    if (diff < 0) return 'lleva 0m en revisión';
+    const totalMinutes = Math.floor(diff / 60000);
+    if (totalMinutes < 60) return `lleva ${totalMinutes} min en revisión`;
+    const hours = Math.floor(totalMinutes / 60);
+    const mins = totalMinutes % 60;
+    return `lleva ${hours}h y ${mins}m en revisión`;
+  }
+
   useEffect(() => {
     loadStores();
   }, []);
@@ -91,7 +109,20 @@ export function TemplateBuilder() {
         throw new Error(json.details?.error?.message || json.error || 'Error desconocido');
       }
 
-      setTemplates(json.data || []);
+      const metaData = json.data || [];
+
+      // Fetch our custom creation times
+      const { data: localData } = await (supabase as any)
+        .from('meta_templates')
+        .select('name, created_at')
+        .eq('store_id', storeId);
+
+      const mergedTemplates = metaData.map((t: any) => {
+        const local = localData?.find((l: any) => l.name === t.name);
+        return { ...t, created_at: local ? local.created_at : null };
+      });
+
+      setTemplates(mergedTemplates);
     } catch (err: any) {
       setError(err.message);
     }
@@ -174,7 +205,8 @@ export function TemplateBuilder() {
     setSaving(false);
   }
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (template: any) => {
+    const status = template.status;
     switch(status) {
       case 'APPROVED': return <span className="bg-green-100 text-green-700 px-2 py-1 flex items-center gap-1 text-[10px] uppercase font-bold rounded-full"><CheckCircle2 className="w-3 h-3"/> Aprobada</span>;
       case 'REJECTED': return <span className="bg-red-100 text-red-700 px-2 py-1 flex items-center gap-1 text-[10px] uppercase font-bold rounded-full"><AlertCircle className="w-3 h-3"/> Rechazada</span>;
@@ -183,7 +215,9 @@ export function TemplateBuilder() {
           <span className="bg-yellow-100 text-yellow-700 px-2 py-1 flex items-center gap-1 text-[10px] uppercase font-bold rounded-full w-fit">
             <Loader2 className="w-3 h-3 animate-spin"/> En Revisión
           </span>
-          <span className="text-[9px] text-gray-400">Meta puede tardar hasta 24h</span>
+          <span className="text-[9px] text-gray-400 font-medium">
+            {formatTimeElapsed(template.created_at)}
+          </span>
         </div>
       );
       default: return <span className="bg-gray-100 text-gray-700 px-2 py-1 flex items-center gap-1 text-[10px] uppercase font-bold rounded-full">{status}</span>;
@@ -484,7 +518,7 @@ export function TemplateBuilder() {
                     <td className="p-4 text-gray-600 font-medium text-xs">{tpl.category}</td>
                     <td className="p-4 text-gray-500">{tpl.language}</td>
                     <td className="p-4">
-                      {getStatusBadge(tpl.status)}
+                      {getStatusBadge(tpl)}
                     </td>
                     <td className="p-4 text-right pr-6">
                       <button 

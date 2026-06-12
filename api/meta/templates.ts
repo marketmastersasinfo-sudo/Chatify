@@ -72,6 +72,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(response.status).json({ error: 'Error creando plantilla', details: data });
       }
 
+      // Guardar registro de tiempo en nuestra base de datos para el cronómetro
+      try {
+        await supabase.from('meta_templates').insert({
+          name: payload.name,
+          store_id: storeId
+        });
+      } catch (dbErr) {
+        console.error('Error insertando en meta_templates:', dbErr);
+        // No fallamos la petición si falla la BD interna, ya que la plantilla en Meta sí se creó
+      }
+
       return res.status(200).json({ success: true, data: data });
     }
 

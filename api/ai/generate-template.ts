@@ -35,7 +35,7 @@ REGLAS ESTRICTAS DE FORMATO:
 Responde ÚNICAMENTE con un JSON válido, sin Markdown (\`\`\`json), sin texto extra, solo el objeto JSON puro con las propiedades "name", "category", "bodyText", y "variableExamples".`;
 
     const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
+        model: 'gemini-2.0-flash',
         contents: prompt,
         config: {
             systemInstruction: systemInstruction,
