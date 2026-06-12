@@ -64,7 +64,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // 4. Revisar si el lead ya existe para esta tienda (Prevención global del error 42P10)
     const { data: existingLead } = await supabase
       .from('leads')
-      .select('id')
+      .select('*')
       .eq('store_id', store.id)
       .eq('phone', formattedPhone)
       .maybeSingle();
@@ -88,6 +88,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       if (insertError) throw insertError;
       leadId = newLead.id;
+    } else {
+      // Si el lead ya existe en Carritos, pero este nuevo webhook es una VENTA (logistics), 
+      // debemos MOVER el lead al tablero de Logística porque el cliente finalmente compró.
+      const updates: any = {};
+      
+      if (targetBoard === 'logistics' && existingLead.board_type.includes('remarketing')) {
+        updates.board_type = 'logistics';
+        updates.status = 'nuevo';
+      }
+      
+      // Actualizar datos de la venta si llegaron ahora (en carritos a veces no llegan)
+      if (city && !existingLead.city) updates.city = city;
+      if (address && !existingLead.address) updates.address = address;
+      if (productName && !existingLead.product_name) updates.product_name = productName;
+      
+      if (Object.keys(updates).length > 0) {
+        await supabase.from('leads').update(updates).eq('id', existingLead.id);
+      }
     }
 
     // 4. Llamar a nuestro propio endpoint interno para disparar la plantilla
