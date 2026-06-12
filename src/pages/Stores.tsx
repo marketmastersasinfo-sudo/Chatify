@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Store, Smartphone, Target, Plus, ShoppingBag, Loader2, Save, X, BrainCircuit, TrendingDown, AlertTriangle, FileText, Eye, EyeOff, RefreshCw } from 'lucide-react';
+import { Store, Smartphone, Target, Plus, ShoppingBag, Loader2, Save, X, BrainCircuit, TrendingDown, AlertTriangle, FileText, RefreshCw } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 
@@ -17,7 +17,6 @@ export function Stores() {
   const [newStoreName, setNewStoreName] = useState('');
   const [newWaba, setNewWaba] = useState('');
   const [newPixel, setNewPixel] = useState('');
-  const [showToken, setShowToken] = useState(false);
   const [syncingStores, setSyncingStores] = useState(false);
   const [importingCarts, setImportingCarts] = useState(false);
   
