@@ -400,12 +400,9 @@ export function Stores() {
                   <div className="col-span-1 md:col-span-2 bg-blue-50 p-4 rounded-xl border border-blue-100 mt-2">
                     <div className="flex justify-between items-center">
                       <div>
-                        <h5 className="font-bold text-blue-900 flex items-center gap-2"><Smartphone className="w-4 h-4"/> WhatsApp API (Meta)</h5>
-                        <p className="text-xs text-blue-700 mt-1">Conecta con Facebook para autollenar los permisos de Meta Cloud API.</p>
+                        <h5 className="font-bold text-blue-900 flex items-center gap-2"><Smartphone className="w-4 h-4"/> WhatsApp API (Twilio Partner)</h5>
+                        <p className="text-xs text-blue-700 mt-1">Podrás ingresar tu número de WhatsApp una vez guardes la tienda inicial.</p>
                       </div>
-                      <button className="bg-[#1877F2] text-white px-4 py-2 rounded-xl text-xs font-bold shadow-sm hover:bg-[#0C63D4] flex items-center gap-2 transition-colors">
-                        Conectar con Facebook
-                      </button>
                     </div>
                   </div>
                 </div>
@@ -459,67 +456,30 @@ export function Stores() {
                     <div className="col-span-1 md:col-span-2 bg-blue-50 p-4 rounded-xl border border-blue-100 mb-2">
                       <div className="flex justify-between items-center mb-4">
                         <div>
-                          <h5 className="font-bold text-blue-900 flex items-center gap-2"><Smartphone className="w-4 h-4"/> WhatsApp Business (Meta Cloud API)</h5>
-                          <p className="text-xs text-blue-700 mt-1">La integración oficial requiere que inicies sesión. Extraeremos tus tokens automáticamente.</p>
+                          <h5 className="font-bold text-blue-900 flex items-center gap-2"><Smartphone className="w-4 h-4"/> WhatsApp API (Twilio Partner)</h5>
+                          <p className="text-xs text-blue-700 mt-1">Ingresa el número telefónico que compraste y conectaste en la consola de Twilio.</p>
                         </div>
-                        <button className="bg-[#1877F2] text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-sm hover:bg-[#0C63D4] flex items-center gap-2 transition-colors">
-                          Conectar con Facebook
-                        </button>
+                        <a href="https://console.twilio.com/us1/develop/sms/senders/whatsapp-senders" target="_blank" rel="noreferrer" className="bg-[#F22F46] text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-sm hover:bg-[#D1263A] flex items-center gap-2 transition-colors">
+                          Abrir Consola Twilio
+                        </a>
                       </div>
                       <div className="bg-white p-4 rounded-lg border border-blue-100 relative">
-                        <div className="absolute inset-0 bg-white/0 pointer-events-none z-10 rounded-lg"></div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div className="grid grid-cols-1 gap-3">
                           <div>
-                            <label className="block text-xs font-semibold text-blue-800 mb-1">WhatsApp Business Account ID (WABA)</label>
+                            <label className="block text-xs font-semibold text-blue-800 mb-1">Número Telefónico de Twilio</label>
                             <input 
                               type="text" 
-                              value={selectedStore.waba_id || ''}
+                              value={selectedStore.twilio_phone_number || ''}
                               onChange={async (e) => {
                                 const val = e.target.value;
-                                setSelectedStore({...selectedStore, waba_id: val});
+                                setSelectedStore({...selectedStore, twilio_phone_number: val});
                                 // @ts-ignore
-                                await supabase.from('stores').update({waba_id: val}).eq('id', selectedStore.id);
+                                await supabase.from('stores').update({twilio_phone_number: val}).eq('id', selectedStore.id);
                               }}
-                              placeholder="Ej: 104533035987112" 
+                              placeholder="Ej: +18106666654" 
                               className="w-full px-3 py-2 border border-blue-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500" 
                             />
-                          </div>
-                          <div>
-                            <label className="block text-xs font-semibold text-blue-800 mb-1">Phone Number ID</label>
-                            <input 
-                              type="text" 
-                              value={selectedStore.waba_number || ''}
-                              onChange={async (e) => {
-                                const val = e.target.value;
-                                setSelectedStore({...selectedStore, waba_number: val});
-                                // @ts-ignore
-                                await supabase.from('stores').update({waba_number: val}).eq('id', selectedStore.id);
-                              }}
-                              placeholder="Ej: 102345678901234" 
-                              className="w-full px-3 py-2 border border-blue-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500" 
-                            />
-                          </div>
-                          <div className="md:col-span-2 relative">
-                            <label className="block text-xs font-semibold text-blue-800 mb-1">Permanent Access Token</label>
-                            <input 
-                              type={showToken ? "text" : "password"} 
-                              value={selectedStore.meta_access_token || ''}
-                              onChange={async (e) => {
-                                const val = e.target.value;
-                                setSelectedStore({...selectedStore, meta_access_token: val});
-                                // @ts-ignore
-                                await supabase.from('stores').update({meta_access_token: val}).eq('id', selectedStore.id);
-                              }}
-                              placeholder="EAAGm0..." 
-                              className="w-full px-3 py-2 pr-10 border border-blue-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500" 
-                            />
-                            <button
-                              type="button"
-                              onClick={() => setShowToken(!showToken)}
-                              className="absolute right-3 top-[26px] text-gray-400 hover:text-gray-600 focus:outline-none"
-                            >
-                              {showToken ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                            </button>
+                            <p className="text-[11px] text-gray-500 mt-1">Asegúrate de incluir el código de país (ej. +1 o +57).</p>
                           </div>
                         </div>
                       </div>

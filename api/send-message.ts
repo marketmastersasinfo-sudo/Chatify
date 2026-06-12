@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
+import twilio from 'twilio';
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL;
 const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY;
@@ -38,49 +39,30 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(404).json({ error: 'Lead not found' });
     }
 
-    // 2. Get store info (meta tokens)
+    // 2. Get store info (Twilio Phone Number)
     const { data: store, error: storeError } = await supabase
       .from('stores')
-      .select('meta_access_token, waba_number')
+      .select('twilio_phone_number')
       .eq('id', lead.store_id)
       .single();
 
-    if (storeError || !store || !store.meta_access_token || !store.waba_number) {
-      return res.status(400).json({ error: 'Store configuration missing Meta tokens' });
+    if (storeError || !store || !store.twilio_phone_number) {
+      return res.status(400).json({ error: 'Store configuration missing Twilio Phone Number' });
     }
 
-    // 3. Send message via Meta API
-    const metaApiUrl = `https://graph.facebook.com/v25.0/${store.waba_number}/messages`;
-    
-    const metaResponse = await fetch(metaApiUrl, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${store.meta_access_token}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        messaging_product: 'whatsapp',
-        recipient_type: 'individual',
-        to: lead.phone,
-        type: 'text',
-        text: {
-          preview_url: false,
-          body: message
-        }
-      })
+    // 3. Send message via Twilio API
+    const twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+
+    const twilioMessage = await twilioClient.messages.create({
+      from: `whatsapp:${store.twilio_phone_number}`,
+      to: `whatsapp:${lead.phone}`,
+      body: message
     });
 
-    const metaResult = await metaResponse.json();
-
-    if (!metaResponse.ok) {
-      console.error('Meta API Error:', metaResult);
-      return res.status(500).json({ error: 'Failed to send message via Meta', details: metaResult });
-    }
-
-    return res.status(200).json({ success: true, messageId: metaResult.messages?.[0]?.id });
+    return res.status(200).json({ success: true, messageId: twilioMessage.sid });
     
-  } catch (error) {
+  } catch (error: any) {
     console.error('Server error:', error);
-    return res.status(500).json({ error: 'Internal Server Error' });
+    return res.status(500).json({ error: error.message || 'Internal Server Error' });
   }
 }
