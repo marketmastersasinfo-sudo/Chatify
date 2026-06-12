@@ -73,10 +73,32 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
+    // Sanitize from number
+    let fromNumber = store.twilio_phone_number.trim();
+    fromNumber = fromNumber.replace(/ /g, '');
+    if (fromNumber.startsWith('whatsapp:')) {
+      fromNumber = fromNumber.replace('whatsapp:', '');
+    }
+    if (!fromNumber.startsWith('+')) {
+      fromNumber = `+${fromNumber}`;
+    }
+    fromNumber = `whatsapp:${fromNumber}`;
+
+    // Sanitize to number
+    let toNumber = lead.phone.trim();
+    toNumber = toNumber.replace(/ /g, '');
+    if (toNumber.startsWith('whatsapp:')) {
+      toNumber = toNumber.replace('whatsapp:', '');
+    }
+    if (!toNumber.startsWith('+')) {
+      toNumber = `+${toNumber}`;
+    }
+    toNumber = `whatsapp:${toNumber}`;
+
     // 5. Disparar a Twilio
     const message = await twilioClient.messages.create({
-      from: `whatsapp:${store.twilio_phone_number}`,
-      to: `whatsapp:${lead.phone}`,
+      from: fromNumber,
+      to: toNumber,
       contentSid: template.twilio_content_sid,
       contentVariables: Object.keys(contentVariables).length > 0 ? JSON.stringify(contentVariables) : undefined,
     });

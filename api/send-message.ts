@@ -53,13 +53,35 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // 3. Send message via Twilio API
     const twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 
-    const twilioMessage = await twilioClient.messages.create({
-      from: `whatsapp:${store.twilio_phone_number}`,
-      to: `whatsapp:${lead.phone}`,
-      body: message
+    // Sanitize from number
+    let fromNumber = store.twilio_phone_number.trim();
+    fromNumber = fromNumber.replace(/ /g, '');
+    if (fromNumber.startsWith('whatsapp:')) {
+      fromNumber = fromNumber.replace('whatsapp:', '');
+    }
+    if (!fromNumber.startsWith('+')) {
+      fromNumber = `+${fromNumber}`;
+    }
+    fromNumber = `whatsapp:${fromNumber}`;
+
+    // Sanitize to number
+    let toNumber = lead.phone.trim();
+    toNumber = toNumber.replace(/ /g, '');
+    if (toNumber.startsWith('whatsapp:')) {
+      toNumber = toNumber.replace('whatsapp:', '');
+    }
+    if (!toNumber.startsWith('+')) {
+      toNumber = `+${toNumber}`;
+    }
+    toNumber = `whatsapp:${toNumber}`;
+
+    const messageResult = await twilioClient.messages.create({
+      from: fromNumber,
+      to: toNumber,
+      body: message,
     });
 
-    return res.status(200).json({ success: true, messageId: twilioMessage.sid });
+    return res.status(200).json({ success: true, messageId: messageResult.sid });
     
   } catch (error: any) {
     console.error('Server error:', error);
