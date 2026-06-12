@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Key, MapPin, Target, Plus, Save, Loader2, CheckCircle2 } from 'lucide-react';
+import { Key, MapPin, Target, Plus, Save, Loader2, CheckCircle2, Eye, EyeOff } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 export function Settings() {
   const [orgId, setOrgId] = useState<string | null>(null);
   const [googleMapsKey, setGoogleMapsKey] = useState('');
+  const [showMapsKey, setShowMapsKey] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
@@ -173,14 +174,36 @@ export function Settings() {
           </div>
           <div className="max-w-xl">
             <label className="block text-sm font-semibold text-gray-900 mb-2">Google Maps API Key</label>
-            <input 
-              type="password" 
-              placeholder="AIzaSy..." 
-              value={googleMapsKey}
-              onChange={(e) => setGoogleMapsKey(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500" 
-            />
-            <p className="text-xs text-gray-500 mt-2">
+            <div className="relative">
+              <input 
+                type={showMapsKey ? "text" : "password"}
+                placeholder="AIzaSy..." 
+                value={googleMapsKey}
+                onChange={(e) => setGoogleMapsKey(e.target.value)}
+                className="w-full pl-3 pr-10 py-2 border border-gray-200 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500 font-mono" 
+              />
+              <button 
+                type="button"
+                onClick={() => setShowMapsKey(!showMapsKey)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                {showMapsKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+            
+            <div className="mt-3 flex items-center gap-2 text-xs font-bold px-2 py-1.5 rounded-md inline-flex border">
+              {googleMapsKey.length > 20 ? (
+                <div className="flex items-center gap-2 bg-green-50 text-green-700 px-1 border-transparent">
+                  <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div> ✅ Conectado de forma exitosa
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 text-gray-500 border-transparent">
+                  <div className="w-2 h-2 rounded-full bg-gray-300"></div> No Configurado
+                </div>
+              )}
+            </div>
+
+            <p className="text-xs text-gray-500 mt-4 border-t border-gray-100 pt-3">
               Se requiere habilitar la <b>Street View Static API</b> en tu proyecto de Google Cloud para que funcione el bot de envío de fachadas por WhatsApp.
             </p>
           </div>
