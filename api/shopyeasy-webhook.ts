@@ -147,7 +147,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           customerName: customerName,
           productName: realProductName || 'tu pedido',
           city: realCity || '',
-          address: realAddress || ''
+          address: realAddress || '',
+          department: department || '',
+          totalPrice: totalPrice ? `$${totalPrice}` : '',
+          orderId: realOrderId || ''
         }
       })
     });

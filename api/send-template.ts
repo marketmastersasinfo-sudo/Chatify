@@ -46,6 +46,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (variables.productName) contentVariables['2'] = variables.productName;
       if (variables.city) contentVariables['3'] = variables.city;
       if (variables.address) contentVariables['4'] = variables.address;
+      if (variables.department) contentVariables['5'] = variables.department;
+      if (variables.totalPrice) contentVariables['6'] = variables.totalPrice;
+      if (variables.orderId) contentVariables['7'] = variables.orderId;
     }
 
     // 5. Disparar a Twilio

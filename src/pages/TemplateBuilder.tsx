@@ -369,7 +369,14 @@ export function TemplateBuilder() {
                   className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:bg-white resize-none"
                   placeholder="Hola {{1}}, ¿sigues interesado en {{2}}?"
                 />
-                <p className="text-[11px] text-gray-500 mt-2 font-medium">Usa <code className="bg-gray-100 text-blue-600 px-1 py-0.5 rounded">{'{{1}}'}</code>, <code className="bg-gray-100 text-blue-600 px-1 py-0.5 rounded">{'{{2}}'}</code> para inyectar variables automáticas.</p>
+                <p className="text-[11px] text-gray-500 mt-2 font-medium">
+                  Usa <code className="bg-gray-100 text-blue-600 px-1 py-0.5 rounded">{'{{1}}'}</code> para inyectar variables automáticas. <br/>
+                  <span className="text-gray-400 mt-1 inline-block">
+                    <b>Valores automáticos de ShopyEasy:</b> <br/>
+                    {`{{1}}`}: Nombre | {`{{2}}`}: Producto | {`{{3}}`}: Ciudad | {`{{4}}`}: Dirección <br/>
+                    {`{{5}}`}: Departamento | {`{{6}}`}: Precio Total | {`{{7}}`}: ID de Pedido
+                  </span>
+                </p>
               </div>
 
               {/* Dynamic Variable Examples */}
