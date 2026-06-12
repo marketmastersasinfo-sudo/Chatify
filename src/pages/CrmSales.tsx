@@ -47,13 +47,10 @@ export function CrmSales() {
         .select('*, stores(name, country)')
         .eq('board_type', 'sales_wa');
         
-      if (f.storeId) {
-        query = query.eq('store_id', f.storeId);
-      } else {
-        // Si no hay storeId pero hay país, necesitaríamos filtrar por las tiendas de ese país.
-        // Como 'leads' solo tiene store_id, tendríamos que hacer un join con stores.
-        // Pero para mantenerlo simple, si hay filtro global de supabase, lo hacemos con .in('store_id', ...)
-        // Por ahora lo dejamos sin filtro de tienda si f.storeId está vacío (trae todas).
+      if (f.storeIds && f.storeIds.length > 0) {
+        query = query.in('store_id', f.storeIds);
+      } else if (f.storeIds && f.storeIds.length === 0) {
+        query = query.eq('store_id', '00000000-0000-0000-0000-000000000000');
       }
 
       if (f.dateStart) {

@@ -4,6 +4,7 @@ import { Calendar, Filter, Store, Globe } from 'lucide-react';
 
 export interface CrmFilterState {
   storeId: string;
+  storeIds: string[];
   country: string;
   dateStart: string | null;
   dateEnd: string | null;
@@ -96,8 +97,12 @@ export function CrmFilters({ onFilterChange, initialStoreId }: CrmFiltersProps) 
       }
     }
 
+    const filteredStores = country ? stores.filter(s => s.country === country) : stores;
+    const storeIds = storeId ? [storeId] : filteredStores.map(s => s.id);
+
     onFilterChange({
       storeId,
+      storeIds,
       country,
       dateStart,
       dateEnd

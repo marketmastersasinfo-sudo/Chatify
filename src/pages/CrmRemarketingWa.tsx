@@ -39,8 +39,10 @@ export function CrmRemarketingWa() {
         .select('*, stores(name, country)')
         .eq('board_type', 'remarketing');
         
-      if (f.storeId) {
-        query = query.eq('store_id', f.storeId);
+      if (f.storeIds && f.storeIds.length > 0) {
+        query = query.in('store_id', f.storeIds);
+      } else if (f.storeIds && f.storeIds.length === 0) {
+        query = query.eq('store_id', '00000000-0000-0000-0000-000000000000');
       }
       if (f.dateStart) {
         query = query.gte('created_at', f.dateStart);
