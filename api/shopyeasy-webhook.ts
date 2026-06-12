@@ -52,18 +52,40 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // 2. Formatear el teléfono
     const formattedPhone = formatPhone(customerPhone);
 
-    // 3. Crear o actualizar el Lead
-    const { data: lead, error: leadError } = await supabase.from('leads').upsert({
-      store_id: store.id,
-      name: customerName,
-      phone: formattedPhone,
-      traffic_source: 'Shopyeasy Webhook',
-      board_type: 'sales_wa',
-      status: eventType === 'abandoned_cart' ? 'contacted' : 'won',
-      notes: `Order ID: ${orderId || 'N/A'}`
-    }, { onConflict: 'phone' }).select().single();
+    // 3. Determinar el tablero y estado correcto
+    let targetBoard = 'logistics';
+    let targetStatus = 'nuevo';
 
-    if (leadError) throw leadError;
+    if (eventType === 'abandoned_cart') {
+      targetBoard = 'remarketing_carts';
+      targetStatus = 'contact_1';
+    }
+
+    // 4. Revisar si el lead ya existe para esta tienda (Prevención global del error 42P10)
+    const { data: existingLead } = await supabase
+      .from('leads')
+      .select('id')
+      .eq('store_id', store.id)
+      .eq('phone', formattedPhone)
+      .maybeSingle();
+
+    let leadId = existingLead?.id;
+
+    if (!existingLead) {
+      // 5. Insertar Lead (sin upsert, inserción directa y segura)
+      const { data: newLead, error: insertError } = await supabase.from('leads').insert({
+        store_id: store.id,
+        name: customerName,
+        phone: formattedPhone,
+        traffic_source: 'Shopyeasy Webhook',
+        board_type: targetBoard,
+        status: targetStatus,
+        notes: `Order ID: ${orderId || 'N/A'}`
+      }).select().single();
+
+      if (insertError) throw insertError;
+      leadId = newLead.id;
+    }
 
     // 4. Llamar a nuestro propio endpoint interno para disparar la plantilla
     // En producción (Vercel), podemos usar el fetch directo a nuestra misma URL
@@ -74,7 +96,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        leadId: lead.id,
+        leadId: leadId,
         templateType: eventType,
         variables: {
           customerName: customerName,
@@ -91,7 +113,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: 'Webhook processed but Template failed', details: result });
     }
 
-    return res.status(200).json({ success: true, message: 'Webhook processed and message sent!', leadId: lead.id });
+    return res.status(200).json({ success: true, message: 'Webhook processed and message sent!', leadId: leadId });
 
   } catch (error: any) {
     console.error('Webhook processing error:', error);
