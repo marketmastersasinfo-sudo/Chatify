@@ -242,7 +242,7 @@ export function TemplateBuilder() {
               className="text-sm font-bold text-blue-600 border-none focus:ring-0 bg-transparent cursor-pointer"
             >
               {stores.map(s => (
-                <option key={s.id} value={s.id}>{s.name} (WABA: {s.waba_id ? 'Conectado' : 'Falta WABA'})</option>
+                <option key={s.id} value={s.id}>{s.name} (Twilio: {s.twilio_phone_number ? 'Conectado' : 'Falta Número'})</option>
               ))}
             </select>
           </div>
