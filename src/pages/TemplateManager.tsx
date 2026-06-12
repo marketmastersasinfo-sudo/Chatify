@@ -15,7 +15,7 @@ export function TemplateManager() {
   async function loadData() {
     setLoading(true);
     // Load stores
-    const { data: storesData } = await (supabase as any).from('stores').select('*');
+    const { data: storesData } = await (supabase as any).from('stores').select('*').order('name');
     setStores(storesData || []);
 
     // Load templates

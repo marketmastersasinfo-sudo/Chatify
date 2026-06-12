@@ -90,7 +90,7 @@ export function TemplateBuilder() {
 
   async function loadStores() {
     try {
-      const { data } = await supabase.from('stores').select('*');
+      const { data } = await supabase.from('stores').select('*').order('name');
       setStores(data || []);
       if (data && data.length > 0) setSelectedStore(data[0]);
     } catch (err) {

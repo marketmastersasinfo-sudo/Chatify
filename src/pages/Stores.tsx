@@ -72,7 +72,8 @@ export function Stores() {
         const { data: allStoresData } = await supabase
           .from('stores')
           .select('*')
-          .eq('organization_id', orgId);
+          .eq('organization_id', orgId)
+          .order('name');
           
         if (allStoresData) {
           const uniqueCountries = Array.from(new Set(allStoresData.map((s: any) => s.country))).sort();
@@ -214,7 +215,7 @@ export function Stores() {
     setImportingCarts(true);
     try {
       // 1. Obtener todas las tiendas de Supabase
-      const { data } = await supabase.from('stores').select('id, name, country');
+      const { data } = await supabase.from('stores').select('id, name, country').order('name');
       const localStores: any[] = data || [];
       if (!localStores.length) throw new Error("No hay tiendas locales para cruzar");
 

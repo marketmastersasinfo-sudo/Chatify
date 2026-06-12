@@ -31,7 +31,7 @@ export function CrmFilters({ onFilterChange, initialStoreId }: CrmFiltersProps) 
 
   async function loadStores() {
     try {
-      const { data } = await supabase.from('stores').select('*').order('created_at', { ascending: false });
+      const { data } = await supabase.from('stores').select('*').order('name');
       if (data && data.length > 0) {
         setStores(data);
         
