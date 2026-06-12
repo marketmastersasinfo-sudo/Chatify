@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Send, User, MapPin, Mail, AlignLeft, Phone, Building2, Ban, Trash2 } from 'lucide-react';
+import { X, Send, User, MapPin, Mail, AlignLeft, Phone, Building2, Ban, Trash2, CheckCircle2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 interface Message {
@@ -40,6 +40,7 @@ export function LeadChatPanel({
     comment_status: lead?.comment_status || ''
   });
   const [savingForm, setSavingForm] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
   useEffect(() => {
     if (lead) {
@@ -110,12 +111,16 @@ export function LeadChatPanel({
 
   async function handleSaveData() {
     setSavingForm(true);
+    setSaveSuccess(false);
     try {
-      await (supabase as any).from('leads').update(formData).eq('id', lead.id);
+      const { error } = await (supabase as any).from('leads').update(formData).eq('id', lead.id);
+      if (error) throw error;
       onUpdateLead({ ...lead, ...formData });
-      // Show some toast or indication here ideally
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 2000);
     } catch(e) {
-      console.error(e);
+      console.error('Error saving:', e);
+      alert('Error al guardar los cambios en la base de datos.');
     }
     setSavingForm(false);
   }
@@ -371,10 +376,12 @@ export function LeadChatPanel({
 
               <button 
                 onClick={handleSaveData}
-                disabled={savingForm}
-                className="w-full py-3 bg-gray-900 text-white rounded-xl font-bold shadow-sm hover:bg-gray-800 transition-colors disabled:opacity-70 flex justify-center items-center gap-2"
+                disabled={savingForm || saveSuccess}
+                className={`w-full py-3 rounded-xl font-bold shadow-sm transition-colors disabled:opacity-70 flex justify-center items-center gap-2 ${saveSuccess ? 'bg-green-600 text-white hover:bg-green-700' : 'bg-gray-900 text-white hover:bg-gray-800'}`}
               >
-                {savingForm ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div> : 'Guardar Cambios'}
+                {savingForm ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div> : 
+                 saveSuccess ? <><CheckCircle2 className="w-5 h-5"/> ¡Guardado con Éxito!</> : 
+                 'Guardar Cambios'}
               </button>
               
               <div className="pt-6 mt-6 border-t border-gray-200">

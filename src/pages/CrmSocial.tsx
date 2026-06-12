@@ -205,7 +205,14 @@ export function CrmSocial() {
           onClose={() => setSelectedLead(null)}
           onDelete={() => {}}
           onBan={() => {}}
-          onUpdateLead={() => {}}
+          onUpdateLead={(updatedLead) => {
+            if (updatedLead.board_type !== 'sales_social') {
+              setLeads(leads.filter(l => l.id !== updatedLead.id));
+              setSelectedLead(null);
+            } else {
+              setLeads(leads.map(l => l.id === updatedLead.id ? updatedLead : l));
+            }
+          }}
         />
       )}
     </div>

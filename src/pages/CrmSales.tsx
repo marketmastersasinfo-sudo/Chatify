@@ -259,8 +259,12 @@ export function CrmSales() {
             onBan={handleBanLead}
             onDelete={handleDeleteLead}
             onUpdateLead={(updated) => {
-              setLeads(leads.map(l => l.id === updated.id ? updated : l));
-              setSelectedLead(updated);
+              if (updated.board_type !== 'sales_wa') {
+                setLeads(leads.filter(l => l.id !== updated.id));
+                setSelectedLead(null);
+              } else {
+                setLeads(leads.map(l => l.id === updated.id ? updated : l));
+              }
             }}
           />
         )}

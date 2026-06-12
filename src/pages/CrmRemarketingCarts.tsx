@@ -251,7 +251,14 @@ export function CrmRemarketingCarts() {
           onClose={() => setSelectedLead(null)}
           onDelete={() => {}}
           onBan={() => {}}
-          onUpdateLead={() => {}}
+          onUpdateLead={(updatedLead) => {
+            if (updatedLead.board_type !== 'remarketing_carts') {
+              setLeads(leads.filter(l => l.id !== updatedLead.id));
+              setSelectedLead(null);
+            } else {
+              setLeads(leads.map(l => l.id === updatedLead.id ? updatedLead : l));
+            }
+          }}
         />
       )}
     </div>
