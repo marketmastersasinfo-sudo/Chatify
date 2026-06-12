@@ -102,7 +102,7 @@ export function LeadChatPanel({
         .from('store_templates')
         .select('*')
         .eq('store_id', lead.store_id)
-        .eq('twilio_approval_status', 'APPROVED');
+        .in('twilio_approval_status', ['APPROVED', 'approved']);
       setTemplates(data || []);
     } catch (e) {
       console.error(e);
