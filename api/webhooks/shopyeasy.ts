@@ -57,6 +57,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         traffic_source: 'Shopyeasy Webhook',
         board_type: board_type,
         status: status,
+        city: payload.customer.city || null,
+        address: payload.customer.address || null,
+        total_price: payload.order?.total || null,
+        product_name: payload.order?.products || null
       })
       .select()
       .single();
@@ -65,7 +69,36 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       throw error;
     }
 
-    return res.status(200).json({ success: true, message: 'Lead guardado correctamente', data: lead });
+    // Attempt to trigger the template if configured
+    try {
+      const host = req.headers.host || 'chatify-teal-xi.vercel.app';
+      const protocol = host.includes('localhost') ? 'http' : 'https';
+      
+      const templateResponse = await fetch(`${protocol}://${host}/api/send-template`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          leadId: lead.id,
+          templateType: payload.event_type === 'abandoned_cart' ? 'abandoned_cart' : 'order_confirmation',
+          variables: {
+            customerName: payload.customer.name,
+            productName: payload.order?.products || 'tu pedido',
+            city: payload.customer.city || '',
+            address: payload.customer.address || '',
+            department: '',
+            totalPrice: payload.order?.total ? `$${payload.order.total}` : '',
+            orderId: payload.order?.id || ''
+          }
+        })
+      });
+      
+      const templateResult = await templateResponse.json();
+      console.log('Template trigger result:', templateResult);
+    } catch (templateError) {
+      console.error('Error triggering template from webhook:', templateError);
+    }
+
+    return res.status(200).json({ success: true, message: 'Lead guardado correctamente y plantilla disparada', data: lead });
 
   } catch (error: any) {
     console.error('Shopyeasy Webhook Error:', error);
