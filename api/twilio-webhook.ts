@@ -21,14 +21,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // From and To format: "whatsapp:+18106666654"
     const customerPhone = From.replace('whatsapp:', '').replace('+', '');
-    const storeTwilioPhone = To.replace('whatsapp:', '');
+    // Sanitize To number to match how it might be in the database
+    let storeTwilioPhone = To.replace('whatsapp:', '').trim();
+    let storeTwilioPhoneNoPlus = storeTwilioPhone.replace('+', '');
+    let storeTwilioPhoneWithPlus = storeTwilioPhone.startsWith('+') ? storeTwilioPhone : `+${storeTwilioPhone}`;
 
     // 1. Find the store that owns this Twilio number
-    const { data: store } = await supabase
+    const { data: stores } = await supabase
       .from('stores')
-      .select('id, organization_id, organizations(google_maps_api_key)')
-      .eq('twilio_phone_number', storeTwilioPhone)
-      .single();
+      .select('id, twilio_phone_number, organization_id, organizations(google_maps_api_key)');
+      
+    const store = stores?.find(s => {
+      if (!s.twilio_phone_number) return false;
+      const dbNum = s.twilio_phone_number.trim().replace('whatsapp:', '');
+      return dbNum === storeTwilioPhone || dbNum === storeTwilioPhoneNoPlus || dbNum === storeTwilioPhoneWithPlus;
+    });
 
     if (!store) {
       console.error(`No store found with Twilio number ${storeTwilioPhone}`);
