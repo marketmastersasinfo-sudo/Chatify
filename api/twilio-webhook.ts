@@ -49,9 +49,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     let storeTwilioPhoneNoPlus = storeTwilioPhone.replace('+', '');
     let storeTwilioPhoneWithPlus = storeTwilioPhone.startsWith('+') ? storeTwilioPhone : `+${storeTwilioPhone}`;
 
-    const { data: stores } = await supabase
+    const { data: stores, error: storesError } = await supabase
       .from('stores')
-      .select('id, twilio_phone_number, organization_id, organizations(google_maps_api_key)');
+      .select('id, twilio_phone_number, organization_id');
+      
+    if (storesError) {
+      console.error('Error fetching stores:', storesError);
+    }
       
     const store = stores?.find(s => {
       if (!s.twilio_phone_number) return false;
@@ -61,7 +65,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (!store) {
       console.error(`No store found with Twilio number ${storeTwilioPhone}`);
-      return res.status(200).json({ error: 'No store found', storeTwilioPhone, stores }); // Always return 200 to Twilio
+      return res.status(200).send('<Response></Response>'); // Always return 200 to Twilio
     }
 
     // 2. Find or create the lead
@@ -128,8 +132,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (leadBoard === 'logistics' && leadStatus === 'nuevo') {
         leadUpdates.status = 'client_replied'; // Movemos de estado
         
-        // TypeScript safe access for nested join
-        const apiKey = (store.organizations as any)?.google_maps_api_key;
+        // Fetch organization API key manually to avoid join errors
+        const { data: org } = await supabase
+          .from('organizations')
+          .select('google_maps_api_key')
+          .eq('id', store.organization_id)
+          .single();
+          
+        const apiKey = org?.google_maps_api_key;
         
         if (apiKey && leadAddress && leadCity) {
           const mapQuery = encodeURIComponent(`${leadAddress}, ${leadCity}`);
