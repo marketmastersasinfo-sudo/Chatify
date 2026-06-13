@@ -65,7 +65,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (!store) {
       console.error(`No store found with Twilio number ${storeTwilioPhone}`);
-      return res.status(200).send('<Response></Response>'); // Always return 200 to Twilio
+      return res.status(200).json({ error: 'No store found', storeTwilioPhone, stores, storesError }); // Always return 200 to Twilio
     }
 
     // 2. Find or create the lead
