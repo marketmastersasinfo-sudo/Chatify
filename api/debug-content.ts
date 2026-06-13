@@ -1,20 +1,16 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import twilio from 'twilio';
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseUrl = process.env.VITE_SUPABASE_URL;
+const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY;
+const supabase = createClient(supabaseUrl || '', supabaseKey || '');
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
-    const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
-    const balance = await client.request({
-      method: 'GET',
-      uri: `https://api.twilio.com/2010-04-01/Accounts/${process.env.TWILIO_ACCOUNT_SID}/Balance.json`
-    });
+    const { data: stores } = await supabase.from('stores').select('id, twilio_phone_number');
+    const { data: leads } = await supabase.from('leads').select('id, phone, status, board_type').order('created_at', { ascending: false }).limit(5);
     
-    const usage = await client.request({
-      method: 'GET',
-      uri: `https://api.twilio.com/2010-04-01/Accounts/${process.env.TWILIO_ACCOUNT_SID}/Usage/Records/Today.json`
-    });
-    
-    return res.status(200).json({ success: true, balance: balance.body, usage: usage.body });
+    return res.status(200).json({ success: true, stores, leads });
   } catch (error: any) {
     return res.status(500).json({ error: error.message });
   }
