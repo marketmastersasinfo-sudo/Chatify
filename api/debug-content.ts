@@ -7,10 +7,10 @@ const supabase = createClient(supabaseUrl || '', supabaseKey || '');
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
-    const { data: stores } = await supabase.from('stores').select('id, twilio_phone_number');
-    const { data: leads } = await supabase.from('leads').select('id, phone, status, board_type').order('created_at', { ascending: false }).limit(5);
+    const { data: messages } = await supabase.from('messages').select('*').order('created_at', { ascending: false }).limit(10);
+    const { data: raw_leads } = await supabase.from('leads').select('*').eq('phone', '573182533893').order('created_at', { ascending: false });
     
-    return res.status(200).json({ success: true, stores, leads });
+    return res.status(200).json({ success: true, messages, leads: raw_leads });
   } catch (error: any) {
     return res.status(500).json({ error: error.message });
   }
