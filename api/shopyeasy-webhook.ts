@@ -162,7 +162,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           address: realAddress || '',
           department: department || '',
           totalPrice: totalPrice ? `$${totalPrice}` : '',
-          orderId: realOrderId || ''
+          orderId: realOrderId || '',
+          // Default mappings for the "confirmacion_pedido" template
+          "1": customerName,
+          "2": `${realAddress || ''} ${realCity ? ', ' + realCity : ''}`.trim(),
+          "3": formattedPhone,
+          "4": realProductName || 'tu pedido',
+          "5": totalPrice ? `$${totalPrice}` : ''
         }
       })
     });
