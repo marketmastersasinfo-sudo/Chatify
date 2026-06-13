@@ -8,10 +8,9 @@ const supabase = createClient(supabaseUrl || '', supabaseKey || '');
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
-    const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
-    const alerts = await client.monitor.v1.alerts.list({ limit: 10 });
+    const { data: messages } = await supabase.from('messages').select('*').order('created_at', { ascending: false }).limit(5);
     
-    return res.status(200).json({ success: true, alerts });
+    return res.status(200).json({ success: true, messages });
   } catch (error: any) {
     return res.status(500).json({ error: error.message });
   }
