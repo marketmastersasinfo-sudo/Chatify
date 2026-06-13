@@ -119,19 +119,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
 
     // 7. Save the message to Supabase
-    await supabase.from('messages').insert({
+    const { error: insertError } = await supabase.from('messages').insert({
       lead_id: leadId,
-      store_id: store.id,
-      direction: 'outbound',
-      message_type: 'template',
-      sender_type: 'user',
-      content: bodyText,
-      status: 'sent',
-      metadata: {
-        twilio_message_sid: message.sid,
-        template_name: template.template_name
-      }
+      sender_type: 'human',
+      content: bodyText
     });
+    
+    if (insertError) {
+      console.error('Failed to save message to DB:', insertError);
+    }
 
     return res.status(200).json({ success: true, messageId: message.sid, bodyText });
 
