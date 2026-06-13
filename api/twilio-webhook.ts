@@ -146,8 +146,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           try {
             const twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
             await twilioClient.messages.create({
-              from: `whatsapp:${storeTwilioPhone}`,
-              to: `whatsapp:${customerPhone}`,
+              from: `whatsapp:+${storeTwilioPhone.replace('+', '')}`,
+              to: `whatsapp:+${customerPhone}`,
               body: '¡Excelente! Para asegurar que la transportadora no se pierda, ¿nos confirmas si esta es la fachada de la dirección de entrega?',
               mediaUrl: [streetViewUrl]
             });
@@ -155,15 +155,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             // Guardar el mensaje del bot en el CRM
             await supabase.from('messages').insert({
               lead_id: leadId,
-              store_id: store.id,
-              direction: 'outbound',
-              message_type: 'image',
               sender_type: 'ai',
-              content: '¡Excelente! Para asegurar que la transportadora no se pierda, ¿nos confirmas si esta es la fachada de la dirección de entrega?',
-              status: 'sent',
-              metadata: {
-                image_url: streetViewUrl
-              }
+              content: `[Automated Street View Image Sent]\\n¡Excelente! Para asegurar que la transportadora no se pierda, ¿nos confirmas si esta es la fachada de la dirección de entrega?\\n\\nImage URL: ${streetViewUrl}`
             });
           } catch (e) {
             console.error('Error sending Street View image via Twilio:', e);
