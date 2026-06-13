@@ -12,8 +12,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    // Twilio sends data as URL-encoded form data (application/x-www-form-urlencoded)
-    const { From, To, Body, MessageSid, ProfileName } = req.body;
+    let bodyObj: any = req.body;
+    
+    // Vercel doesn't always automatically parse application/x-www-form-urlencoded into an object.
+    if (Buffer.isBuffer(req.body)) {
+      bodyObj = Object.fromEntries(new URLSearchParams(req.body.toString('utf8')).entries());
+    } else if (typeof req.body === 'string') {
+      bodyObj = Object.fromEntries(new URLSearchParams(req.body).entries());
+    }
+
+    const { From, To, Body, MessageSid, ProfileName } = bodyObj || {};
+
+    if (!From || !To) {
+      console.error('Twilio Webhook: Missing From or To', bodyObj);
+      return res.status(200).send('<Response></Response>');
+    }
 
     // From and To format: "whatsapp:+18106666654"
     const customerPhone = From.replace('whatsapp:', '').replace('+', '');
