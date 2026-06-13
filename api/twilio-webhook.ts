@@ -158,9 +158,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               sender_type: 'ai',
               content: `[Automated Street View Image Sent]\\n¡Excelente! Para asegurar que la transportadora no se pierda, ¿nos confirmas si esta es la fachada de la dirección de entrega?\\n\\nImage URL: ${streetViewUrl}`
             });
-          } catch (e) {
+          } catch (e: any) {
             console.error('Error sending Street View image via Twilio:', e);
+            await supabase.from('messages').insert({
+              lead_id: leadId,
+              sender_type: 'ai',
+              content: `[BOT CRASH] Twilio Error: ${e.message}`
+            });
           }
+        } else {
+            await supabase.from('messages').insert({
+              lead_id: leadId,
+              sender_type: 'ai',
+              content: `[BOT SKIPPED] Missing data. APIKey: ${!!apiKey}, Address: ${!!leadAddress}, City: ${!!leadCity}`
+            });
         }
       }
 
