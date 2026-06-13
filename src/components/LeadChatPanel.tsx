@@ -122,7 +122,7 @@ export function LeadChatPanel({
         if (v === '1') initialValues[v] = lead.name;
         else if (v === '2') initialValues[v] = lead.name;
         else if (v === '3') initialValues[v] = lead.address || '';
-        else if (v === '4') initialValues[v] = lead.city || '';
+        else if (v === '4') initialValues[v] = lead.phone || '';
         else if (v === '5') initialValues[v] = lead.product_name || 'tu pedido';
         else if (v === '6') initialValues[v] = lead.total_price || '';
         else initialValues[v] = '';
