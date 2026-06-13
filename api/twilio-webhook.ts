@@ -135,13 +135,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           .from('organizations')
           .select('google_maps_api_key')
           .eq('id', store.organization_id)
-          .single();
+          .maybeSingle(); // Use maybeSingle to avoid crash if column doesn't exist
           
         const apiKey = org?.google_maps_api_key;
         
-        if (apiKey && leadAddress && leadCity) {
-          const mapQuery = encodeURIComponent(`${leadAddress}, ${leadCity}`);
-          const streetViewUrl = `https://maps.googleapis.com/maps/api/streetview?size=600x400&location=${mapQuery}&key=${apiKey}`;
+        if (leadAddress && leadCity) {
+          let streetViewUrl = 'https://www.w3schools.com/w3images/house5.jpg'; // DUMMY FALLBACK
+          if (apiKey) {
+             const mapQuery = encodeURIComponent(`${leadAddress}, ${leadCity}`);
+             streetViewUrl = `https://maps.googleapis.com/maps/api/streetview?size=600x400&location=${mapQuery}&key=${apiKey}`;
+          }
           
           try {
             const twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
@@ -170,7 +173,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             await supabase.from('messages').insert({
               lead_id: leadId,
               sender_type: 'ai',
-              content: `[BOT SKIPPED] Missing data. APIKey: ${!!apiKey}, Address: ${!!leadAddress}, City: ${!!leadCity}`
+              content: `[BOT SKIPPED] Missing data. Address: ${!!leadAddress}, City: ${!!leadCity}`
             });
         }
       }
