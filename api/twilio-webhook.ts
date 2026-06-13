@@ -113,15 +113,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (leadId) {
       const { error: insertError } = await supabase.from('messages').insert({
         lead_id: leadId,
-        store_id: store.id,
-        direction: 'inbound',
-        message_type: 'text',
-        content: Body,
-        status: 'received',
-        metadata: {
-          twilio_message_sid: MessageSid,
-          sender_name: ProfileName
-        }
+        sender_type: 'customer',
+        content: Body
       });
       
       if (insertError) {
