@@ -25,7 +25,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (!From || !To) {
       console.error('Twilio Webhook: Missing From or To', bodyObj);
-      return res.status(200).send('<Response></Response>');
+      return res.status(200).send('<?xml version="1.0" encoding="UTF-8"?><Response></Response>');
     }
 
     // From and To format: "whatsapp:+18106666654"
@@ -183,11 +183,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Twilio expects an empty TwiML response or a 200 OK
     res.setHeader('Content-Type', 'text/xml');
-    return res.status(200).send('<Response></Response>');
+    return res.status(200).send('<?xml version="1.0" encoding="UTF-8"?><Response></Response>');
 
   } catch (error: any) {
     console.error('Twilio Webhook Error:', error);
     // Always return 200 to Twilio so they don't retry forever, unless it's a critical infrastructure error
-    return res.status(200).send('<Response></Response>');
+    return res.status(200).send('<?xml version="1.0" encoding="UTF-8"?><Response></Response>');
   }
 }
