@@ -21,13 +21,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       bodyObj = Object.fromEntries(new URLSearchParams(req.body).entries());
     }
 
-    // DEBUG LOG
-    await supabase.from('messages').insert({
-      lead_id: 'ac45d048-1c63-46c4-9aec-c2b719ce3f24', // existing lead id
-      sender_type: 'client',
-      content: `[DEBUG RAW PAYLOAD]: ${JSON.stringify(bodyObj)}`
-    });
-
     const { From, To, Body, MessageSid, ProfileName } = bodyObj || {};
 
     if (!From || !To) {

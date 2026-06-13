@@ -268,11 +268,13 @@ export function LeadChatPanel({
              ) : (
                messages.map(msg => (
                  <div key={msg.id} className={`flex flex-col ${msg.sender_type === 'human' || msg.sender_type === 'ai' ? 'items-end' : 'items-start'}`}>
-                   <div className={`px-5 py-3 rounded-2xl max-w-[75%] shadow-sm ${
+                   <div 
+                    className={`max-w-[80%] rounded-2xl px-4 py-2 shadow-sm whitespace-pre-wrap break-words ${
                       msg.sender_type === 'human' ? 'bg-blue-600 text-white rounded-tr-none' : 
                       msg.sender_type === 'ai' ? 'bg-purple-600 text-white rounded-tr-none' : 
                       'bg-white border border-gray-100 text-gray-800 rounded-tl-none'
-                    }`}>
+                    }`}
+                  >
                       {msg.metadata?.image_url && (
                         <img src={msg.metadata.image_url} alt="Media" className="w-full h-auto rounded-xl mb-2 object-cover" />
                       )}
