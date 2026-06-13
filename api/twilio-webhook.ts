@@ -119,6 +119,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       
       if (insertError) {
         console.error('Error inserting message:', insertError);
+        return res.status(200).json({ error: 'Insert failed', details: insertError });
       }
       
       const leadUpdates: any = { updated_at: new Date().toISOString() };
