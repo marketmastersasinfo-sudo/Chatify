@@ -175,6 +175,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
       }
 
+      // DEBUG COMMAND
+      if (Body.trim().toUpperCase() === 'RESET') {
+        await supabase.from('leads').update({ status: 'nuevo' }).eq('id', leadId);
+        await supabase.from('messages').insert({
+          lead_id: leadId,
+          sender_type: 'ai',
+          content: `[SISTEMA] Estado reseteado a 'nuevo'. Ahora envía "Confirmo".`
+        });
+        return res.status(200).send('<?xml version="1.0" encoding="UTF-8"?><Response></Response>');
+      }
+
       // Update the lead's status and updated_at timestamp
       await supabase.from('leads').update(leadUpdates).eq('id', leadId);
     }
