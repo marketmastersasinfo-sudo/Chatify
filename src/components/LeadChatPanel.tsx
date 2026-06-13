@@ -38,7 +38,9 @@ export function LeadChatPanel({
     board_type: lead?.board_type || 'sales_wa',
     social_platform: lead?.social_platform || '',
     comment_content: lead?.comment_content || '',
-    comment_status: lead?.comment_status || ''
+    comment_status: lead?.comment_status || '',
+    product_name: lead?.product_name || '',
+    total_price: lead?.total_price || ''
   });
   const [savingForm, setSavingForm] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -66,7 +68,9 @@ export function LeadChatPanel({
         board_type: lead.board_type || 'sales_wa',
         social_platform: lead.social_platform || '',
         comment_content: lead.comment_content || '',
-        comment_status: lead.comment_status || ''
+        comment_status: lead.comment_status || '',
+        product_name: lead.product_name || '',
+        total_price: lead.total_price || ''
       });
     }
   }, [lead]);
@@ -120,11 +124,10 @@ export function LeadChatPanel({
       const initialValues: Record<string, string> = {};
       data.variables.forEach((v: string) => {
         if (v === '1') initialValues[v] = lead.name;
-        else if (v === '2') initialValues[v] = lead.name;
-        else if (v === '3') initialValues[v] = lead.address || '';
-        else if (v === '4') initialValues[v] = lead.phone || '';
-        else if (v === '5') initialValues[v] = lead.product_name || 'tu pedido';
-        else if (v === '6') initialValues[v] = lead.total_price || '';
+        else if (v === '2') initialValues[v] = lead.address || '';
+        else if (v === '3') initialValues[v] = lead.phone || '';
+        else if (v === '4') initialValues[v] = lead.product_name || 'tu pedido';
+        else if (v === '5') initialValues[v] = lead.total_price || '';
         else initialValues[v] = '';
       });
 
@@ -556,6 +559,20 @@ export function LeadChatPanel({
                     )}
                   </div>
                   <input type="text" value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-white focus:ring-2 focus:ring-blue-500 outline-none text-sm transition-all" placeholder="Calle 123 #45-67" />
+                </div>
+              </div>
+
+              <div className="p-3 bg-orange-50 border border-orange-100 rounded-xl space-y-3">
+                <h4 className="text-xs font-bold text-orange-700 uppercase tracking-wider flex items-center gap-1 mb-2">
+                   Datos del Pedido
+                </h4>
+                <div>
+                  <label className="text-[10px] font-bold text-orange-600 uppercase">Producto y Variantes</label>
+                  <input type="text" value={formData.product_name} onChange={e => setFormData({...formData, product_name: e.target.value})} className="w-full px-3 py-2 bg-white border border-orange-200 rounded-lg outline-none text-sm focus:ring-2 focus:ring-orange-500 transition-all" placeholder="Ej. Jogger Talla L Negro" />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-orange-600 uppercase">Precio Total</label>
+                  <input type="text" value={formData.total_price} onChange={e => setFormData({...formData, total_price: e.target.value})} className="w-full px-3 py-2 bg-white border border-orange-200 rounded-lg outline-none text-sm focus:ring-2 focus:ring-orange-500 transition-all" placeholder="Ej. $120.000" />
                 </div>
               </div>
 
