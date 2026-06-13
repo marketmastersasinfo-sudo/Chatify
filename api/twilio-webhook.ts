@@ -49,7 +49,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     let storeTwilioPhoneNoPlus = storeTwilioPhone.replace('+', '');
     let storeTwilioPhoneWithPlus = storeTwilioPhone.startsWith('+') ? storeTwilioPhone : `+${storeTwilioPhone}`;
 
-    // 1. Find the store that owns this Twilio number
     const { data: stores } = await supabase
       .from('stores')
       .select('id, twilio_phone_number, organization_id, organizations(google_maps_api_key)');
@@ -62,7 +61,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (!store) {
       console.error(`No store found with Twilio number ${storeTwilioPhone}`);
-      return res.status(200).send('OK'); // Always return 200 to Twilio
+      return res.status(200).json({ error: 'No store found', storeTwilioPhone, stores }); // Always return 200 to Twilio
     }
 
     // 2. Find or create the lead
