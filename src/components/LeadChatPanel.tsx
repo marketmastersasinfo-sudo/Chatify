@@ -139,7 +139,7 @@ export function LeadChatPanel({
       
     } catch(e: any) {
       console.error(e);
-      alert(`Error al enviar la plantilla:\n${e.message}`);
+      alert(`Error al enviar la plantilla "${templateName}":\n${e.message}`);
     }
     setSendingTemplate(null);
     setShowTemplates(false);
