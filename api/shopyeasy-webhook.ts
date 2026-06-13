@@ -21,8 +21,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  // { eventType: 'order_confirmation' | 'abandoned_cart', storeName: 'Yacompro', storeCountry: 'CO', customerName: 'Juan', customerPhone: '318...', orderId: '123', productName: 'Zapatos', city: 'Bogota', address: 'Calle 1' }
-  const { eventType, storeName, storeCountry, customerName, customerPhone, orderId, productName, city, address, department, totalPrice } = req.body;
+  // Aceptamos variaciones comunes de nombres de variables para mayor compatibilidad con Dropi, Shopyeasy, Make.com
+  const eventType = req.body.eventType || req.body.event || 'order_confirmation';
+  const storeName = req.body.storeName || req.body.store || 'Vistet';
+  const storeCountry = req.body.storeCountry || req.body.country || 'CO';
+  const customerName = req.body.customerName || req.body.name || req.body.customer_name;
+  const customerPhone = req.body.customerPhone || req.body.phone || req.body.customer_phone;
+  const orderId = req.body.orderId || req.body.order_id || req.body.id;
+  const productName = req.body.productName || req.body.product || req.body.product_name || req.body.item;
+  const city = req.body.city || req.body.ciudad;
+  const address = req.body.address || req.body.direccion;
+  const department = req.body.department || req.body.departamento;
+  const totalPrice = req.body.totalPrice || req.body.total || req.body.price || req.body.total_price;
 
   if (!eventType || !storeName || !customerName || !customerPhone) {
     return res.status(400).json({ error: 'Missing required fields' });
