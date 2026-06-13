@@ -47,6 +47,8 @@ export function LeadChatPanel({
   const [templates, setTemplates] = useState<any[]>([]);
   const [showTemplates, setShowTemplates] = useState(false);
   const [sendingTemplate, setSendingTemplate] = useState<string | null>(null);
+  const [previewTemplate, setPreviewTemplate] = useState<{ id: string, name: string, body: string, variables: string[], values: Record<string, string> } | null>(null);
+  const [fetchingTemplate, setFetchingTemplate] = useState<string | null>(null);
 
   useEffect(() => {
     if (lead) {
@@ -108,25 +110,51 @@ export function LeadChatPanel({
     }
   }
 
-  async function handleSendTemplate(templateId: string, templateName: string) {
-    setSendingTemplate(templateId);
+  async function fetchAndPreviewTemplate(templateId: string, templateName: string) {
+    setFetchingTemplate(templateId);
     try {
-      // Call API
+      const res = await fetch(`/api/get-template?templateId=${templateId}`);
+      if (!res.ok) throw new Error('Error obteniendo la plantilla desde Twilio');
+      const data = await res.json();
+      
+      const initialValues: Record<string, string> = {};
+      data.variables.forEach((v: string) => {
+        if (v === '1') initialValues[v] = lead.name;
+        else if (v === '2') initialValues[v] = lead.name;
+        else if (v === '3') initialValues[v] = lead.address || '';
+        else if (v === '4') initialValues[v] = lead.city || '';
+        else if (v === '5') initialValues[v] = lead.product_name || 'tu pedido';
+        else if (v === '6') initialValues[v] = lead.total_price || '';
+        else initialValues[v] = '';
+      });
+
+      setPreviewTemplate({
+        id: templateId,
+        name: templateName,
+        body: data.body,
+        variables: data.variables,
+        values: initialValues
+      });
+      setShowTemplates(false);
+    } catch (e: any) {
+      console.error(e);
+      alert('Error al cargar la plantilla: ' + e.message);
+    }
+    setFetchingTemplate(null);
+  }
+
+  async function handleConfirmSendTemplate() {
+    if (!previewTemplate) return;
+    setSendingTemplate(previewTemplate.id);
+    try {
       const res = await fetch('/api/send-template', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           leadId: lead.id,
-          templateId: templateId,
-          templateType: 'custom', // fallback
-          variables: {
-            customerName: lead.name,
-            productName: lead.product_name || 'tu pedido',
-            city: lead.city || '',
-            address: lead.address || '',
-            totalPrice: lead.total_price || '',
-            orderId: lead.notes?.split('Order ID:')[1]?.split('\n')[0]?.trim() || ''
-          }
+          templateId: previewTemplate.id,
+          templateType: 'custom',
+          variables: previewTemplate.values
         })
       });
       
@@ -136,13 +164,12 @@ export function LeadChatPanel({
       }
 
       await loadMessages();
-      
+      setPreviewTemplate(null);
     } catch(e: any) {
       console.error(e);
-      alert(`Error al enviar la plantilla "${templateName}":\n${e.message}`);
+      alert(`Error al enviar la plantilla "${previewTemplate.name}":\n${e.message}`);
     }
     setSendingTemplate(null);
-    setShowTemplates(false);
   }
 
   async function handleSendMessage() {
@@ -279,12 +306,12 @@ export function LeadChatPanel({
                        templates.map(t => (
                          <button 
                            key={t.id}
-                           onClick={() => handleSendTemplate(t.id, t.template_name)}
-                           disabled={sendingTemplate === t.id}
+                           onClick={() => fetchAndPreviewTemplate(t.id, t.template_name)}
+                           disabled={fetchingTemplate === t.id}
                            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-colors flex items-center justify-between"
                          >
                            <span className="truncate">{t.template_name}</span>
-                           {sendingTemplate === t.id && <Loader2 className="w-3 h-3 animate-spin text-blue-600" />}
+                           {fetchingTemplate === t.id && <Loader2 className="w-3 h-3 animate-spin text-blue-600" />}
                          </button>
                        ))
                      )}
@@ -309,6 +336,60 @@ export function LeadChatPanel({
                </button>
              </div>
           </div>
+
+          {/* Preview Template Modal */}
+          {previewTemplate && (
+            <div className="absolute inset-0 bg-white/95 backdrop-blur-sm z-50 flex items-center justify-center p-6 animate-in fade-in">
+              <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 p-6 max-w-lg w-full flex flex-col max-h-[90vh]">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="font-bold text-lg text-gray-900">Variables de Plantilla</h3>
+                  <button onClick={() => setPreviewTemplate(null)} className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg"><X className="w-5 h-5"/></button>
+                </div>
+                
+                <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100 mb-6 flex-1 overflow-y-auto text-[15px] text-gray-700 whitespace-pre-wrap leading-relaxed">
+                  {previewTemplate.body.split(/(\{\{\d+\}\})/).map((part, i) => {
+                    const match = part.match(/\{\{(\d+)\}\}/);
+                    if (match) {
+                      const varId = match[1];
+                      const val = previewTemplate.values[varId];
+                      return <span key={i} className="bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded font-bold">{val || `{{${varId}}}`}</span>;
+                    }
+                    return <span key={i}>{part}</span>;
+                  })}
+                </div>
+
+                {previewTemplate.variables.length > 0 && (
+                  <div className="space-y-3 mb-6">
+                    <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Completa los espacios:</h4>
+                    {previewTemplate.variables.map(v => (
+                      <div key={v} className="flex items-center gap-3">
+                        <label className="text-xs font-bold text-blue-600 bg-blue-100 px-2 py-1.5 rounded w-10 text-center">{'{{' + v + '}}'}</label>
+                        <input 
+                          type="text" 
+                          value={previewTemplate.values[v] || ''}
+                          onChange={e => setPreviewTemplate(prev => prev ? {...prev, values: {...prev.values, [v]: e.target.value}} : null)}
+                          className="flex-1 bg-white border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all shadow-sm"
+                          placeholder={`Valor para la variable ${v}...`}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div className="flex gap-3 mt-auto">
+                  <button onClick={() => setPreviewTemplate(null)} className="flex-1 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200 transition-colors">Cancelar</button>
+                  <button 
+                    onClick={handleConfirmSendTemplate}
+                    disabled={sendingTemplate !== null}
+                    className="flex-[2] px-4 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 disabled:opacity-70 flex justify-center items-center gap-2 transition-colors shadow-sm"
+                  >
+                    {sendingTemplate ? <Loader2 className="w-5 h-5 animate-spin"/> : <Send className="w-5 h-5"/>}
+                    Enviar Plantilla a Cliente
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* RIGHT COLUMN: CRM DATA */}

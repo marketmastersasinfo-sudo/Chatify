@@ -56,20 +56,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // 5. Construir Payload asegurando que NO mandamos variables sobrantes que hagan crashear la API
     const contentVariables: any = {};
     if (variables) {
-      // Mapeo por defecto según el orden estándar (1: nombre, 2: producto, etc.)
-      const mapping: Record<string, string> = {
-        '1': variables.customerName || '',
-        '2': variables.productName || 'tu pedido',
-        '3': variables.city || '',
-        '4': variables.address || '',
-        '5': variables.department || '',
-        '6': variables.totalPrice || '',
-        '7': variables.orderId || ''
-      };
-
+      // La UI ahora manda las variables con las llaves exactas ("1", "2", "3")
       // SOLO agregar las variables que la plantilla realmente pide
       for (const key of templateVariablesKeys) {
-        contentVariables[key] = mapping[key] || '';
+        contentVariables[key] = variables[key] || '';
       }
     }
 
