@@ -115,7 +115,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         department: department || null,
         total_price: totalPrice || null,
         product_name: realProductName || null,
-        notes: `Order ID: ${realOrderId}`
+        notes: `Order ID: ${realOrderId}\nRAW PAYLOAD: ${JSON.stringify(req.body)}`
       }).select().single();
 
       if (insertError) throw insertError;
@@ -136,6 +136,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (department && !existingLead.department) updates.department = department;
       if (totalPrice && !existingLead.total_price) updates.total_price = totalPrice;
       if (realProductName && !existingLead.product_name) updates.product_name = realProductName;
+      
+      updates.notes = (existingLead.notes ? existingLead.notes + '\n\n' : '') + `UPDATE RAW PAYLOAD: ${JSON.stringify(req.body)}`;
       
       if (Object.keys(updates).length > 0) {
         await supabase.from('leads').update(updates).eq('id', existingLead.id);
