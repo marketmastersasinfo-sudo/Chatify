@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import twilio from 'twilio';
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL;
-const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY;
+const supabaseKey = process.env.VITE_SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
 const supabase = createClient(supabaseUrl || '', supabaseKey || '');
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -111,7 +111,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       // 3. Save the message to the CRM
     if (leadId) {
-      await supabase.from('messages').insert({
+      const { error: insertError } = await supabase.from('messages').insert({
         lead_id: leadId,
         store_id: store.id,
         direction: 'inbound',
@@ -123,6 +123,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           sender_name: ProfileName
         }
       });
+      
+      if (insertError) {
+        console.error('Error inserting message:', insertError);
+      }
       
       const leadUpdates: any = { updated_at: new Date().toISOString() };
 
