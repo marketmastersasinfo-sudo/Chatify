@@ -18,7 +18,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const content = await twilioClient.content.v1.contents(template.twilio_content_sid).fetch();
     
     const rawText = content.types['twilio/text']?.body || content.types['twilio/media']?.body || '';
-    const variables = content.variables ? Object.keys(content.variables) : [];
+    
+    // Extraer variables usando regex {{1}}, {{2}}, etc.
+    const variableMatches = [...rawText.matchAll(/\{\{(\d+)\}\}/g)];
+    const variablesSet = new Set<string>();
+    variableMatches.forEach(match => variablesSet.add(match[1]));
+    
+    // Si Twilio reporta variables, también las sumamos por si acaso
+    if (content.variables) {
+      Object.keys(content.variables).forEach(k => variablesSet.add(k));
+    }
+    
+    const variables = Array.from(variablesSet).sort((a, b) => parseInt(a) - parseInt(b));
 
     return res.status(200).json({
       success: true,

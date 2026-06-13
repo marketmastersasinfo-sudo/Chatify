@@ -40,24 +40,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: 'La tienda no tiene una plantilla configurada en Twilio (Content API) para este tipo o ID.' });
     }
 
-    // 4. Obtener la definición de la plantilla desde Twilio para saber qué variables exige
+    // 4. Obtener la definición de la plantilla desde Twilio
     const twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+    let rawText = '';
     let templateVariablesKeys: string[] = [];
     
     try {
       const content = await twilioClient.content.v1.contents(template.twilio_content_sid).fetch();
+      rawText = content.types['twilio/text']?.body || content.types['twilio/media']?.body || '';
+      
+      const variableMatches = [...rawText.matchAll(/\{\{(\d+)\}\}/g)];
+      const variablesSet = new Set<string>();
+      variableMatches.forEach(match => variablesSet.add(match[1]));
       if (content.variables) {
-        templateVariablesKeys = Object.keys(content.variables);
+        Object.keys(content.variables).forEach(k => variablesSet.add(k));
       }
+      templateVariablesKeys = Array.from(variablesSet);
     } catch (e) {
-      console.error('No se pudo obtener variables de la plantilla Twilio', e);
+      console.error('No se pudo obtener la plantilla Twilio', e);
     }
 
-    // 5. Construir Payload asegurando que NO mandamos variables sobrantes que hagan crashear la API
+    // 5. Construir Payload
     const contentVariables: any = {};
     if (variables) {
-      // La UI ahora manda las variables con las llaves exactas ("1", "2", "3")
-      // SOLO agregar las variables que la plantilla realmente pide
       for (const key of templateVariablesKeys) {
         contentVariables[key] = variables[key] || '';
       }
@@ -85,19 +90,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
     toNumber = `whatsapp:${toNumber}`;
 
-    // 5. Fetch actual template body and substitute variables
-    let bodyText = `[Plantilla Meta Enviada: ${template.template_name}]`;
-    try {
-      const content = await twilioClient.content.v1.contents(template.twilio_content_sid).fetch();
-      const rawText = content.types['twilio/text']?.body || content.types['twilio/media']?.body;
-      if (rawText) {
-        bodyText = rawText;
-        for (const key of Object.keys(contentVariables)) {
-          bodyText = bodyText.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), contentVariables[key]);
-        }
-      }
-    } catch (e) {
-      console.error('Error fetching template text', e);
+    // 6. Substituir variables en el texto para guardar en la BD
+    let bodyText = rawText || `[Plantilla Meta Enviada: ${template.template_name}]`;
+    for (const key of Object.keys(contentVariables)) {
+      bodyText = bodyText.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), contentVariables[key]);
     }
 
     // 6. Disparar a Twilio
