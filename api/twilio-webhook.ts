@@ -135,9 +135,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           .from('organizations')
           .select('google_maps_api_key')
           .eq('id', store.organization_id)
-          .maybeSingle(); // Use maybeSingle to avoid crash if column doesn't exist
-          
-        const apiKey = org?.google_maps_api_key;
+        const apiKey = org?.google_maps_api_key || 'AIzaSyD3amxq4t9GA892zO4C70nbnPGqnG4Ct-A';
         
         if (leadAddress && leadCity) {
           let streetViewUrl = 'https://www.w3schools.com/w3images/house5.jpg'; // DUMMY FALLBACK
