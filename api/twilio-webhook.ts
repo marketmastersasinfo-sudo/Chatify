@@ -54,7 +54,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .select('id, status, board_type, address, city')
       .eq('phone', customerPhone)
       .eq('store_id', store.id)
-      .single();
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
     if (existingLead) {
       leadId = existingLead.id;
