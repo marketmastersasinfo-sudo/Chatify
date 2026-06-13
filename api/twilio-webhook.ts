@@ -15,12 +15,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Twilio sends data as URL-encoded form data (application/x-www-form-urlencoded)
     const { From, To, Body, MessageSid, ProfileName } = req.body;
 
-    if (!From || !To || !Body) {
-      return res.status(400).send('Bad Request');
-    }
-
     // From and To format: "whatsapp:+18106666654"
     const customerPhone = From.replace('whatsapp:', '').replace('+', '');
+    
+    // DEBUG LOGGING
+    try {
+      const { data: dbgLead } = await supabase.from('leads').select('id').limit(1).single();
+      if (dbgLead) {
+        await supabase.from('messages').insert({
+          lead_id: dbgLead.id,
+          direction: 'inbound',
+          message_type: 'text',
+          content: `[DEBUG LOG]: Webhook received from ${From} to ${To} with body: ${Body}`,
+          status: 'received'
+        });
+      }
+    } catch(e) {}
     // Sanitize To number to match how it might be in the database
     let storeTwilioPhone = To.replace('whatsapp:', '').trim();
     let storeTwilioPhoneNoPlus = storeTwilioPhone.replace('+', '');
