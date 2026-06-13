@@ -111,15 +111,6 @@ export function LeadChatPanel({
   async function handleSendTemplate(templateId: string, templateName: string) {
     setSendingTemplate(templateId);
     try {
-      // Registrar mensaje en BD primero
-      const { data: insertedMsg } = await (supabase as any).from('messages').insert({
-        lead_id: lead.id,
-        sender_type: 'human',
-        content: `[Plantilla Meta Enviada: ${templateName}]`
-      }).select().single();
-      
-      if (insertedMsg) setMessages(prev => [...prev, insertedMsg]);
-
       // Call API
       const res = await fetch('/api/send-template', {
         method: 'POST',
@@ -143,6 +134,8 @@ export function LeadChatPanel({
         const errorData = await res.json();
         throw new Error(errorData.error || 'Error desconocido de Twilio');
       }
+
+      await loadMessages();
       
     } catch(e: any) {
       console.error(e);

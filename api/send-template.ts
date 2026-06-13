@@ -95,7 +95,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
     toNumber = `whatsapp:${toNumber}`;
 
-    // 5. Disparar a Twilio
+    // 5. Fetch actual template body and substitute variables
+    let bodyText = `[Plantilla Meta Enviada: ${template.template_name}]`;
+    try {
+      const content = await twilioClient.content.v1.contents(template.twilio_content_sid).fetch();
+      const rawText = content.types['twilio/text']?.body || content.types['twilio/media']?.body;
+      if (rawText) {
+        bodyText = rawText;
+        for (const key of Object.keys(contentVariables)) {
+          bodyText = bodyText.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), contentVariables[key]);
+        }
+      }
+    } catch (e) {
+      console.error('Error fetching template text', e);
+    }
+
+    // 6. Disparar a Twilio
     const message = await twilioClient.messages.create({
       from: fromNumber,
       to: toNumber,
@@ -103,7 +118,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       contentVariables: Object.keys(contentVariables).length > 0 ? JSON.stringify(contentVariables) : undefined,
     });
 
-    return res.status(200).json({ success: true, messageId: message.sid });
+    // 7. Save the message to Supabase
+    await supabase.from('messages').insert({
+      lead_id: leadId,
+      store_id: store.id,
+      direction: 'outbound',
+      message_type: 'template',
+      sender_type: 'user',
+      content: bodyText,
+      status: 'sent',
+      metadata: {
+        twilio_message_sid: message.sid,
+        template_name: template.template_name
+      }
+    });
+
+    return res.status(200).json({ success: true, messageId: message.sid, bodyText });
 
   } catch (error: any) {
     console.error('Server error:', error);
