@@ -119,6 +119,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   } catch (error: any) {
     console.error('Server error:', error);
+    
+    // Si tenemos el leadId, guardamos el error en la base de datos para que el usuario lo vea
+    if (req.body?.leadId) {
+      await supabase.from('messages').insert({
+        lead_id: req.body.leadId,
+        sender_type: 'ai',
+        content: `[ERROR DE ENVÍO] No se pudo enviar la plantilla. Razón: ${error.message}`
+      });
+    }
+
     return res.status(500).json({ error: error.message });
   }
 }
