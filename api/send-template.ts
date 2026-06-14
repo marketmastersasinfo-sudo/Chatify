@@ -120,12 +120,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   } catch (error: any) {
     console.error('Server error:', error);
     
+    // Traducción de errores comunes para el usuario
+    let userFriendlyError = error.message || 'Error desconocido';
+    if (userFriendlyError.includes('63016') || userFriendlyError.includes('Outside messaging window')) {
+      userFriendlyError = 'WhatsApp bloqueó este mensaje. Han pasado más de 24 horas desde que el cliente te escribió. Para hablarle, envíale una "Plantilla" primero.';
+    }
+
     // Si tenemos el leadId, guardamos el error en la base de datos para que el usuario lo vea
     if (req.body?.leadId) {
       await supabase.from('messages').insert({
         lead_id: req.body.leadId,
         sender_type: 'ai',
-        content: `[ERROR DE ENVÍO] No se pudo enviar la plantilla. Razón: ${error.message}`
+        content: `[ERROR DE ENVÍO] ${userFriendlyError}`
       });
     }
 
