@@ -21,7 +21,8 @@ export function TemplateBuilder() {
     headerType: 'NONE', // NONE, IMAGE
     headerImageUrl: '', // Solo de uso interno si queremos preview
     bodyText: 'Hola {{1}}, gracias por tu compra. Te enviaremos a la ciudad {{2}}.',
-    variableExamples: { '1': 'Juan', '2': 'Bogotá' } as Record<string, string>
+    variableExamples: { '1': 'Juan', '2': 'Bogotá' } as Record<string, string>,
+    quickReplies: [] as string[]
   });
 
   // AI Form State
@@ -162,6 +163,16 @@ export function TemplateBuilder() {
                "https://scontent.whatsapp.net/v/t61.24694-34/436662446_460613243171833_7612711019129598816_n.jpg"
             ]
           }
+        });
+      }
+
+      if (newTemplate.quickReplies && newTemplate.quickReplies.length > 0) {
+        components.push({
+          type: 'BUTTONS',
+          buttons: newTemplate.quickReplies.map(text => ({
+            type: 'QUICK_REPLY',
+            text: text.substring(0, 25)
+          }))
         });
       }
 
@@ -406,7 +417,63 @@ export function TemplateBuilder() {
                   </div>
                 );
               })()}
-
+              {/* Quick Reply Buttons */}
+              <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
+                <div className="flex justify-between items-center mb-3">
+                  <div>
+                    <h5 className="text-sm font-bold text-gray-800">Botones de Respuesta Rápida</h5>
+                    <p className="text-[10px] text-gray-500">Agrega botones que el cliente pueda tocar (ej: "Confirmar pedido"). Máximo 3.</p>
+                  </div>
+                  <button 
+                    onClick={() => {
+                      if (newTemplate.quickReplies.length < 3) {
+                        setNewTemplate({
+                          ...newTemplate,
+                          quickReplies: [...newTemplate.quickReplies, '']
+                        });
+                      }
+                    }}
+                    disabled={newTemplate.quickReplies.length >= 3}
+                    className="flex items-center gap-1 bg-white border border-gray-300 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-gray-50 disabled:opacity-50"
+                  >
+                    <Plus className="w-3 h-3"/> Agregar Botón
+                  </button>
+                </div>
+                
+                {newTemplate.quickReplies.length > 0 && (
+                  <div className="space-y-2">
+                    {newTemplate.quickReplies.map((qr, index) => (
+                      <div key={index} className="flex items-center gap-2">
+                        <div className="bg-gray-200 text-gray-600 px-3 py-2 rounded-lg text-xs font-bold">
+                          Botón {index + 1}
+                        </div>
+                        <input 
+                          type="text" 
+                          placeholder="Ej: Confirmar pedido"
+                          maxLength={25}
+                          value={qr}
+                          onChange={(e) => {
+                            const updated = [...newTemplate.quickReplies];
+                            updated[index] = e.target.value;
+                            setNewTemplate({ ...newTemplate, quickReplies: updated });
+                          }}
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-1 focus:ring-blue-500"
+                        />
+                        <button 
+                          onClick={() => {
+                            const updated = [...newTemplate.quickReplies];
+                            updated.splice(index, 1);
+                            setNewTemplate({ ...newTemplate, quickReplies: updated });
+                          }}
+                          className="text-red-500 hover:bg-red-50 p-2 rounded-lg"
+                        >
+                          <X className="w-4 h-4"/>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
               <div className="pt-4 flex justify-end gap-3">
                 <button onClick={() => setIsCreating(false)} className="px-5 py-2.5 text-sm font-bold text-gray-600 hover:text-gray-900 transition-colors">Cancelar</button>
                 <button 

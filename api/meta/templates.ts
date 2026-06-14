@@ -106,15 +106,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
       }
 
+      const buttonsComponent = payload.components?.find((c: any) => c.type === 'BUTTONS');
+
       const twilioContentPayload: any = {
         friendlyName: payload.name,
         language: payload.language || 'es',
-        types: {
-          'twilio/text': {
-            body: bodyText || 'Plantilla vacía'
-          }
-        }
+        types: {}
       };
+
+      if (buttonsComponent && buttonsComponent.buttons && buttonsComponent.buttons.length > 0) {
+        twilioContentPayload.types['twilio/quick-reply'] = {
+          body: bodyText || 'Plantilla vacía',
+          actions: buttonsComponent.buttons.map((b: any, index: number) => ({
+            id: `btn_${index}`,
+            title: b.text
+          }))
+        };
+      } else {
+        twilioContentPayload.types['twilio/text'] = {
+          body: bodyText || 'Plantilla vacía'
+        };
+      }
 
       if (Object.keys(variables).length > 0) {
         twilioContentPayload.variables = variables;
