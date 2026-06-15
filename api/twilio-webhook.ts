@@ -189,6 +189,99 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       // Update the lead's status and updated_at timestamp
       await supabase.from('leads').update(leadUpdates).eq('id', leadId);
+
+      // 5. SOPHIA AI INTEGRATION 🤖
+      const isStreetViewTriggered = (leadBoard === 'logistics' && leadStatus === 'nuevo');
+      const isDebugCommand = (Body.trim().toUpperCase() === 'RESET');
+
+      if (!isStreetViewTriggered && !isDebugCommand && process.env.OPENAI_API_KEY) {
+        // a) Fetch the last 15 messages for context
+        const { data: recentMessages } = await supabase
+          .from('messages')
+          .select('sender_type, content')
+          .eq('lead_id', leadId)
+          .order('created_at', { ascending: false })
+          .limit(15);
+
+        if (recentMessages) {
+          // Revert to chronological order for OpenAI
+          recentMessages.reverse();
+
+          // b) Check if AI is paused by checking if the last system command was PAUSAR_IA
+          let isAIPaused = false;
+          for (let i = recentMessages.length - 1; i >= 0; i--) {
+            if (recentMessages[i].content === '[SISTEMA] PAUSAR_IA') {
+              isAIPaused = true;
+              break;
+            }
+            if (recentMessages[i].content === '[SISTEMA] REANUDAR_IA') {
+              isAIPaused = false;
+              break;
+            }
+          }
+
+          if (!isAIPaused) {
+            // c) Construct OpenAI Context
+            const { buildSophiaPrompt } = await import('./utils/sophia-prompt.js');
+            const { OpenAI } = await import('openai');
+            
+            // We need to fetch the full lead info for the prompt
+            const { data: fullLead } = await supabase.from('leads').select('*').eq('id', leadId).single();
+            
+            const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+            
+            const aiMessages = [];
+            aiMessages.push({ role: 'system', content: buildSophiaPrompt(fullLead || {}) });
+            
+            for (const msg of recentMessages) {
+              // Ignore system debug messages
+              if (msg.content.startsWith('[')) continue;
+              
+              aiMessages.push({
+                role: msg.sender_type === 'client' ? 'user' : 'assistant',
+                content: msg.content
+              });
+            }
+
+            try {
+              const response = await openai.chat.completions.create({
+                model: 'gpt-4o-mini',
+                messages: aiMessages as any,
+                temperature: 0.7,
+                max_tokens: 150 // Keep responses short and sweet
+              });
+
+              const aiReply = response.choices[0]?.message?.content || '';
+
+              if (aiReply) {
+                // Send reply via Twilio
+                const twilioClient = await import('twilio');
+                const client = twilioClient.default(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+                
+                await client.messages.create({
+                  from: `whatsapp:+${storeTwilioPhone.replace('+', '')}`,
+                  to: `whatsapp:+${customerPhone}`,
+                  body: aiReply
+                });
+
+                // Save reply to CRM
+                await supabase.from('messages').insert({
+                  lead_id: leadId,
+                  sender_type: 'ai',
+                  content: aiReply
+                });
+              }
+            } catch (err: any) {
+              console.error('Sophia AI Error:', err);
+              await supabase.from('messages').insert({
+                lead_id: leadId,
+                sender_type: 'ai',
+                content: `[BOT CRASH] OpenAI Error: ${err.message}`
+              });
+            }
+          }
+        }
+      }
     }
 
     // Twilio expects an empty TwiML response or a 200 OK
