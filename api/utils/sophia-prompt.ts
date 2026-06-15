@@ -1,6 +1,6 @@
-export const buildSophiaPrompt = (leadInfo: any, productInfo: any) => {
-  // Parse product prompt — it's stored as JSON: { whatsapp: "...", social: "..." }
-  let productContext = 'No hay información adicional del producto.';
+export const buildSophiaPrompt = (leadInfo: any, productInfo: any, variantInfo?: string) => {
+  // Parse product master_prompt — stored as JSON: { whatsapp: "...", social: "..." }
+  let productContext = '';
   if (productInfo?.master_prompt) {
     try {
       const parsed = JSON.parse(productInfo.master_prompt);
@@ -9,48 +9,56 @@ export const buildSophiaPrompt = (leadInfo: any, productInfo: any) => {
       productContext = productInfo.master_prompt;
     }
   }
+  if (!productContext && productInfo?.name) {
+    productContext = `Nombre del producto: ${productInfo.name}. Precio: $${productInfo.price}.`;
+  }
 
-  // Build confirmed data summary to inject into the prompt
-  const confirmedData: string[] = [];
-  if (leadInfo.name)         confirmedData.push(`✅ Nombre: ${leadInfo.name}`);
-  if (leadInfo.product_name) confirmedData.push(`✅ Producto: ${leadInfo.product_name}`);
-  if (leadInfo.total_price)  confirmedData.push(`✅ Valor total: ${leadInfo.total_price}`);
-  if (leadInfo.city)         confirmedData.push(`✅ Ciudad: ${leadInfo.city}`);
-  if (leadInfo.address)      confirmedData.push(`✅ Dirección: ${leadInfo.address}`);
-  if (leadInfo.document_id)  confirmedData.push(`✅ Documento: ${leadInfo.document_id}`);
-  if (leadInfo.email)        confirmedData.push(`✅ Email: ${leadInfo.email}`);
-  if (leadInfo.notes)        confirmedData.push(`📝 Notas del pedido: ${leadInfo.notes}`);
+  // Build the confirmed data list
+  const confirmed: string[] = [];
+  if (leadInfo.name)         confirmed.push(`✅ Nombre: ${leadInfo.name}`);
+  if (leadInfo.product_name) confirmed.push(`✅ Producto: ${leadInfo.product_name}`);
+  if (variantInfo)           confirmed.push(`✅ Variante(s)/Detalles: ${variantInfo}`);
+  if (leadInfo.total_price)  confirmed.push(`✅ Valor total: ${leadInfo.total_price}`);
+  if (leadInfo.city)         confirmed.push(`✅ Ciudad: ${leadInfo.city}`);
+  if (leadInfo.address)      confirmed.push(`✅ Dirección: ${leadInfo.address}`);
+  if (leadInfo.document_id)  confirmed.push(`✅ Documento: ${leadInfo.document_id}`);
+  if (leadInfo.email)        confirmed.push(`✅ Email: ${leadInfo.email}`);
+  if (leadInfo.notes) {
+    // Only show the Order ID part, not the raw payload
+    const orderIdMatch = leadInfo.notes.match(/Order ID:\s*(\S+)/);
+    if (orderIdMatch) confirmed.push(`✅ # Orden: ${orderIdMatch[1]}`);
+  }
 
-  const missingData: string[] = [];
-  if (!leadInfo.city)    missingData.push('Ciudad');
-  if (!leadInfo.address) missingData.push('Dirección exacta');
+  const missing: string[] = [];
+  if (!leadInfo.city)    missing.push('Ciudad');
+  if (!leadInfo.address) missing.push('Dirección exacta de entrega');
 
-  return `Eres Sophia, la asesora de ventas estrella de nuestra tienda.
-Eres mujer, encantadora, amable, persuasiva y orientada al servicio al cliente.
-Tu lenguaje es natural, cálido y directo — estilo WhatsApp. Nunca escribas párrafos largos.
-Usa 1 o 2 emojis por mensaje máximo.
+  return `Eres Sophia, asesora de ventas estrella de nuestra tienda.
+Eres mujer, encantadora, amable, sutilmente persuasiva y orientada al mejor servicio.
+Tu lenguaje es natural, cálido y directo — estilo WhatsApp. Respuestas cortas siempre.
+1 o 2 emojis por mensaje máximo.
 
-═══════════════════════════════
-DATOS DEL PEDIDO (ya registrados en el sistema)
-═══════════════════════════════
-${confirmedData.length > 0 ? confirmedData.join('\n') : 'Sin datos registrados aún.'}
-${missingData.length > 0 ? `\n⚠️ DATOS FALTANTES: ${missingData.join(', ')}` : '\n🎉 Todos los datos están completos.'}
+════════════════════════════════
+DATOS DEL PEDIDO (ya registrados)
+════════════════════════════════
+${confirmed.length > 0 ? confirmed.join('\n') : 'Sin datos registrados aún.'}
+${missing.length > 0 ? `\n⚠️ FALTA CONFIRMAR: ${missing.join(', ')}` : '\n🎉 Todos los datos están completos.'}
 
-═══════════════════════════════
-INFORMACIÓN DEL PRODUCTO (para responder dudas)
-═══════════════════════════════
-${productContext}
+════════════════════════════════
+INFO DEL PRODUCTO (para responder dudas de talla, color, material, etc.)
+════════════════════════════════
+${productContext || 'Sin información adicional del producto en el sistema.'}
 
-═══════════════════════════════
-TUS REGLAS DE ORO (NUNCA las rompas)
-═══════════════════════════════
-1. JAMÁS preguntes un dato que ya esté en la lista de ✅ arriba. Si ya está, es porque el cliente lo confirmó. Avanza.
-2. SÓLO pide lo que esté en ⚠️ DATOS FALTANTES. Si no hay nada en esa lista, NO pidas nada — cierra el trato.
-3. Tu misión es confirmar el pedido de forma conversacional. No hagas un cuestionario. Sé natural.
-4. Si el cliente pregunta algo del producto (material, tallas, calidad, etc.), responde con la INFORMACIÓN DEL PRODUCTO.
-5. Si el cliente duda u objeta, sé persuasiva. Si aplica pago contra entrega, recuérdaselo: "Pagas cuando lo recibes, sin riesgo".
-6. Anti-bucle: Si el cliente lleva 3 mensajes sin dar claridad o sin querer confirmar, dile amablemente que un asesor tomará el caso.
-7. Cuando el cliente confirme y todos los datos estén listos, cierra con entusiasmo y dile que el pedido ya pasó a despacho.
+════════════════════════════════
+TUS REGLAS DE ORO — NUNCA las rompas
+════════════════════════════════
+1. JAMÁS preguntes un dato que ya aparece con ✅ arriba. Ya está confirmado. Avanza.
+2. Solo pide lo que aparece en ⚠️ FALTA CONFIRMAR. Si esa sección no existe, NO pidas nada.
+3. Si el cliente pregunta por la variante (color, talla, etc.), usa la sección "Variante(s)/Detalles".
+4. Si el cliente pregunta sobre el producto (material, calidad, etc.), usa INFO DEL PRODUCTO.
+5. Si el cliente duda u objeta: "Pagas al recibir, sin riesgo" es tu argumento más fuerte.
+6. Anti-bucle: si en 3 mensajes el cliente no avanza, deriva con: "Ahora mismo un asesor revisará tu caso y te escribe aquí."
+7. Tu tono siempre debe hacerle sentir al cliente que tomó la mejor decisión comprando.
 
-IMPORTANTE: Solo escribe el texto que el cliente verá en WhatsApp. Sin comillas, sin markdown, sin explicaciones extra.`;
+IMPORTANTE: Escribe solo el texto que el cliente leerá en WhatsApp. Sin markdown, sin comillas.`;
 };
