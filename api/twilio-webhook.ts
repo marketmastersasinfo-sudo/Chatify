@@ -77,7 +77,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const { data: existingLead } = await supabase
       .from('leads')
-      .select('id, status, board_type, address, city')
+      .select('id, status, board_type, address, city, name, product_name, total_price, notes, document_id, email')
       .eq('phone', customerPhone)
       .eq('store_id', store.id)
       .order('created_at', { ascending: false })
@@ -127,7 +127,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // 4. GOOGLE STREET VIEW AUTOMATION
       // Si el lead de logística responde por primera vez (su estado era 'nuevo')
       // le enviamos automáticamente la fachada si tenemos la API key.
-      if (leadBoard === 'logistics' && leadStatus === 'nuevo') {
+      
+      // FAIL-SAFE: Verificar si ya enviamos la fachada a este lead (ilike = case-insensitive)
+      const { data: previousStreetView } = await supabase
+        .from('messages')
+        .select('id')
+        .eq('lead_id', leadId)
+        .ilike('content', '%Automated Street View Image Sent%')
+        .limit(1)
+        .maybeSingle();
+
+      if (leadBoard === 'logistics' && existingLead?.status === 'nuevo' && !previousStreetView) {
         leadUpdates.status = 'client_replied'; // Movemos de estado
         
         // Fetch organization API key manually to avoid join errors
@@ -188,10 +198,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
 
       // Update the lead's status and updated_at timestamp
-      await supabase.from('leads').update(leadUpdates).eq('id', leadId);
+      const { error: updateError } = await supabase.from('leads').update(leadUpdates).eq('id', leadId);
+      if (updateError) {
+        console.error('Error updating lead status:', updateError);
+        // Fallback: If update failed, force the status so we don't loop
+        leadStatus = leadUpdates.status || leadStatus;
+      }
 
       // 5. SOPHIA AI INTEGRATION 🤖
-      const isStreetViewTriggered = (leadBoard === 'logistics' && leadStatus === 'nuevo');
+      const isStreetViewTriggered = (leadBoard === 'logistics' && existingLead?.status === 'nuevo' && !previousStreetView);
       const isDebugCommand = (Body.trim().toUpperCase() === 'RESET');
 
       if (!isStreetViewTriggered && !isDebugCommand && process.env.OPENAI_API_KEY) {
@@ -225,13 +240,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             const { buildSophiaPrompt } = await import('./utils/sophia-prompt.js');
             const { OpenAI } = await import('openai');
             
-            // We need to fetch the full lead info for the prompt
-            const { data: fullLead } = await supabase.from('leads').select('*').eq('id', leadId).single();
+            // Use the lead data already fetched at the top (existingLead has all fields now)
+            const fullLead = existingLead;
+            
+            // Fetch product master_prompt for Sophia's product context
+            let productInfo = null;
+            if (fullLead?.product_name) {
+               const searchTerm = fullLead.product_name.substring(0, 15);
+               const { data: prodData } = await supabase.from('products')
+                 .select('name, price, master_prompt')
+                 .eq('store_id', store.id)
+                 .ilike('name', `%${searchTerm}%`)
+                 .limit(1).maybeSingle();
+               productInfo = prodData;
+            }
             
             const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
             
             const aiMessages = [];
-            aiMessages.push({ role: 'system', content: buildSophiaPrompt(fullLead || {}) });
+            aiMessages.push({ role: 'system', content: buildSophiaPrompt(fullLead || {}, productInfo) });
             
             for (const msg of recentMessages) {
               // Ignore system debug messages
