@@ -47,7 +47,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     
     try {
       const content = await twilioClient.content.v1.contents(template.twilio_content_sid).fetch();
-      rawText = content.types['twilio/text']?.body || content.types['twilio/media']?.body || '';
+      const types = content.types as any;
+      rawText = types['twilio/text']?.body || types['twilio/media']?.body || types['twilio/quick-reply']?.body || '';
       
       const variableMatches = [...rawText.matchAll(/\{\{(\d+)\}\}/g)];
       const variablesSet = new Set<string>();

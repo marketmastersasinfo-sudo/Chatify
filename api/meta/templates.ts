@@ -44,7 +44,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         for (const local of localTemplates) {
           if (local.twilio_approval_status === 'received' || local.twilio_approval_status === 'pending') {
             try {
-              const approval = await twilioClient.content.v1.contents(local.twilio_content_sid).approvalFetch().fetch();
+              const approval = await twilioClient.content.v1.contents(local.twilio_content_sid).approvalFetch().fetch() as any;
               if (approval.status !== local.twilio_approval_status) {
                 await supabase.from('store_templates')
                   .update({ twilio_approval_status: approval.status })
@@ -61,17 +61,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // Formatear para que el frontend no se rompa tanto
       const formattedData = contents.map(c => {
         const local = localTemplates?.find(l => l.twilio_content_sid === c.sid);
+        const types = c.types as any;
         return {
           id: c.sid,
           name: local?.template_name || c.friendlyName || 'Sin Nombre',
-          category: local?.template_type === 'custom' ? 'UTILITY' : 'MARKETING', // Fallback simplificado
+          category: local?.template_type === 'custom' ? 'UTILITY' : 'MARKETING',
           language: c.language,
           status: local?.twilio_approval_status || 'APPROVED', 
           created_at: local?.created_at || null,
           components: [
             {
               type: 'BODY',
-              text: c.types['twilio/text']?.body || c.types['twilio/media']?.body || ''
+              text: types['twilio/text']?.body || types['twilio/media']?.body || types['twilio/quick-reply']?.body || ''
             }
           ]
         };
@@ -86,19 +87,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (req.method === 'POST') {
       const payload = req.body;
       
-      // 1. Crear el Content en Twilio
-      // Asumimos que payload viene estructurado desde el frontend similar a Meta
-      // Convertimos el payload de Meta a Twilio Content API
-      
       let bodyText = '';
       const variables: any = {};
       
       const bodyComponent = payload.components?.find((c: any) => c.type === 'BODY');
       if (bodyComponent) {
         bodyText = bodyComponent.text;
-        // Twilio usa {{1}}, Meta usa {{1}}. Si hay variables, las extraemos
-        // En un caso real avanzado, el frontend debería mandar las variables de Twilio.
-        // Simularemos un mapping simple.
         const regex = /{{(\d+)}}/g;
         let match;
         while ((match = regex.exec(bodyText)) !== null) {
@@ -139,7 +133,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const approval = await twilioClient.content.v1.contents(content.sid).approvalCreate.create({
         category: payload.category || 'UTILITY',
         name: payload.name
-      });
+      }) as any;
 
       // Guardar el SID en nuestra BD
       try {
@@ -155,6 +149,89 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
 
       return res.status(200).json({ success: true, data: { id: content.sid, status: approval.status } });
+    }
+
+    // ==========================================
+    // PUT: Sincronizar nombres desde Chatify → Twilio (fix unnamed templates)
+    // ==========================================
+    if (req.method === 'PUT') {
+      const { action } = req.body || {};
+      
+      if (action !== 'sync-names') {
+        return res.status(400).json({ error: 'Acción no reconocida. Usa action: "sync-names"' });
+      }
+
+      // Load store_templates with valid names and SIDs
+      const { data: localTemplates, error: dbErr } = await supabase
+        .from('store_templates')
+        .select('id, template_name, twilio_content_sid, twilio_approval_status')
+        .eq('store_id', storeId as string)
+        .not('twilio_content_sid', 'is', null)
+        .not('template_name', 'is', null)
+        .neq('template_name', '');
+
+      if (dbErr) throw new Error('Error leyendo store_templates: ' + dbErr.message);
+
+      const results: any[] = [];
+      const accountSid = process.env.TWILIO_ACCOUNT_SID!;
+      const authToken = process.env.TWILIO_AUTH_TOKEN!;
+      const base64Auth = Buffer.from(`${accountSid}:${authToken}`).toString('base64');
+
+      for (const tmpl of (localTemplates || [])) {
+        const sid = tmpl.twilio_content_sid?.trim();
+        const name = tmpl.template_name?.trim();
+        if (!sid || !name) continue;
+
+        const result: any = { id: tmpl.id, name, sid, actions: [] };
+
+        try {
+          // Fetch current friendlyName
+          const content = await twilioClient.content.v1.contents(sid).fetch();
+          const currentFriendlyName = content.friendlyName;
+
+          if (!currentFriendlyName || currentFriendlyName !== name) {
+            // Update via Twilio REST API (SDK doesn't expose update for Content Templates)
+            const updateRes = await fetch(`https://content.twilio.com/v1/Content/${sid}`, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Basic ${base64Auth}`,
+                'Content-Type': 'application/x-www-form-urlencoded',
+              },
+              body: new URLSearchParams({ FriendlyName: name }).toString(),
+            });
+
+            if (updateRes.ok) {
+              result.actions.push(`✅ Renombrado a "${name}" en Twilio`);
+            } else {
+              const errBody = await updateRes.text();
+              result.actions.push(`⚠️ No se pudo renombrar (${updateRes.status}): ${errBody.substring(0, 120)}`);
+            }
+          } else {
+            result.actions.push(`ℹ️ Ya tenía el nombre correcto: "${currentFriendlyName}"`);
+          }
+
+          // Sync approval status back to Supabase
+          try {
+            const approval = await twilioClient.content.v1.contents(sid).approvalFetch().fetch() as any;
+            const realStatus = approval.status || 'approved';
+            if (realStatus !== tmpl.twilio_approval_status) {
+              await supabase.from('store_templates').update({ twilio_approval_status: realStatus }).eq('id', tmpl.id);
+              result.actions.push(`🔄 Estado actualizado: ${tmpl.twilio_approval_status} → ${realStatus}`);
+            } else {
+              result.actions.push(`✅ Estado correcto: ${realStatus}`);
+            }
+          } catch (approvalErr: any) {
+            result.actions.push(`⚠️ No se pudo verificar estado: ${approvalErr.message}`);
+          }
+
+        } catch (twilioErr: any) {
+          result.actions.push(`❌ Error Twilio: ${twilioErr.message}`);
+        }
+
+        results.push(result);
+      }
+
+      return res.status(200).json({ success: true, synced: results.length, results });
     }
 
     return res.status(405).json({ error: 'Method not allowed' });

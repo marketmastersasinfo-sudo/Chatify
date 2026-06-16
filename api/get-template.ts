@@ -17,7 +17,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
     const content = await twilioClient.content.v1.contents(template.twilio_content_sid).fetch();
     
-    const rawText = content.types['twilio/text']?.body || content.types['twilio/media']?.body || '';
+    const types = content.types as any;
+    const rawText = types['twilio/text']?.body || types['twilio/media']?.body || types['twilio/quick-reply']?.body || '';
     
     // Extraer variables usando regex {{1}}, {{2}}, etc.
     const variableMatches = [...rawText.matchAll(/\{\{(\d+)\}\}/g)];

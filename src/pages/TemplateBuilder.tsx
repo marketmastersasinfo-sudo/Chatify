@@ -128,15 +128,14 @@ export function TemplateBuilder() {
     setSyncing(true);
     setSyncResults(null);
     try {
-      const res = await fetch('/api/twilio/sync-template-names', {
-        method: 'POST',
+      const res = await fetch(`/api/meta/templates?storeId=${selectedStore.id}`, {
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ storeId: selectedStore.id })
+        body: JSON.stringify({ action: 'sync-names' })
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Error sincronizando');
       setSyncResults(json.results || []);
-      // Reload templates to reflect any status updates
       fetchMetaTemplates(selectedStore.id);
     } catch (err: any) {
       setError(err.message);
