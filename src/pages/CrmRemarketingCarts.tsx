@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   ShoppingCart, MessageSquare, MessageSquareText, MapPin,
-  CheckCircle2, Users, Search, Loader2, Store,
+  CheckCircle2, Users, Search, Loader2,
   Ban, Send, Clock, TrendingUp, DollarSign, Zap, Plus, X, FlaskConical
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
@@ -477,70 +477,67 @@ function LeadCard({
       draggable
       onDragStart={e => onDragStart(e, lead.id)}
       onClick={onClick}
-      className="bg-white rounded-xl shadow-sm border border-gray-100 cursor-grab active:cursor-grabbing hover:shadow-md transition-all relative overflow-hidden group"
+      className="bg-white rounded-xl shadow-sm border border-gray-100 cursor-grab active:cursor-grabbing hover:shadow-md transition-all relative overflow-hidden"
     >
       {/* Left accent bar */}
       <div className="absolute left-0 top-0 w-1 h-full rounded-l-xl" style={{ backgroundColor: accent }} />
 
-      <div className="pl-3 pr-3 pt-3 pb-2.5">
-        {/* Row 1: badges */}
-        <div className="flex items-center gap-1.5 flex-wrap mb-2">
-          <TrafficBadge source={lead.traffic_source} />
-          {lead.stores?.country && (
-            <span className="leading-none"><CountryFlag country={lead.stores.country} /></span>
-          )}
-          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${touchMeta.color}`}>
-            {touchMeta.label}
-          </span>
-          {lead.is_banned && (
-            <span className="bg-red-100 text-red-600 px-1.5 py-0.5 rounded text-[10px] font-bold flex items-center gap-0.5">
-              <Ban className="w-2.5 h-2.5" /> Baneado
+      <div className="pl-3 pr-3 pt-2.5 pb-2.5">
+        {/* Row 1: Name + Store */}
+        <div className="flex items-center justify-between">
+          <h4 className="font-bold text-gray-900 text-sm leading-tight truncate max-w-[160px]">{lead.name || 'Sin nombre'}</h4>
+          {lead.stores?.name && (
+            <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-0.5">
+              {lead.stores?.country && <CountryFlag country={lead.stores.country} />}
+              {lead.stores.name}
             </span>
           )}
         </div>
 
-        {/* Row 2: name + store */}
-        <h4 className="font-bold text-gray-900 text-sm leading-tight">{lead.name || 'Sin nombre'}</h4>
-        {lead.stores?.name && (
-          <p className="text-[10px] font-semibold text-gray-400 mt-0.5 flex items-center gap-1 uppercase tracking-wide">
-            <Store className="w-3 h-3" /> {lead.stores.name}
-          </p>
-        )}
-
-        {/* Row 3: product */}
+        {/* Row 2: Product (truncated) */}
         {lead.product_name && (
-          <p className="text-xs font-semibold text-purple-600 bg-purple-50 w-fit px-2 py-0.5 rounded-full mt-1.5">
-            🛍️ {lead.product_name}
+          <p className="text-[11px] text-purple-600 font-medium mt-1 truncate" title={lead.product_name}>
+            🛍️ {lead.product_name.length > 35 ? lead.product_name.substring(0, 35) + '...' : lead.product_name}
           </p>
         )}
 
-        {/* Row 4: phone + price */}
+        {/* Row 3: Phone + Price inline */}
         <div className="flex items-center justify-between mt-1.5">
-          <p className="text-[11px] text-gray-400">{lead.phone}</p>
+          <p className="text-[11px] text-gray-400 font-mono">{lead.phone}</p>
           {lead.total_price && (
             <p className="text-xs font-bold text-green-600">${Number(lead.total_price).toLocaleString('es-CO')}</p>
           )}
         </div>
 
-        {/* Row 5: last contact time */}
-        {lead.recovery_last_sent_at && (
-          <div className="flex items-center gap-1 mt-1.5">
-            <Clock className="w-3 h-3 text-gray-300" />
-            <p className="text-[10px] text-gray-400">Último msg: hace {timeSince(lead.recovery_last_sent_at)}</p>
-          </div>
-        )}
+        {/* Row 4: Badges */}
+        <div className="flex items-center gap-1.5 flex-wrap mt-2">
+          <TrafficBadge source={lead.traffic_source} />
+          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${touchMeta.color}`}>
+            {touchMeta.label}
+          </span>
+          {lead.recovery_last_sent_at && (
+            <span className="text-[10px] text-gray-400 flex items-center gap-0.5">
+              <Clock className="w-2.5 h-2.5" /> hace {timeSince(lead.recovery_last_sent_at)}
+            </span>
+          )}
+          {lead.is_banned && (
+            <span className="bg-red-100 text-red-600 px-1.5 py-0.5 rounded text-[10px] font-bold flex items-center gap-0.5">
+              <Ban className="w-2.5 h-2.5" /> Ban
+            </span>
+          )}
+        </div>
 
-        {/* Row 6: actions (shown on hover for non-recovered/lost) */}
+        {/* Row 5: Send button — ALWAYS VISIBLE for actionable leads */}
         {(lead.status === 'abandoned' || lead.status === 'bot_sent') && (
-          <div className="mt-2 opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
+          <div className="mt-2.5" onClick={e => e.stopPropagation()}>
             <button
               onClick={() => onForceSend(lead)}
               disabled={isForcingSend}
-              className="w-full text-xs font-bold bg-purple-600 text-white py-1.5 rounded-lg flex items-center justify-center gap-1.5 hover:bg-purple-700 transition-colors"
+              className="w-full text-[11px] font-bold bg-purple-600 text-white py-2 rounded-lg flex items-center justify-center gap-1.5 hover:bg-purple-700 transition-colors shadow-sm"
             >
               {isForcingSend
-                ? <><Loader2 className="w-3 h-3 animate-spin" /> Enviando...</>
-                : <><Send className="w-3 h-3" /> Enviar mensaje ahora</>}
+                ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Enviando...</>
+                : <><Send className="w-3.5 h-3.5" /> 📩 Enviar mensaje ahora</>}
             </button>
           </div>
         )}
