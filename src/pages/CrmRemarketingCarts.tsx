@@ -1,134 +1,94 @@
 import { useState, useEffect } from 'react';
 import {
   ShoppingCart, MessageSquare, MessageSquareText, MapPin,
-  CheckCircle2, Users, Search, Loader2,
-  Ban, Send, Clock, TrendingUp, DollarSign, Zap, Plus, X, FlaskConical
+  CheckCircle2, Users, Search, Loader2, Trash2,
+  Send, Clock, TrendingUp, DollarSign, Zap, Plus, X, FlaskConical
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { CrmFilters } from '../components/CrmFilters';
 import type { CrmFilterState } from '../components/CrmFilters';
 import { LeadChatPanel } from '../components/LeadChatPanel';
 import { CountryFlag } from '../utils/flags';
-import { TrafficBadge } from '../components/TrafficBadge';
 
 // ─── Column definitions (Funnel Stages) ───────────────────────────────
 const columns = [
   {
     id: 'abandoned',
-    title: '🛒 Abandono Detectado',
+    title: 'Abandono Detectado',
+    emoji: '🛒',
     icon: ShoppingCart,
-    accent: '#6366F1',
-    bg: 'bg-indigo-50/40',
-    border: 'border-indigo-200',
-    headerBg: 'bg-indigo-100',
-    headerText: 'text-indigo-800',
-    tooltip: 'Acaba de abandonar el carrito — el bot aún no ha contactado.',
+    accent: '#818CF8',
     filterFn: (l: any) => l.status === 'abandoned',
     dropStatus: 'abandoned',
     dropTouch: 0,
   },
   {
     id: 'touch_1',
-    title: '📩 1er Contacto',
+    title: '1er Contacto',
+    emoji: '📩',
     icon: MessageSquare,
-    accent: '#3B82F6',
-    bg: 'bg-blue-50/40',
-    border: 'border-blue-200',
-    headerBg: 'bg-blue-100',
-    headerText: 'text-blue-800',
-    tooltip: 'Primer mensaje enviado (30min) — esperando respuesta.',
+    accent: '#60A5FA',
     filterFn: (l: any) => l.status === 'bot_sent' && (l.recovery_touch === 1 || l.recovery_touch === 0),
     dropStatus: 'bot_sent',
     dropTouch: 1,
   },
   {
     id: 'touch_2',
-    title: '📩 2do Contacto',
+    title: '2do Contacto',
+    emoji: '📩',
     icon: MessageSquare,
-    accent: '#F97316',
-    bg: 'bg-orange-50/40',
-    border: 'border-orange-200',
-    headerBg: 'bg-orange-100',
-    headerText: 'text-orange-800',
-    tooltip: 'Segundo mensaje enviado (4h) — seguimiento activo.',
+    accent: '#FB923C',
     filterFn: (l: any) => l.status === 'bot_sent' && l.recovery_touch === 2,
     dropStatus: 'bot_sent',
     dropTouch: 2,
   },
   {
     id: 'touch_3',
-    title: '📩 Último Intento',
+    title: 'Último Intento',
+    emoji: '⚠️',
     icon: MessageSquare,
-    accent: '#EF4444',
-    bg: 'bg-red-50/40',
-    border: 'border-red-200',
-    headerBg: 'bg-red-100',
-    headerText: 'text-red-800',
-    tooltip: 'Tercer y último mensaje (24h) — si no responde, se pierde.',
+    accent: '#F87171',
     filterFn: (l: any) => l.status === 'bot_sent' && l.recovery_touch === 3,
     dropStatus: 'bot_sent',
     dropTouch: 3,
   },
   {
     id: 'client_replied',
-    title: '💬 En Negociación',
+    title: 'En Negociación',
+    emoji: '💬',
     icon: MessageSquareText,
-    accent: '#EAB308',
-    bg: 'bg-yellow-50/40',
-    border: 'border-yellow-200',
-    headerBg: 'bg-yellow-100',
-    headerText: 'text-yellow-800',
-    tooltip: 'El cliente respondió — Sophia está cerrando la venta.',
+    accent: '#FBBF24',
     filterFn: (l: any) => l.status === 'client_replied',
     dropStatus: 'client_replied',
   },
   {
     id: 'verifying_address',
-    title: '📍 Verificando Dirección',
+    title: 'Verificando Dir.',
+    emoji: '📍',
     icon: MapPin,
-    accent: '#8B5CF6',
-    bg: 'bg-purple-50/40',
-    border: 'border-purple-200',
-    headerBg: 'bg-purple-100',
-    headerText: 'text-purple-800',
-    tooltip: 'Street View enviado — esperando que confirme la fachada.',
+    accent: '#A78BFA',
     filterFn: (l: any) => l.status === 'verifying_address',
     dropStatus: 'verifying_address',
   },
   {
     id: 'recovered',
-    title: '✅ Venta Recuperada',
+    title: 'Venta Recuperada',
+    emoji: '✅',
     icon: CheckCircle2,
-    accent: '#10B981',
-    bg: 'bg-green-50/40',
-    border: 'border-green-200',
-    headerBg: 'bg-green-100',
-    headerText: 'text-green-800',
-    tooltip: 'Pedido 100% confirmado — dirección verificada.',
+    accent: '#34D399',
     filterFn: (l: any) => l.status === 'recovered',
     dropStatus: 'recovered',
   },
   {
     id: 'lost',
-    title: '📢 Base Remarketing',
+    title: 'Remarketing',
+    emoji: '📢',
     icon: Users,
-    accent: '#6B7280',
-    bg: 'bg-gray-50/40',
-    border: 'border-gray-200',
-    headerBg: 'bg-gray-100',
-    headerText: 'text-gray-700',
-    tooltip: 'No se recuperó — guardado para campañas de difusión masiva.',
+    accent: '#94A3B8',
     filterFn: (l: any) => l.status === 'lost',
     dropStatus: 'lost',
   },
 ];
-
-const TOUCH_LABELS: Record<number, { label: string; color: string }> = {
-  0: { label: 'Nuevo', color: 'bg-gray-100 text-gray-500' },
-  1: { label: 'T1 · 30min', color: 'bg-blue-100 text-blue-700' },
-  2: { label: 'T2 · 4h', color: 'bg-orange-100 text-orange-700' },
-  3: { label: 'T3 · 24h', color: 'bg-red-100 text-red-700' },
-};
 
 // ─── Component ────────────────────────────────────────────────────────
 export function CrmRemarketingCarts() {
@@ -344,33 +304,35 @@ export function CrmRemarketingCarts() {
       <CrmFilters onFilterChange={setFilters} />
 
       {/* ── Kanban Board ─────────────────────────────────────────────── */}
-      <div className="flex-1 flex gap-3 overflow-x-auto pb-4 snap-x relative mt-4">
+      <div className="flex-1 flex gap-2.5 overflow-x-auto pb-4 snap-x relative mt-4">
         {columns.map((col) => {
           const colLeads = filteredLeads.filter(col.filterFn);
           return (
             <div
               key={col.id}
-              className="flex-shrink-0 w-[240px] flex flex-col snap-center h-full"
+              className="flex-shrink-0 w-[220px] flex flex-col snap-center h-full"
               onDragOver={handleDragOver}
               onDrop={e => handleDrop(e, col)}
             >
-              {/* Column header */}
+              {/* Column header - minimal & elegant */}
               <div
-                className={`flex items-center justify-between px-3 py-2.5 rounded-t-xl border-x border-t ${col.border} ${col.bg}`}
-                title={col.tooltip}
+                className="flex items-center justify-between px-3 py-2 rounded-t-lg bg-slate-50 border border-slate-200/80"
+                title={col.title}
                 style={{ borderTopColor: col.accent, borderTopWidth: 3 }}
               >
-                <div className="flex items-center gap-2">
-                  <col.icon className="w-4 h-4" style={{ color: col.accent }} />
-                  <h3 className="text-xs font-bold text-gray-700">{col.title}</h3>
-                </div>
-                <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${col.headerBg} ${col.headerText}`}>
+                <h3 className="text-[11px] font-bold text-slate-600 tracking-wide">
+                  {col.emoji} {col.title}
+                </h3>
+                <span
+                  className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white"
+                  style={{ backgroundColor: col.accent }}
+                >
                   {colLeads.length}
                 </span>
               </div>
 
               {/* Column body */}
-              <div className={`flex-1 p-2 border-x border-b rounded-b-xl ${col.border} ${col.bg} flex flex-col gap-2 overflow-y-auto pb-12`}>
+              <div className="flex-1 p-1.5 border-x border-b rounded-b-lg border-slate-200/80 bg-slate-50/50 flex flex-col gap-1.5 overflow-y-auto pb-10">
                 {loading ? (
                   <div className="flex justify-center py-6">
                     <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
@@ -387,7 +349,7 @@ export function CrmRemarketingCarts() {
                   />
                 ))}
                 {!loading && colLeads.length === 0 && (
-                  <div className="h-20 border-2 border-dashed border-gray-200/70 rounded-xl flex items-center justify-center text-xs font-semibold text-gray-300">
+                  <div className="h-16 border border-dashed border-slate-200 rounded-lg flex items-center justify-center text-[10px] font-medium text-slate-300">
                     Vacío
                   </div>
                 )}
@@ -484,7 +446,7 @@ export function CrmRemarketingCarts() {
             </div>
 
             <p className="text-[10px] text-gray-400 text-center mt-3">
-              El lead aparecerá en "Carrito Abandonado". Usa "Enviar mensaje ahora" para disparar el Touch 1.
+              El lead aparecerá en "Abandono Detectado". Usa "Enviar mensaje" para disparar el Touch 1.
             </p>
           </div>
         </div>
@@ -493,7 +455,7 @@ export function CrmRemarketingCarts() {
   );
 }
 
-// ─── Lead Card ────────────────────────────────────────────────────────
+// ─── Lead Card (Compact Premium) ──────────────────────────────────────
 function LeadCard({
   lead, accent, onDragStart, onClick, onForceSend, isForcingSend
 }: {
@@ -504,8 +466,7 @@ function LeadCard({
   onForceSend: (lead: any) => void;
   isForcingSend: boolean;
 }) {
-  const touch = lead.recovery_touch ?? 0;
-  const touchMeta = TOUCH_LABELS[touch] || TOUCH_LABELS[0];
+  const [deleting, setDeleting] = useState(false);
 
   const timeSince = (dateStr: string | null) => {
     if (!dateStr) return null;
@@ -516,75 +477,88 @@ function LeadCard({
     return `${m}m`;
   };
 
+  const handleDelete = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!confirm(`¿Eliminar a ${lead.name}?`)) return;
+    setDeleting(true);
+    try {
+      await supabase.from('leads').delete().eq('id', lead.id);
+      window.location.reload();
+    } catch { setDeleting(false); }
+  };
+
   return (
     <div
       draggable
       onDragStart={e => onDragStart(e, lead.id)}
       onClick={onClick}
-      className="bg-white rounded-xl shadow-sm border border-gray-100 cursor-grab active:cursor-grabbing hover:shadow-md transition-all relative overflow-hidden"
+      className={`bg-white rounded-lg border border-slate-100 cursor-grab active:cursor-grabbing hover:border-slate-300 hover:shadow-sm transition-all relative group ${deleting ? 'opacity-40' : ''}`}
     >
-      {/* Left accent bar */}
-      <div className="absolute left-0 top-0 w-1 h-full rounded-l-xl" style={{ backgroundColor: accent }} />
+      {/* Accent line */}
+      <div className="absolute left-0 top-0 w-[3px] h-full rounded-l-lg" style={{ backgroundColor: accent, opacity: 0.7 }} />
 
-      <div className="pl-3 pr-3 pt-2.5 pb-2.5">
-        {/* Row 1: Name + Store */}
-        <div className="flex items-center justify-between">
-          <h4 className="font-bold text-gray-900 text-sm leading-tight truncate max-w-[160px]">{lead.name || 'Sin nombre'}</h4>
-          {lead.stores?.name && (
-            <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-0.5">
-              {lead.stores?.country && <CountryFlag country={lead.stores.country} />}
-              {lead.stores.name}
-            </span>
-          )}
+      <div className="pl-2.5 pr-2 py-2">
+        {/* Row 1: Name + delete */}
+        <div className="flex items-center justify-between gap-1">
+          <h4 className="font-semibold text-slate-800 text-[12px] leading-tight truncate flex-1">{lead.name || 'Sin nombre'}</h4>
+          <div className="flex items-center gap-1 flex-shrink-0">
+            {lead.stores?.country && <CountryFlag country={lead.stores.country} />}
+            <button
+              onClick={handleDelete}
+              className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-red-50 transition-all"
+              title="Eliminar"
+            >
+              <Trash2 className="w-3 h-3 text-slate-300 hover:text-red-500" />
+            </button>
+          </div>
         </div>
 
-        {/* Row 2: SEND BUTTON — right after name, impossible to miss */}
-        {lead.status !== 'recovered' && lead.status !== 'lost' && lead.status !== 'client_replied' && lead.status !== 'verifying_address' && (
-          <div className="mt-2" onClick={e => e.stopPropagation()}>
-            <button
-              onClick={() => onForceSend(lead)}
-              disabled={isForcingSend}
-              className="w-full text-[11px] font-bold bg-purple-600 text-white py-2 rounded-lg flex items-center justify-center gap-1.5 hover:bg-purple-700 transition-colors shadow-sm"
-            >
-              {isForcingSend
-                ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Enviando...</>
-                : <><Send className="w-3.5 h-3.5" /> 📩 Enviar mensaje ahora</>}
-            </button>
+        {/* Row 2: Product + Price compact */}
+        {(lead.product_name || lead.total_price) && (
+          <div className="flex items-center justify-between mt-1 gap-1">
+            {lead.product_name && (
+              <p className="text-[10px] text-slate-500 truncate flex-1" title={lead.product_name}>
+                {lead.product_name.length > 25 ? lead.product_name.substring(0, 25) + '...' : lead.product_name}
+              </p>
+            )}
+            {lead.total_price && (
+              <span className="text-[10px] font-bold text-emerald-600 flex-shrink-0">${Number(lead.total_price).toLocaleString('es-CO')}</span>
+            )}
           </div>
         )}
 
-        {/* Row 3: Product (truncated) */}
-        {lead.product_name && (
-          <p className="text-[11px] text-purple-600 font-medium mt-1.5 truncate" title={lead.product_name}>
-            🛍️ {lead.product_name.length > 35 ? lead.product_name.substring(0, 35) + '...' : lead.product_name}
-          </p>
-        )}
-
-        {/* Row 4: Phone + Price inline */}
-        <div className="flex items-center justify-between mt-1">
-          <p className="text-[11px] text-gray-400 font-mono">{lead.phone}</p>
-          {lead.total_price && (
-            <p className="text-xs font-bold text-green-600">${Number(lead.total_price).toLocaleString('es-CO')}</p>
-          )}
-        </div>
-
-        {/* Row 5: Badges */}
-        <div className="flex items-center gap-1.5 flex-wrap mt-1.5">
-          <TrafficBadge source={lead.traffic_source} />
-          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${touchMeta.color}`}>
-            {touchMeta.label}
+        {/* Row 3: Meta badges (compact) */}
+        <div className="flex items-center gap-1 mt-1.5 flex-wrap">
+          <span className="text-[9px] font-medium text-slate-400 bg-slate-50 px-1.5 py-0.5 rounded">
+            {lead.phone?.slice(-4)}
           </span>
-          {lead.recovery_last_sent_at && (
-            <span className="text-[10px] text-gray-400 flex items-center gap-0.5">
-              <Clock className="w-2.5 h-2.5" /> hace {timeSince(lead.recovery_last_sent_at)}
+          {lead.stores?.name && (
+            <span className="text-[9px] font-medium text-slate-400 bg-slate-50 px-1.5 py-0.5 rounded truncate max-w-[60px]">
+              {lead.stores.name}
             </span>
           )}
-          {lead.is_banned && (
-            <span className="bg-red-100 text-red-600 px-1.5 py-0.5 rounded text-[10px] font-bold flex items-center gap-0.5">
-              <Ban className="w-2.5 h-2.5" /> Ban
+          {lead.recovery_last_sent_at && (
+            <span className="text-[9px] text-slate-400 flex items-center gap-0.5">
+              <Clock className="w-2.5 h-2.5" />{timeSince(lead.recovery_last_sent_at)}
             </span>
           )}
         </div>
+
+        {/* Row 4: Send button - compact, only for actionable */}
+        {lead.status !== 'recovered' && lead.status !== 'lost' && lead.status !== 'client_replied' && lead.status !== 'verifying_address' && (
+          <div className="mt-1.5" onClick={e => e.stopPropagation()}>
+            <button
+              onClick={() => onForceSend(lead)}
+              disabled={isForcingSend}
+              className="w-full text-[10px] font-semibold text-white py-1.5 rounded-md flex items-center justify-center gap-1 transition-colors shadow-sm"
+              style={{ backgroundColor: accent }}
+            >
+              {isForcingSend
+                ? <><Loader2 className="w-3 h-3 animate-spin" /> Enviando...</>
+                : <><Send className="w-3 h-3" /> Enviar mensaje</>}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
