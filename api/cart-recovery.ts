@@ -20,11 +20,48 @@ const supabase = createClient(
  *   Expire  → 48 hours after Touch 3 → status = 'lost' (Base Remarketing)
  */
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+
+  // ==========================================
+  // POST: Create a test lead for cart recovery
+  // ==========================================
+  if (req.method === 'POST') {
+    try {
+      const { storeId, name, phone, productName, totalPrice } = req.body;
+      if (!storeId || !name || !phone) {
+        return res.status(400).json({ error: 'Faltan campos: storeId, name, phone' });
+      }
+
+      // Clean phone number
+      let cleanPhone = phone.replace(/[^\d+]/g, '');
+      if (cleanPhone.startsWith('+')) cleanPhone = cleanPhone.substring(1);
+      if (cleanPhone.length === 10) cleanPhone = `57${cleanPhone}`;
+
+      const { data: newLead, error } = await supabase.from('leads').insert({
+        store_id: storeId,
+        name,
+        phone: cleanPhone,
+        product_name: productName || 'Producto de prueba',
+        total_price: totalPrice || 50000,
+        board_type: 'remarketing_carts',
+        status: 'abandoned',
+        recovery_touch: 0,
+        traffic_source: 'Test Manual',
+        notes: 'Lead de prueba creado manualmente para testing'
+      }).select().single();
+
+      if (error) throw error;
+      return res.status(200).json({ success: true, lead: newLead });
+    } catch (e: any) {
+      return res.status(500).json({ error: e.message });
+    }
+  }
+
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
-  // Security: only authorized callers (cron-job.org with secret header)
+  // Security: only authorized callers (cron-job.org with secret header) — skip for force-send
+  const forceSendLeadId = req.query.leadId as string | undefined;
   const secret = req.headers['x-cron-secret'];
-  if (process.env.CRON_SECRET && secret !== process.env.CRON_SECRET) {
+  if (!forceSendLeadId && process.env.CRON_SECRET && secret !== process.env.CRON_SECRET) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
@@ -113,6 +150,44 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       } catch (e: any) {
         log.push(`[T${touch}] ERROR lead ${lead.id}: ${e.message}`);
         return false;
+      }
+    }
+
+    // ═══════════════════════════════════════
+    // FORCE SEND — Manual trigger for a single lead
+    // ═══════════════════════════════════════
+    if (forceSendLeadId) {
+      const { data: lead } = await supabase
+        .from('leads')
+        .select('id, name, phone, product_name, total_price, address, city, store_id, recovery_touch, status')
+        .eq('id', forceSendLeadId)
+        .single();
+
+      if (!lead) return res.status(404).json({ error: 'Lead not found' });
+
+      const store = stores?.find(s => s.id === lead.store_id);
+      if (!store?.twilio_phone_number) {
+        return res.status(400).json({ error: 'Store has no Twilio phone number' });
+      }
+
+      // Send NEXT touch (current + 1, max 3)
+      const nextTouch = Math.min((lead.recovery_touch || 0) + 1, 3);
+      const sent = await sendRecoveryMessage(lead, nextTouch, store);
+
+      if (sent) {
+        await supabase.from('leads').update({
+          status: 'bot_sent',
+          recovery_touch: nextTouch,
+          recovery_last_sent_at: now.toISOString()
+        }).eq('id', lead.id);
+
+        return res.status(200).json({
+          success: true,
+          message: `Touch ${nextTouch} sent to ${lead.name}`,
+          log: [`[FORCE T${nextTouch}] ✅ ${lead.name} (${lead.phone})`]
+        });
+      } else {
+        return res.status(400).json({ error: 'Failed to send', log });
       }
     }
 

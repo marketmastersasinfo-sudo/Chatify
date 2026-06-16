@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import {
   ShoppingCart, MessageSquare, MessageSquareText, MapPin,
   CheckCircle2, Users, Search, Loader2, Store,
-  Ban, Send, Clock, TrendingUp, DollarSign, Zap
+  Ban, Send, Clock, TrendingUp, DollarSign, Zap, Plus, X, FlaskConical
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { CrmFilters } from '../components/CrmFilters';
@@ -97,6 +97,9 @@ export function CrmRemarketingCarts() {
   const [selectedLead, setSelectedLead] = useState<any | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [forcingSend, setForcingSend] = useState<string | null>(null);
+  const [showTestModal, setShowTestModal] = useState(false);
+  const [testLead, setTestLead] = useState({ name: '', phone: '', productName: '', totalPrice: '' });
+  const [creatingTest, setCreatingTest] = useState(false);
 
   useEffect(() => {
     if (filters) loadLeads(filters);
@@ -129,16 +132,51 @@ export function CrmRemarketingCarts() {
     if (!lead.store_id) return;
     setForcingSend(lead.id);
     try {
-      const res = await fetch(`/api/cart-recovery?leadId=${lead.id}`, {
-        headers: { 'x-cron-secret': '' }
-      });
+      const res = await fetch(`/api/cart-recovery?leadId=${lead.id}`);
+      const result = await res.json();
       if (res.ok) {
         // Refresh this lead's status
         const { data } = await supabase.from('leads').select('*, stores(name, country)').eq('id', lead.id).single();
         if (data) setLeads(prev => prev.map(l => l.id === lead.id ? data : l));
+        alert(`✅ ${result.message}`);
+      } else {
+        alert(`❌ Error: ${result.error || 'Error desconocido'}\n${result.log?.join('\n') || ''}`);
       }
     } catch (e) { console.error(e); }
     setForcingSend(null);
+  }
+
+  // ── Create test lead ──────────────────────────────────────────────────
+  async function handleCreateTestLead() {
+    if (!filters?.storeIds?.length) {
+      alert('Selecciona una tienda primero en los filtros');
+      return;
+    }
+    setCreatingTest(true);
+    try {
+      const res = await fetch('/api/cart-recovery', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          storeId: filters.storeIds[0],
+          name: testLead.name,
+          phone: testLead.phone,
+          productName: testLead.productName || 'Creatina Monohidrato',
+          totalPrice: testLead.totalPrice || '85000'
+        })
+      });
+      const result = await res.json();
+      if (res.ok) {
+        setShowTestModal(false);
+        setTestLead({ name: '', phone: '', productName: '', totalPrice: '' });
+        // Reload leads
+        if (filters) loadLeads(filters);
+        alert('✅ Lead de prueba creado. Usa "Enviar mensaje ahora" para enviar el Touch 1.');
+      } else {
+        alert(`❌ Error: ${result.error}`);
+      }
+    } catch (e) { console.error(e); }
+    setCreatingTest(false);
   }
 
   // ── Drag and Drop ─────────────────────────────────────────────────────
@@ -198,15 +236,23 @@ export function CrmRemarketingCarts() {
               <span className="ml-2 text-orange-600 font-semibold">Regla Meta: Plantilla obligatoria</span>
             </p>
           </div>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Buscar nombre, celular, producto..."
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              className="pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-400 w-72"
-            />
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShowTestModal(true)}
+              className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-colors shadow-sm"
+            >
+              <FlaskConical className="w-3.5 h-3.5" /> Lead de Prueba
+            </button>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Buscar nombre, celular, producto..."
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                className="pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-400 w-72"
+              />
+            </div>
           </div>
         </div>
 
@@ -323,6 +369,81 @@ export function CrmRemarketingCarts() {
             }
           }}
         />
+      )}
+
+      {/* ── Test Lead Modal ──────────────────────────────────────────── */}
+      {showTestModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-2">
+                <FlaskConical className="w-5 h-5 text-purple-600" />
+                <h3 className="text-lg font-bold text-gray-900">Crear Lead de Prueba</h3>
+              </div>
+              <button onClick={() => setShowTestModal(false)} className="p-1 hover:bg-gray-100 rounded-lg"><X className="w-5 h-5" /></button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="text-xs font-bold text-gray-600 uppercase">Nombre del cliente *</label>
+                <input
+                  type="text"
+                  placeholder="Ej: Felipe Ríos"
+                  value={testLead.name}
+                  onChange={e => setTestLead({...testLead, name: e.target.value})}
+                  className="w-full mt-1 px-3 py-2 border rounded-xl text-sm focus:ring-2 focus:ring-purple-400"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-gray-600 uppercase">Teléfono WhatsApp *</label>
+                <input
+                  type="text"
+                  placeholder="Ej: 3001234567"
+                  value={testLead.phone}
+                  onChange={e => setTestLead({...testLead, phone: e.target.value})}
+                  className="w-full mt-1 px-3 py-2 border rounded-xl text-sm focus:ring-2 focus:ring-purple-400"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-gray-600 uppercase">Producto</label>
+                <input
+                  type="text"
+                  placeholder="Ej: Creatina Monohidrato"
+                  value={testLead.productName}
+                  onChange={e => setTestLead({...testLead, productName: e.target.value})}
+                  className="w-full mt-1 px-3 py-2 border rounded-xl text-sm focus:ring-2 focus:ring-purple-400"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-gray-600 uppercase">Precio Total</label>
+                <input
+                  type="text"
+                  placeholder="Ej: 85000"
+                  value={testLead.totalPrice}
+                  onChange={e => setTestLead({...testLead, totalPrice: e.target.value})}
+                  className="w-full mt-1 px-3 py-2 border rounded-xl text-sm focus:ring-2 focus:ring-purple-400"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button onClick={() => setShowTestModal(false)} className="flex-1 py-2.5 text-sm font-bold text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors">
+                Cancelar
+              </button>
+              <button
+                onClick={handleCreateTestLead}
+                disabled={!testLead.name || !testLead.phone || creatingTest}
+                className="flex-1 py-2.5 text-sm font-bold text-white bg-purple-600 rounded-xl hover:bg-purple-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {creatingTest ? <><Loader2 className="w-4 h-4 animate-spin" /> Creando...</> : <><Plus className="w-4 h-4" /> Crear Lead</>}
+              </button>
+            </div>
+
+            <p className="text-[10px] text-gray-400 text-center mt-3">
+              El lead aparecerá en "Carrito Abandonado". Usa "Enviar mensaje ahora" para disparar el Touch 1.
+            </p>
+          </div>
+        </div>
       )}
     </div>
   );
