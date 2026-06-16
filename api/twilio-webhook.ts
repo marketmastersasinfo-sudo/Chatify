@@ -25,13 +25,12 @@ function isConfirmation(text: string): boolean {
   return patterns.some(p => p.test(normalized));
 }
 
-/** Extract variants from the first confirmation template message sent to the customer.
- *  ShopyEasy embeds the full product+variant list in the "Producto:" line of that message.
- *  Example: "Producto: Jogger Variable Hombre (Talla: XL, Color: Azul Rey), ..."
+/** Get the full body of the first ShopyEasy confirmation template sent to this customer.
+ *  This message already has the complete order: name, product, variants, price, address.
+ *  We pass it to Sophia as extra context so she can answer ANY question about the order.
  */
-async function extractVariantsFromTemplateMessage(leadId: string): Promise<string> {
+async function getTemplateMessageContext(leadId: string): Promise<string> {
   try {
-    // The first outbound message (sender_type: 'human') is the ShopyEasy confirmation template
     const { data: templateMsg } = await supabase
       .from('messages')
       .select('content')
@@ -41,14 +40,7 @@ async function extractVariantsFromTemplateMessage(leadId: string): Promise<strin
       .limit(1)
       .maybeSingle();
 
-    if (!templateMsg?.content) return '';
-
-    // Extract everything after "Producto:" or "- Producto:" in the message
-    const match = templateMsg.content.match(/[-•]?\s*Producto:\s*(.+?)(?:\n|$)/i);
-    if (match && match[1]) {
-      return match[1].trim();
-    }
-    return '';
+    return templateMsg?.content || '';
   } catch {
     return '';
   }
@@ -289,8 +281,8 @@ async function handleSophia({ lead, productInfo, leadId, incomingText, storeTwil
   const { buildSophiaPrompt } = await import('./utils/sophia-prompt.js');
   const { OpenAI } = await import('openai');
 
-  // Extract variant info from the first template message (where ShopyEasy embeds talla/color)
-  const variantInfo = await extractVariantsFromTemplateMessage(leadId);
+  // Get the full confirmation template message — it has the complete order: name, products, variants, price
+  const variantInfo = await getTemplateMessageContext(leadId);
 
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
   const aiMessages: any[] = [{ role: 'system', content: buildSophiaPrompt(lead || {}, productInfo, variantInfo) }];
