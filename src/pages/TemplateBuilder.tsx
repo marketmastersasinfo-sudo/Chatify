@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { RefreshCcw, Plus, Image as ImageIcon, MessageSquareDashed, AlertCircle, CheckCircle2, Loader2, Save, X, Sparkles, Wand2, Link2 } from 'lucide-react';
+import { RefreshCcw, Plus, Image as ImageIcon, MessageSquareDashed, AlertCircle, CheckCircle2, Loader2, Save, X, Sparkles, Wand2, Link2, Trash2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 export function TemplateBuilder() {
@@ -18,6 +18,9 @@ export function TemplateBuilder() {
   // Sync Names State
   const [syncing, setSyncing] = useState(false);
   const [syncResults, setSyncResults] = useState<any[] | null>(null);
+
+  // Delete template State
+  const [deletingTemplate, setDeletingTemplate] = useState<string | null>(null);
   const [newTemplate, setNewTemplate] = useState({
     name: '',
     category: 'MARKETING',
@@ -141,6 +144,24 @@ export function TemplateBuilder() {
       setError(err.message);
     }
     setSyncing(false);
+  }
+
+  async function handleDeleteTemplate(templateSid: string, templateName: string) {
+    if (!selectedStore) return;
+    if (!confirm(`¿Eliminar la plantilla "${templateName}" de Twilio?\n\nEsta acción no se puede deshacer.`)) return;
+    setDeletingTemplate(templateSid);
+    try {
+      const res = await fetch(`/api/meta/templates?storeId=${selectedStore.id}&sid=${templateSid}`, {
+        method: 'DELETE'
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Error eliminando');
+      // Remove from local state
+      setTemplates(prev => prev.filter(t => t.id !== templateSid));
+    } catch (err: any) {
+      setError(err.message);
+    }
+    setDeletingTemplate(null);
   }
 
   async function handleCreateTemplate() {
@@ -670,12 +691,27 @@ export function TemplateBuilder() {
                       {getStatusBadge(tpl)}
                     </td>
                     <td className="p-4 text-right pr-6">
-                      <button 
-                        onClick={() => setSelectedTemplateToView(tpl)}
-                        className="text-blue-600 font-bold hover:text-blue-800 transition-colors text-xs"
-                      >
-                        Ver Detalles
-                      </button>
+                      <div className="flex items-center justify-end gap-3">
+                        {/* Delete button for unnamed/unconfigured templates */}
+                        {tpl.name === 'Sin Nombre' && (
+                          <button
+                            onClick={() => handleDeleteTemplate(tpl.id, tpl.name)}
+                            disabled={deletingTemplate === tpl.id}
+                            className="text-red-400 hover:text-red-600 transition-colors"
+                            title="Eliminar plantilla de Twilio"
+                          >
+                            {deletingTemplate === tpl.id
+                              ? <Loader2 className="w-4 h-4 animate-spin"/>
+                              : <Trash2 className="w-4 h-4"/>}
+                          </button>
+                        )}
+                        <button 
+                          onClick={() => setSelectedTemplateToView(tpl)}
+                          className="text-blue-600 font-bold hover:text-blue-800 transition-colors text-xs"
+                        >
+                          Ver Detalles
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))

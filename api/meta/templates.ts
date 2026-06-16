@@ -234,6 +234,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).json({ success: true, synced: results.length, results });
     }
 
+    // ==========================================
+    // DELETE: Eliminar una plantilla de Twilio
+    // ==========================================
+    if (req.method === 'DELETE') {
+      const sid = req.query.sid as string;
+      if (!sid) return res.status(400).json({ error: 'Falta el SID de la plantilla' });
+
+      // Delete from Twilio
+      await twilioClient.content.v1.contents(sid).remove();
+
+      // Also delete from store_templates if it exists
+      await supabase.from('store_templates').delete().eq('twilio_content_sid', sid);
+
+      return res.status(200).json({ success: true, message: `Plantilla ${sid} eliminada de Twilio y Chatify.` });
+    }
+
     return res.status(405).json({ error: 'Method not allowed' });
 
   } catch (error: any) {
