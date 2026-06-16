@@ -25,47 +25,30 @@ function isConfirmation(text: string): boolean {
   return patterns.some(p => p.test(normalized));
 }
 
-/** Extract variants from the raw ShopyEasy payload stored in notes */
-function extractVariantsFromNotes(notes: string | null): string {
-  if (!notes) return '';
+/** Extract variants from the first confirmation template message sent to the customer.
+ *  ShopyEasy embeds the full product+variant list in the "Producto:" line of that message.
+ *  Example: "Producto: Jogger Variable Hombre (Talla: XL, Color: Azul Rey), ..."
+ */
+async function extractVariantsFromTemplateMessage(leadId: string): Promise<string> {
   try {
-    // notes format: "Order ID: 248\nRAW PAYLOAD: {...json...}"
-    const match = notes.match(/RAW PAYLOAD:\s*(\{[\s\S]*\})/);
-    if (!match) return '';
-    const payload = JSON.parse(match[1]);
+    // The first outbound message (sender_type: 'human') is the ShopyEasy confirmation template
+    const { data: templateMsg } = await supabase
+      .from('messages')
+      .select('content')
+      .eq('lead_id', leadId)
+      .eq('sender_type', 'human')
+      .order('created_at', { ascending: true })
+      .limit(1)
+      .maybeSingle();
 
-    const variantFields = [
-      'variant', 'variant_name', 'variants', 'variante', 'variantes',
-      'color', 'talla', 'size', 'sku', 'option1', 'option2', 'option3',
-      'productVariant', 'product_variant', 'lineItems', 'line_items',
-      'items', 'attributes', 'properties'
-    ];
+    if (!templateMsg?.content) return '';
 
-    const found: string[] = [];
-    for (const field of variantFields) {
-      if (payload[field]) {
-        const val = typeof payload[field] === 'object' ? JSON.stringify(payload[field]) : String(payload[field]);
-        if (val && val !== '{}' && val !== '[]') {
-          found.push(`${field}: ${val}`);
-        }
-      }
+    // Extract everything after "Producto:" or "- Producto:" in the message
+    const match = templateMsg.content.match(/[-•]?\s*Producto:\s*(.+?)(?:\n|$)/i);
+    if (match && match[1]) {
+      return match[1].trim();
     }
-    
-    if (found.length > 0) return found.join(' | ');
-
-    // If no specific variant fields, extract all non-standard fields as potential variants
-    const knownFields = ['eventType', 'event', 'storeName', 'store', 'storeCountry', 'country',
-      'customerName', 'name', 'customer_name', 'customerPhone', 'phone', 'customer_phone',
-      'orderId', 'order_id', 'id', 'productName', 'product', 'product_name', 'item',
-      'city', 'ciudad', 'address', 'direccion', 'department', 'departamento',
-      'totalPrice', 'total', 'price', 'total_price'];
-    const extra: string[] = [];
-    for (const [k, v] of Object.entries(payload)) {
-      if (!knownFields.includes(k) && v) {
-        extra.push(`${k}: ${v}`);
-      }
-    }
-    return extra.join(' | ');
+    return '';
   } catch {
     return '';
   }
@@ -306,8 +289,8 @@ async function handleSophia({ lead, productInfo, leadId, incomingText, storeTwil
   const { buildSophiaPrompt } = await import('./utils/sophia-prompt.js');
   const { OpenAI } = await import('openai');
 
-  // Extract variant info from ShopyEasy RAW PAYLOAD
-  const variantInfo = extractVariantsFromNotes(lead?.notes);
+  // Extract variant info from the first template message (where ShopyEasy embeds talla/color)
+  const variantInfo = await extractVariantsFromTemplateMessage(leadId);
 
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
   const aiMessages: any[] = [{ role: 'system', content: buildSophiaPrompt(lead || {}, productInfo, variantInfo) }];
