@@ -693,19 +693,17 @@ export function TemplateBuilder() {
                     </td>
                     <td className="p-4 text-right pr-6">
                       <div className="flex items-center justify-end gap-3">
-                        {/* Delete button for unnamed/unconfigured templates */}
-                        {tpl.name === 'Sin Nombre' && (
-                          <button
-                            onClick={() => handleDeleteTemplate(tpl.id, tpl.name)}
-                            disabled={deletingTemplate === tpl.id}
-                            className="text-red-400 hover:text-red-600 transition-colors"
-                            title="Eliminar plantilla de Twilio"
-                          >
-                            {deletingTemplate === tpl.id
-                              ? <Loader2 className="w-4 h-4 animate-spin"/>
-                              : <Trash2 className="w-4 h-4"/>}
-                          </button>
-                        )}
+                        {/* Delete button for any template */}
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleDeleteTemplate(tpl.id, tpl.name); }}
+                          disabled={deletingTemplate === tpl.id}
+                          className="text-red-400 hover:text-red-600 transition-colors"
+                          title="Eliminar plantilla de Twilio"
+                        >
+                          {deletingTemplate === tpl.id
+                            ? <Loader2 className="w-4 h-4 animate-spin"/>
+                            : <Trash2 className="w-4 h-4"/>}
+                        </button>
                         <button 
                           onClick={() => setSelectedTemplateToView(tpl)}
                           className="text-blue-600 font-bold hover:text-blue-800 transition-colors text-xs"

@@ -39,21 +39,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         .select('*')
         .eq('store_id', storeId as string);
 
-      // Sincronizar estado con Twilio si alguna está en received/pending
+      // Sincronizar estado real de aprobación con Twilio para TODAS las plantillas
       if (localTemplates) {
         for (const local of localTemplates) {
-          if (local.twilio_approval_status === 'received' || local.twilio_approval_status === 'pending') {
-            try {
-              const approval = await twilioClient.content.v1.contents(local.twilio_content_sid).approvalFetch().fetch() as any;
-              if (approval.status !== local.twilio_approval_status) {
-                await supabase.from('store_templates')
-                  .update({ twilio_approval_status: approval.status })
-                  .eq('id', local.id);
-                local.twilio_approval_status = approval.status;
-              }
-            } catch (err) {
-              console.error('Error fetching approval status for', local.twilio_content_sid, err);
+          if (!local.twilio_content_sid) continue;
+          try {
+            const approval = await twilioClient.content.v1.contents(local.twilio_content_sid).approvalFetch().fetch() as any;
+            const realStatus = approval.status || 'unknown';
+            if (realStatus !== local.twilio_approval_status) {
+              await supabase.from('store_templates')
+                .update({ twilio_approval_status: realStatus })
+                .eq('id', local.id);
+              local.twilio_approval_status = realStatus;
             }
+          } catch (err) {
+            console.error('Error fetching approval status for', local.twilio_content_sid, err);
           }
         }
       }
