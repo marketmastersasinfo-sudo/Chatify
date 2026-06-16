@@ -11,44 +11,80 @@ import { LeadChatPanel } from '../components/LeadChatPanel';
 import { CountryFlag } from '../utils/flags';
 import { TrafficBadge } from '../components/TrafficBadge';
 
-// ─── Column definitions ────────────────────────────────────────────────
+// ─── Column definitions (Funnel Stages) ───────────────────────────────
 const columns = [
   {
     id: 'abandoned',
-    title: 'Carrito Abandonado',
+    title: '🛒 Abandono Detectado',
     icon: ShoppingCart,
+    accent: '#6366F1',
+    bg: 'bg-indigo-50/40',
+    border: 'border-indigo-200',
+    headerBg: 'bg-indigo-100',
+    headerText: 'text-indigo-800',
+    tooltip: 'Acaba de abandonar el carrito — el bot aún no ha contactado.',
+    filterFn: (l: any) => l.status === 'abandoned',
+    dropStatus: 'abandoned',
+    dropTouch: 0,
+  },
+  {
+    id: 'touch_1',
+    title: '📩 1er Contacto',
+    icon: MessageSquare,
     accent: '#3B82F6',
     bg: 'bg-blue-50/40',
     border: 'border-blue-200',
     headerBg: 'bg-blue-100',
     headerText: 'text-blue-800',
-    tooltip: 'Acaba de abandonar el carrito — el bot aún no ha contactado.',
+    tooltip: 'Primer mensaje enviado (30min) — esperando respuesta.',
+    filterFn: (l: any) => l.status === 'bot_sent' && (l.recovery_touch === 1 || l.recovery_touch === 0),
+    dropStatus: 'bot_sent',
+    dropTouch: 1,
   },
   {
-    id: 'bot_sent',
-    title: 'Mensaje Enviado',
+    id: 'touch_2',
+    title: '📩 2do Contacto',
     icon: MessageSquare,
     accent: '#F97316',
     bg: 'bg-orange-50/40',
     border: 'border-orange-200',
     headerBg: 'bg-orange-100',
     headerText: 'text-orange-800',
-    tooltip: 'El bot envió la plantilla de recuperación — esperando respuesta.',
+    tooltip: 'Segundo mensaje enviado (4h) — seguimiento activo.',
+    filterFn: (l: any) => l.status === 'bot_sent' && l.recovery_touch === 2,
+    dropStatus: 'bot_sent',
+    dropTouch: 2,
+  },
+  {
+    id: 'touch_3',
+    title: '📩 Último Intento',
+    icon: MessageSquare,
+    accent: '#EF4444',
+    bg: 'bg-red-50/40',
+    border: 'border-red-200',
+    headerBg: 'bg-red-100',
+    headerText: 'text-red-800',
+    tooltip: 'Tercer y último mensaje (24h) — si no responde, se pierde.',
+    filterFn: (l: any) => l.status === 'bot_sent' && l.recovery_touch === 3,
+    dropStatus: 'bot_sent',
+    dropTouch: 3,
   },
   {
     id: 'client_replied',
-    title: 'Cliente Respondió',
+    title: '💬 En Negociación',
     icon: MessageSquareText,
     accent: '#EAB308',
     bg: 'bg-yellow-50/40',
     border: 'border-yellow-200',
     headerBg: 'bg-yellow-100',
     headerText: 'text-yellow-800',
-    tooltip: 'El cliente interactuó — Sophia está atendiendo.',
+    tooltip: 'El cliente respondió — Sophia está cerrando la venta.',
+    filterFn: (l: any) => l.status === 'client_replied',
+    dropStatus: 'client_replied',
   },
   {
     id: 'verifying_address',
-    title: 'Verificando Dirección',
+    title: '📍 Verificando Dirección',
     icon: MapPin,
     accent: '#8B5CF6',
     bg: 'bg-purple-50/40',
@@ -56,36 +92,42 @@ const columns = [
     headerBg: 'bg-purple-100',
     headerText: 'text-purple-800',
     tooltip: 'Street View enviado — esperando que confirme la fachada.',
+    filterFn: (l: any) => l.status === 'verifying_address',
+    dropStatus: 'verifying_address',
   },
   {
     id: 'recovered',
-    title: 'Pedido Confirmado ✅',
+    title: '✅ Venta Recuperada',
     icon: CheckCircle2,
     accent: '#10B981',
     bg: 'bg-green-50/40',
     border: 'border-green-200',
     headerBg: 'bg-green-100',
     headerText: 'text-green-800',
-    tooltip: 'Dirección verificada y pedido 100% confirmado.',
+    tooltip: 'Pedido 100% confirmado — dirección verificada.',
+    filterFn: (l: any) => l.status === 'recovered',
+    dropStatus: 'recovered',
   },
   {
     id: 'lost',
-    title: 'Base Remarketing 📢',
+    title: '📢 Base Remarketing',
     icon: Users,
     accent: '#6B7280',
     bg: 'bg-gray-50/40',
     border: 'border-gray-200',
     headerBg: 'bg-gray-100',
     headerText: 'text-gray-700',
-    tooltip: 'Dijeron que no — guardados para campañas de difusión masiva.',
+    tooltip: 'No se recuperó — guardado para campañas de difusión masiva.',
+    filterFn: (l: any) => l.status === 'lost',
+    dropStatus: 'lost',
   },
 ];
 
 const TOUCH_LABELS: Record<number, { label: string; color: string }> = {
-  0: { label: 'Sin mensaje', color: 'bg-gray-100 text-gray-500' },
-  1: { label: 'Toque 1 (30min)', color: 'bg-blue-100 text-blue-700' },
-  2: { label: 'Toque 2 (4h)', color: 'bg-orange-100 text-orange-700' },
-  3: { label: 'Toque 3 (24h)', color: 'bg-red-100 text-red-700' },
+  0: { label: 'Nuevo', color: 'bg-gray-100 text-gray-500' },
+  1: { label: 'T1 · 30min', color: 'bg-blue-100 text-blue-700' },
+  2: { label: 'T2 · 4h', color: 'bg-orange-100 text-orange-700' },
+  3: { label: 'T3 · 24h', color: 'bg-red-100 text-red-700' },
 };
 
 // ─── Component ────────────────────────────────────────────────────────
@@ -190,11 +232,13 @@ export function CrmRemarketingCarts() {
     e.dataTransfer.dropEffect = 'move';
   };
 
-  const handleDrop = async (e: React.DragEvent, targetStatus: string) => {
+  const handleDrop = async (e: React.DragEvent, col: typeof columns[0]) => {
     e.preventDefault();
     if (!draggedLeadId) return;
-    setLeads(prev => prev.map(l => l.id === draggedLeadId ? { ...l, status: targetStatus } : l));
-    await (supabase as any).from('leads').update({ status: targetStatus }).eq('id', draggedLeadId);
+    const updates: any = { status: col.dropStatus };
+    if (col.dropTouch !== undefined) updates.recovery_touch = col.dropTouch;
+    setLeads(prev => prev.map(l => l.id === draggedLeadId ? { ...l, ...updates } : l));
+    await (supabase as any).from('leads').update(updates).eq('id', draggedLeadId);
     setDraggedLeadId(null);
   };
 
@@ -300,15 +344,15 @@ export function CrmRemarketingCarts() {
       <CrmFilters onFilterChange={setFilters} />
 
       {/* ── Kanban Board ─────────────────────────────────────────────── */}
-      <div className="flex-1 flex gap-4 overflow-x-auto pb-4 snap-x relative mt-4">
+      <div className="flex-1 flex gap-3 overflow-x-auto pb-4 snap-x relative mt-4">
         {columns.map((col) => {
-          const colLeads = filteredLeads.filter(l => l.status === col.id);
+          const colLeads = filteredLeads.filter(col.filterFn);
           return (
             <div
               key={col.id}
-              className="flex-shrink-0 w-[300px] flex flex-col snap-center h-full"
+              className="flex-shrink-0 w-[240px] flex flex-col snap-center h-full"
               onDragOver={handleDragOver}
-              onDrop={e => handleDrop(e, col.id)}
+              onDrop={e => handleDrop(e, col)}
             >
               {/* Column header */}
               <div
