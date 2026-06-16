@@ -14,6 +14,7 @@ import { CrmRemarketingCarts } from './pages/CrmRemarketingCarts';
 import { CrmRemarketingWa } from './pages/CrmRemarketingWa';
 import { VirtualSims } from './pages/VirtualSims';
 import { TemplateBuilder } from './pages/TemplateBuilder';
+import { SearchResults } from './pages/SearchResults';
 
 function App() {
   return (
@@ -34,6 +35,7 @@ function App() {
           <Route path="/broadcast" element={<Broadcast />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/templates" element={<TemplateBuilder />} />
+          <Route path="/search" element={<SearchResults />} />
         </Route>
       </Routes>
     </Router>

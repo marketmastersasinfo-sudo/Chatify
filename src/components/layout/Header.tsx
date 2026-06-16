@@ -1,18 +1,45 @@
 import { Bell, Search, AlertCircle } from 'lucide-react';
+import { useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 export function Header() {
+  const [query, setQuery] = useState('');
+  const navigate = useNavigate();
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  function handleSearch(e: React.FormEvent) {
+    e.preventDefault();
+    const q = query.trim();
+    if (q.length > 0) {
+      navigate(`/search?q=${encodeURIComponent(q)}`);
+    }
+  }
+
+  // Live search: navigate as user types (debounced via SearchResults component)
+  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const val = e.target.value;
+    setQuery(val);
+    if (val.trim().length >= 2) {
+      navigate(`/search?q=${encodeURIComponent(val.trim())}`, { replace: true });
+    }
+  }
+
   return (
     <header className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b border-gray-200 bg-white/80 backdrop-blur-md px-4 sm:gap-x-6 sm:px-6 lg:px-8">
       <div className="flex flex-1 gap-x-4 self-stretch lg:gap-x-6">
-        <form className="relative flex flex-1 items-center" action="#" method="GET">
+        <form className="relative flex flex-1 items-center" onSubmit={handleSearch}>
           <label htmlFor="search-field" className="sr-only">Buscar</label>
           <Search className="pointer-events-none absolute left-0 h-5 w-5 text-gray-400" aria-hidden="true" />
           <input
+            ref={inputRef}
             id="search-field"
             className="block h-full w-full border-0 py-0 pl-8 pr-0 text-gray-900 placeholder:text-gray-400 focus:ring-0 sm:text-sm bg-transparent"
-            placeholder="Buscar contactos, pedidos, tiendas..."
+            placeholder="Buscar por nombre, celular, producto, guía..."
             type="search"
             name="search"
+            value={query}
+            onChange={handleChange}
+            autoComplete="off"
           />
         </form>
         <div className="flex items-center gap-x-4 lg:gap-x-6">

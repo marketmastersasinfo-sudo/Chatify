@@ -206,25 +206,44 @@ export function TemplateBuilder() {
   }
 
   const getStatusBadge = (template: any) => {
-    const status = template.status;
+    const status = (template.status || '').toUpperCase();
     switch(status) {
-      case 'APPROVED': return <span className="bg-green-100 text-green-700 px-2 py-1 flex items-center gap-1 text-[10px] uppercase font-bold rounded-full"><CheckCircle2 className="w-3 h-3"/> Aprobada</span>;
-      case 'REJECTED': return <span className="bg-red-100 text-red-700 px-2 py-1 flex items-center gap-1 text-[10px] uppercase font-bold rounded-full"><AlertCircle className="w-3 h-3"/> Rechazada</span>;
-      case 'PENDING': 
-      case 'RECEIVED': 
-      case 'received': return (
-        <div className="flex flex-col gap-0.5">
-          <span className="bg-yellow-100 text-yellow-700 px-2 py-1 flex items-center gap-1 text-[10px] uppercase font-bold rounded-full w-fit">
-            <Loader2 className="w-3 h-3 animate-spin"/> En Revisión
-          </span>
-          <span className="text-[9px] text-gray-400 font-medium">
-            {formatTimeElapsed(template.created_at)}
-          </span>
-        </div>
-      );
-      default: return <span className="bg-gray-100 text-gray-700 px-2 py-1 flex items-center gap-1 text-[10px] uppercase font-bold rounded-full">{status}</span>;
+      case 'APPROVED':
+        return <span className="bg-green-100 text-green-700 px-2.5 py-1 flex items-center gap-1 text-[10px] uppercase font-bold rounded-full"><CheckCircle2 className="w-3 h-3"/>✅ Aprobada</span>;
+      
+      case 'REJECTED':
+        return <span className="bg-red-100 text-red-700 px-2.5 py-1 flex items-center gap-1 text-[10px] uppercase font-bold rounded-full"><AlertCircle className="w-3 h-3"/>❌ Rechazada</span>;
+      
+      case 'PENDING':
+      case 'RECEIVED':
+        return (
+          <div className="flex flex-col gap-0.5">
+            <span className="bg-yellow-100 text-yellow-700 px-2.5 py-1 flex items-center gap-1 text-[10px] uppercase font-bold rounded-full w-fit">
+              <Loader2 className="w-3 h-3 animate-spin"/>⏳ En Revisión
+            </span>
+            <span className="text-[9px] text-gray-400 font-medium pl-1">
+              {formatTimeElapsed(template.created_at)}
+            </span>
+          </div>
+        );
+      
+      case 'PAUSED':
+        return <span className="bg-orange-100 text-orange-700 px-2.5 py-1 flex items-center gap-1 text-[10px] uppercase font-bold rounded-full"><AlertCircle className="w-3 h-3"/>⏸ Pausada (Meta la detuvo)</span>;
+      
+      case 'DISABLED':
+        return <span className="bg-gray-200 text-gray-600 px-2.5 py-1 flex items-center gap-1 text-[10px] uppercase font-bold rounded-full"><AlertCircle className="w-3 h-3"/>🚫 Desactivada</span>;
+      
+      case 'IN_APPEAL':
+        return <span className="bg-blue-100 text-blue-700 px-2.5 py-1 flex items-center gap-1 text-[10px] uppercase font-bold rounded-full"><Loader2 className="w-3 h-3 animate-spin"/>⚖️ En Apelación</span>;
+      
+      case 'FLAGGED':
+        return <span className="bg-red-50 text-red-500 px-2.5 py-1 flex items-center gap-1 text-[10px] uppercase font-bold rounded-full"><AlertCircle className="w-3 h-3"/>🚩 Marcada por Meta</span>;
+      
+      default:
+        return <span className="bg-gray-100 text-gray-600 px-2.5 py-1 flex items-center gap-1 text-[10px] uppercase font-bold rounded-full">{status || 'Sin estado'}</span>;
     }
   };
+
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 pb-12">
