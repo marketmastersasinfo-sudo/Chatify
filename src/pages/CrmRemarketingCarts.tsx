@@ -494,23 +494,38 @@ function LeadCard({
           )}
         </div>
 
-        {/* Row 2: Product (truncated) */}
+        {/* Row 2: SEND BUTTON — right after name, impossible to miss */}
+        {lead.status !== 'recovered' && lead.status !== 'lost' && lead.status !== 'client_replied' && lead.status !== 'verifying_address' && (
+          <div className="mt-2" onClick={e => e.stopPropagation()}>
+            <button
+              onClick={() => onForceSend(lead)}
+              disabled={isForcingSend}
+              className="w-full text-[11px] font-bold bg-purple-600 text-white py-2 rounded-lg flex items-center justify-center gap-1.5 hover:bg-purple-700 transition-colors shadow-sm"
+            >
+              {isForcingSend
+                ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Enviando...</>
+                : <><Send className="w-3.5 h-3.5" /> 📩 Enviar mensaje ahora</>}
+            </button>
+          </div>
+        )}
+
+        {/* Row 3: Product (truncated) */}
         {lead.product_name && (
-          <p className="text-[11px] text-purple-600 font-medium mt-1 truncate" title={lead.product_name}>
+          <p className="text-[11px] text-purple-600 font-medium mt-1.5 truncate" title={lead.product_name}>
             🛍️ {lead.product_name.length > 35 ? lead.product_name.substring(0, 35) + '...' : lead.product_name}
           </p>
         )}
 
-        {/* Row 3: Phone + Price inline */}
-        <div className="flex items-center justify-between mt-1.5">
+        {/* Row 4: Phone + Price inline */}
+        <div className="flex items-center justify-between mt-1">
           <p className="text-[11px] text-gray-400 font-mono">{lead.phone}</p>
           {lead.total_price && (
             <p className="text-xs font-bold text-green-600">${Number(lead.total_price).toLocaleString('es-CO')}</p>
           )}
         </div>
 
-        {/* Row 4: Badges */}
-        <div className="flex items-center gap-1.5 flex-wrap mt-2">
+        {/* Row 5: Badges */}
+        <div className="flex items-center gap-1.5 flex-wrap mt-1.5">
           <TrafficBadge source={lead.traffic_source} />
           <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${touchMeta.color}`}>
             {touchMeta.label}
@@ -526,21 +541,6 @@ function LeadCard({
             </span>
           )}
         </div>
-
-        {/* Row 5: Send button — ALWAYS VISIBLE for actionable leads */}
-        {(lead.status === 'abandoned' || lead.status === 'bot_sent') && (
-          <div className="mt-2.5" onClick={e => e.stopPropagation()}>
-            <button
-              onClick={() => onForceSend(lead)}
-              disabled={isForcingSend}
-              className="w-full text-[11px] font-bold bg-purple-600 text-white py-2 rounded-lg flex items-center justify-center gap-1.5 hover:bg-purple-700 transition-colors shadow-sm"
-            >
-              {isForcingSend
-                ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Enviando...</>
-                : <><Send className="w-3.5 h-3.5" /> 📩 Enviar mensaje ahora</>}
-            </button>
-          </div>
-        )}
       </div>
     </div>
   );
