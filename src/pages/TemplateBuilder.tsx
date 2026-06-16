@@ -624,6 +624,17 @@ export function TemplateBuilder() {
                     </p>
                     <div className="text-[10px] text-gray-400 text-right mt-1">12:00 PM</div>
                   </div>
+
+                  {/* Quick Reply Buttons Preview */}
+                  {newTemplate.quickReplies && newTemplate.quickReplies.length > 0 && (
+                    <div className="flex flex-col gap-1 mt-1 max-w-[90%] self-start">
+                      {newTemplate.quickReplies.map((btn, idx) => (
+                        <div key={idx} className="bg-white rounded-lg py-2 px-3 text-center shadow-sm">
+                          <span className="text-[#00A5F4] text-sm font-medium">{btn}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
