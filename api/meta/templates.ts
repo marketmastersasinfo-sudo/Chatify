@@ -46,13 +46,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           if (!local.twilio_content_sid) continue;
           try {
             const approval = await twilioClient.content.v1.contents(local.twilio_content_sid).approvalFetch().fetch() as any;
-            const realStatus = approval.status || 'unknown';
+            // Status is nested inside whatsapp object, NOT at top level
+            const whatsappData = approval.whatsapp || {};
+            const realStatus = whatsappData.status || approval.status || 'unknown';
             // Store full approval details for frontend
             approvalDetails[local.twilio_content_sid] = {
               status: realStatus,
-              rejectionReason: approval.rejectionReason || approval.rejection_reason || null,
-              whatsapp: approval.whatsapp || null,
-              allowCategoryChange: approval.allowCategoryChange || false,
+              rejectionReason: whatsappData.rejection_reason || approval.rejectionReason || null,
+              category: whatsappData.category || null,
+              contentType: whatsappData.content_type || null,
+              whatsapp: whatsappData,
               raw: JSON.stringify(approval).substring(0, 500)
             };
             if (realStatus !== local.twilio_approval_status) {
