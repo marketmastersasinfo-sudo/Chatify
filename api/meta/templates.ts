@@ -40,12 +40,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         .eq('store_id', storeId as string);
 
       // Sincronizar estado real de aprobación con Twilio para TODAS las plantillas
+      const approvalDetails: Record<string, any> = {};
       if (localTemplates) {
         for (const local of localTemplates) {
           if (!local.twilio_content_sid) continue;
           try {
             const approval = await twilioClient.content.v1.contents(local.twilio_content_sid).approvalFetch().fetch() as any;
             const realStatus = approval.status || 'unknown';
+            // Store full approval details for frontend
+            approvalDetails[local.twilio_content_sid] = {
+              status: realStatus,
+              rejectionReason: approval.rejectionReason || approval.rejection_reason || null,
+              whatsapp: approval.whatsapp || null,
+              allowCategoryChange: approval.allowCategoryChange || false,
+              raw: JSON.stringify(approval).substring(0, 500)
+            };
             if (realStatus !== local.twilio_approval_status) {
               await supabase.from('store_templates')
                 .update({ twilio_approval_status: realStatus })
@@ -81,6 +90,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           });
         }
 
+        const approval = approvalDetails[c.sid] || {};
+
         return {
           id: c.sid,
           name: local?.template_name || c.friendlyName || 'Sin Nombre',
@@ -88,7 +99,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           language: c.language,
           status: local?.twilio_approval_status || 'APPROVED', 
           created_at: local?.created_at || null,
-          components
+          components,
+          approvalDetails: approval
         };
       });
 

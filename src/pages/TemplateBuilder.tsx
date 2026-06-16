@@ -749,6 +749,26 @@ export function TemplateBuilder() {
                 </div>
               </div>
 
+              {/* Approval Details Debug */}
+              {selectedTemplateToView.approvalDetails && (
+                <div className="mt-4 bg-orange-50 border border-orange-200 rounded-xl p-4">
+                  <h4 className="text-xs font-bold text-orange-800 uppercase tracking-wider mb-2">🔍 Detalle de Aprobación Meta</h4>
+                  <div className="space-y-1 text-xs text-gray-700">
+                    <p><strong>Estado real:</strong> {selectedTemplateToView.approvalDetails.status || 'N/A'}</p>
+                    {selectedTemplateToView.approvalDetails.rejectionReason && (
+                      <p className="text-red-600"><strong>⚠️ Razón de rechazo:</strong> {selectedTemplateToView.approvalDetails.rejectionReason}</p>
+                    )}
+                    {selectedTemplateToView.approvalDetails.whatsapp && (
+                      <p><strong>WhatsApp:</strong> {JSON.stringify(selectedTemplateToView.approvalDetails.whatsapp)}</p>
+                    )}
+                    <details className="mt-2">
+                      <summary className="cursor-pointer text-orange-600 font-semibold">Ver datos completos</summary>
+                      <pre className="mt-1 text-[10px] bg-white p-2 rounded overflow-x-auto border">{selectedTemplateToView.approvalDetails.raw}</pre>
+                    </details>
+                  </div>
+                </div>
+              )}
+
               <div className="space-y-6 mt-8">
                 {selectedTemplateToView.components?.map((comp: any, idx: number) => (
                   <div key={idx} className="bg-gray-50 rounded-xl p-5 border border-gray-200">
