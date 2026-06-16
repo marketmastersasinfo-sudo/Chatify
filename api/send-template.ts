@@ -60,24 +60,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       console.error('No se pudo obtener la plantilla Twilio', e);
     }
 
-    // 5. Construir Payload
+    // 5. Construir Payload — solo incluir variables con valor real (no vacías)
     const contentVariables: any = {};
     if (variables) {
       for (const key of templateVariablesKeys) {
-        contentVariables[key] = variables[key] || '';
+        const val = variables[key];
+        // Only include if non-empty — empty string causes Error 21656
+        if (val !== undefined && val !== null && String(val).trim() !== '') {
+          contentVariables[key] = String(val).trim();
+        }
       }
     }
 
-    // Sanitize from number
-    let fromNumber = store.twilio_phone_number.trim();
-    fromNumber = fromNumber.replace(/ /g, '');
-    if (fromNumber.startsWith('whatsapp:')) {
-      fromNumber = fromNumber.replace('whatsapp:', '');
-    }
-    if (!fromNumber.startsWith('+')) {
-      fromNumber = `+${fromNumber}`;
-    }
+    // Sanitize from number — must be exactly whatsapp:+XXXXXXXXXX
+    let fromNumber = store.twilio_phone_number.trim().replace(/ /g, '').replace('whatsapp:', '');
+    if (!fromNumber.startsWith('+')) fromNumber = `+${fromNumber}`;
     fromNumber = `whatsapp:${fromNumber}`;
+    console.log(`[send-template] From: ${fromNumber} | ContentSid: ${template.twilio_content_sid} | Variables: ${JSON.stringify(contentVariables)}`);
 
     // Sanitize to number
     let toNumber = lead.phone.trim();
