@@ -382,7 +382,7 @@ async function handleSophia({ lead, productInfo, leadId, incomingText, storeTwil
   }
   if (isAIPaused) return;
 
-  const { buildSophiaPrompt } = await import('./utils/sophia-prompt.js');
+  const { buildSophiaPrompt } = await import('./utils/_sophia-prompt.js');
   const { OpenAI } = await import('openai');
 
   // Get the full confirmation template message — it has the complete order: name, products, variants, price
