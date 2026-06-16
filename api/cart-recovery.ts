@@ -139,11 +139,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           contentVariables: JSON.stringify(filtered),
         } as any);
 
-        // Log in messages table
+        // Fetch actual template body to log the real message content
+        let bodyText = `[Bot Carrito T${touch}] Plantilla "${template.template_name}"`;
+        try {
+          const content = await twilioClient.content.v1.contents(template.twilio_content_sid).fetch();
+          const types = content.types as any;
+          const rawBody = types['twilio/text']?.body || types['twilio/media']?.body || types['twilio/quick-reply']?.body || '';
+          if (rawBody) {
+            bodyText = rawBody;
+            // Replace variables with actual values
+            for (const [key, val] of Object.entries(filtered)) {
+              bodyText = bodyText.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), val);
+            }
+          }
+        } catch { /* ignore - use fallback text */ }
+
+        // Log in messages table with the actual message content
         await supabase.from('messages').insert({
           lead_id: lead.id,
           sender_type: 'human',
-          content: `[Bot Carrito T${touch}] Plantilla "${template.template_name}" enviada automáticamente.`
+          content: bodyText
         });
 
         return true;
