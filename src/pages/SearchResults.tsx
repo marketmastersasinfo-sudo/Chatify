@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Search, User, Phone, Package, MapPin, Store, ChevronRight, Loader2 } from 'lucide-react';
+import { Search, Phone, Package, MapPin, Store, ChevronRight, Loader2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { LeadChatPanel } from '../components/LeadChatPanel';
 import { useSearchParams } from 'react-router-dom';
