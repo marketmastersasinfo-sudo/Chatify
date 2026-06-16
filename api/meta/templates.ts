@@ -39,6 +39,44 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         .select('*')
         .eq('store_id', storeId as string);
 
+      // Auto-register: If this store is missing templates that exist in Twilio,
+      // copy the name from other stores' records or use Twilio's friendlyName
+      const missingTemplates = contents.filter(c => 
+        !localTemplates?.find(l => l.twilio_content_sid === c.sid)
+      );
+
+      if (missingTemplates.length > 0) {
+        // Fetch ALL store_templates to find names from other stores
+        const allSids = missingTemplates.map(c => c.sid);
+        const { data: otherStoreRecords } = await supabase
+          .from('store_templates')
+          .select('twilio_content_sid, template_name, template_type')
+          .in('twilio_content_sid', allSids);
+
+        const newRecords = missingTemplates.map(c => {
+          // Try to get name from another store's record
+          const otherRecord = otherStoreRecords?.find(r => r.twilio_content_sid === c.sid);
+          return {
+            store_id: storeId as string,
+            template_name: otherRecord?.template_name || c.friendlyName || 'Sin Nombre',
+            twilio_content_sid: c.sid,
+            twilio_approval_status: 'received', // Will be updated by sync below
+            template_type: otherRecord?.template_type || 'custom'
+          };
+        });
+
+        // Insert all missing records for this store
+        const { data: inserted } = await supabase
+          .from('store_templates')
+          .insert(newRecords)
+          .select();
+
+        // Add newly inserted records to localTemplates for the rest of the logic
+        if (inserted) {
+          localTemplates?.push(...inserted);
+        }
+      }
+
       // Sincronizar estado real de aprobación con Twilio para TODAS las plantillas
       const approvalDetails: Record<string, any> = {};
       if (localTemplates) {
