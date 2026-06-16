@@ -96,7 +96,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const regex = /{{(\d+)}}/g;
         let match;
         while ((match = regex.exec(bodyText)) !== null) {
-          variables[match[1]] = `Var${match[1]}`;
+          // Use real examples from the form instead of generic "Var1"
+          const exampleValue = payload.variableExamples?.[match[1]] || `Ejemplo${match[1]}`;
+          variables[match[1]] = exampleValue;
         }
       }
 
@@ -129,10 +131,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // Crear contenido
       const content = await twilioClient.content.v1.contents.create(twilioContentPayload);
 
-      // 2. Enviar a aprobación de WhatsApp
+      // 2. Enviar a aprobación de WhatsApp con el nombre en formato válido para Meta
+      const approvalName = (payload.name || 'template').toLowerCase().replace(/[^a-z0-9_]/g, '_');
       const approval = await twilioClient.content.v1.contents(content.sid).approvalCreate.create({
         category: payload.category || 'UTILITY',
-        name: payload.name
+        name: approvalName
       }) as any;
 
       // Guardar el SID en nuestra BD

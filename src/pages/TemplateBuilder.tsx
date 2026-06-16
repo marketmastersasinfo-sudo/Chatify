@@ -225,7 +225,8 @@ export function TemplateBuilder() {
         name: newTemplate.name,
         category: newTemplate.category,
         language: newTemplate.language,
-        components: components
+        components: components,
+        variableExamples: newTemplate.variableExamples
       };
 
       const res = await fetch(`/api/meta/templates?storeId=${selectedStore.id}`, {
