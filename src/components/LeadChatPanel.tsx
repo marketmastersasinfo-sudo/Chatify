@@ -107,8 +107,11 @@ export function LeadChatPanel({
       const { data } = await supabase
         .from('store_templates')
         .select('*')
-        .eq('store_id', lead.store_id);
-      setTemplates(data || []);
+        .eq('store_id', lead.store_id)
+        .not('template_name', 'is', null)
+        .neq('template_name', '');
+      // Only show templates that have a valid name configured
+      setTemplates((data || []).filter((t: any) => t.template_name?.trim()));
     } catch (e) {
       console.error(e);
     }

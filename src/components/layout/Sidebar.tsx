@@ -1,9 +1,10 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, MessageSquare, MapPin, Settings, Truck, ThumbsUp, Database, Megaphone, RefreshCcw, ShoppingCart, Smartphone } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, MapPin, Settings, Truck, ThumbsUp, Database, Megaphone, RefreshCcw, ShoppingCart, Smartphone, Search } from 'lucide-react';
 import { cn } from '../../utils/cn';
 
 const navigation = [
   { name: 'Dashboard Central', href: '/', icon: LayoutDashboard },
+  { name: '🔍 Buscador Global', href: '/search', icon: Search },
   { name: 'CRM Ventas WA', href: '/crm-sales', icon: MessageSquare },
   { name: 'CRM Redes Sociales', href: '/crm-social', icon: ThumbsUp },
   { name: 'Logística ShopyEasy', href: '/crm-logistics', icon: Truck },
@@ -16,6 +17,7 @@ const navigation = [
   { name: 'Líneas y SIMs Virtuales', href: '/virtual-sims', icon: Smartphone },
   { name: 'Configuración Global', href: '/settings', icon: Settings },
 ];
+
 
 export function Sidebar() {
   return (
