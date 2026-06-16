@@ -175,6 +175,15 @@ export function TemplateBuilder() {
         throw new Error("El nombre solo puede contener letras minúsculas, números y guiones bajos (_).");
       }
 
+      // Validar: Meta no permite variables al inicio o final del texto
+      const trimmedBody = newTemplate.bodyText.trim();
+      if (/^\{\{\d+\}\}/.test(trimmedBody)) {
+        throw new Error("⚠️ Meta no permite variables al INICIO del mensaje. Agrega texto antes (ej: \"Hola {{1}}\").");
+      }
+      if (/\{\{\d+\}\}\s*$/.test(trimmedBody)) {
+        throw new Error("⚠️ Meta no permite variables al FINAL del mensaje. Agrega texto después de la última variable.");
+      }
+
       // Armar el JSON estricto que pide Meta
       const bodyComponent: any = {
         type: 'BODY',
