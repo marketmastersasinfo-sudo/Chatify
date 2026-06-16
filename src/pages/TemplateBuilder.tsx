@@ -255,13 +255,13 @@ export function TemplateBuilder() {
     const status = (template.status || '').toUpperCase();
     switch(status) {
       case 'APPROVED':
+      case 'RECEIVED':
         return <span className="bg-green-100 text-green-700 px-2.5 py-1 flex items-center gap-1 text-[10px] uppercase font-bold rounded-full"><CheckCircle2 className="w-3 h-3"/>✅ Aprobada</span>;
       
       case 'REJECTED':
         return <span className="bg-red-100 text-red-700 px-2.5 py-1 flex items-center gap-1 text-[10px] uppercase font-bold rounded-full"><AlertCircle className="w-3 h-3"/>❌ Rechazada</span>;
       
       case 'PENDING':
-      case 'RECEIVED':
         return (
           <div className="flex flex-col gap-0.5">
             <span className="bg-yellow-100 text-yellow-700 px-2.5 py-1 flex items-center gap-1 text-[10px] uppercase font-bold rounded-full w-fit">
