@@ -88,7 +88,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // ── Find Lead ───────────────────────────────────
     const { data: lead } = await supabase
       .from('leads')
-      .select('id, status, board_type, address, city, name, product_name, total_price, notes, document_id, email')
+      .select('id, status, board_type, address, city, name, product_name, total_price, notes, document_id, email, recovery_touch')
       .eq('phone', customerPhone)
       .eq('store_id', store.id)
       .order('created_at', { ascending: false })
@@ -220,6 +220,110 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // ── STATE 3: 'confirmado' or other ── Sophia handles all follow-up questions ──
       const productInfo = await fetchProductInfo(lead, store.id);
       await handleSophia({ lead, productInfo, leadId, incomingText, storeTwilioPhone, customerPhone, store, supabase: supabase as any });
+      return res.status(200).send('<?xml version="1.0" encoding="UTF-8"?><Response></Response>');
+    }
+
+    // ─────────────────────────────────────────────────
+    // STATE MACHINE — Cart Recovery (remarketing_carts)
+    // ─────────────────────────────────────────────────
+    if (leadBoard === 'remarketing_carts') {
+
+      // Detect rejection (button click or text saying NO)
+      const isRejection =
+        ButtonPayload?.toLowerCase().includes('perder') ||
+        ButtonPayload?.toLowerCase().includes('no me interesa') ||
+        ButtonPayload?.toLowerCase().includes('cancelar') ||
+        ButtonText?.toLowerCase().includes('perder') ||
+        ButtonText?.toLowerCase().includes('cancelar') ||
+        /^(no( me interesa| quiero| gracias)?|nop|nel|cancelar?)$/i.test(incomingText.trim());
+
+      if (isRejection && leadStatus !== 'verifying_address') {
+        await supabase.from('leads').update({ status: 'lost' }).eq('id', leadId);
+        const byeMsg = `Entendido \uD83D\uDE0A No hay problema. Si en algún momento cambias de opinión, aquí estaremos.\n\n¡Que tengas un excelente día! \uD83C\uDF1F`;
+        await isTwilioClient.messages.create({
+          from: `whatsapp:+${storeTwilioPhone.replace('+', '')}`,
+          to: `whatsapp:+${customerPhone}`,
+          body: byeMsg
+        });
+        await supabase.from('messages').insert({ lead_id: leadId, sender_type: 'ai', content: byeMsg });
+        return res.status(200).send('<?xml version="1.0" encoding="UTF-8"?><Response></Response>');
+      }
+
+      // STATE: bot_sent / abandoned / client_replied — waiting for any interaction
+      if (leadStatus === 'bot_sent' || leadStatus === 'abandoned' || leadStatus === 'client_replied') {
+        if (leadStatus === 'bot_sent') {
+          await supabase.from('leads').update({ status: 'client_replied' }).eq('id', leadId);
+        }
+
+        const isOrderConfirmed = isConfirmation(incomingText) ||
+          ButtonPayload?.toLowerCase().includes('quiero') ||
+          ButtonPayload?.toLowerCase().includes('confirmar') ||
+          ButtonPayload?.toLowerCase().includes('reclamar') ||
+          ButtonText?.toLowerCase().includes('quiero') ||
+          ButtonText?.toLowerCase().includes('confirmar') ||
+          ButtonText?.toLowerCase().includes('reclamar');
+
+        if (isOrderConfirmed) {
+          await supabase.from('leads').update({ status: 'verifying_address' }).eq('id', leadId);
+
+          const { data: orgData } = await supabase.from('organizations').select('google_maps_api_key').eq('id', store.organization_id);
+          const apiKey = (orgData as any)?.[0]?.google_maps_api_key || 'AIzaSyD3amxq4t9GA892zO4C70nbnPGqnG4Ct-A';
+          const leadAddress = lead?.address || '';
+          const leadCity = lead?.city || '';
+
+          if (leadAddress && leadCity) {
+            const mapQuery = encodeURIComponent(`${leadAddress}, ${leadCity}`);
+            const streetViewUrl = `https://maps.googleapis.com/maps/api/streetview?size=600x400&location=${mapQuery}&key=${apiKey}`;
+            try {
+              await isTwilioClient.messages.create({
+                from: `whatsapp:+${storeTwilioPhone.replace('+', '')}`,
+                to: `whatsapp:+${customerPhone}`,
+                body: '\u00a1Excelente! \uD83C\uDF89 Para asegurar una entrega perfecta, ¿esta es la fachada de tu dirección? \uD83C\uDFE0\uD83D\uDCCD',
+                mediaUrl: [streetViewUrl]
+              });
+              await supabase.from('messages').insert({
+                lead_id: leadId, sender_type: 'ai',
+                content: `[Automated Street View] ¿Esta es la fachada correcta?\nImage: ${streetViewUrl}`
+              });
+            } catch (e: any) {
+              await supabase.from('messages').insert({ lead_id: leadId, sender_type: 'ai', content: `[BOT CRASH] Street View Error: ${e.message}` });
+            }
+          } else {
+            const productInfo = await fetchProductInfo(lead, store.id);
+            await handleSophia({ lead, productInfo, leadId, incomingText: 'El cliente confirmó el pedido pero no tenemos su dirección completa. Pídele amablemente la dirección de entrega.', storeTwilioPhone, customerPhone, store, supabase: supabase as any });
+          }
+        } else {
+          const productInfo = await fetchProductInfo(lead, store.id);
+          await handleSophia({ lead, productInfo, leadId, incomingText, storeTwilioPhone, customerPhone, store, supabase: supabase as any });
+        }
+        return res.status(200).send('<?xml version="1.0" encoding="UTF-8"?><Response></Response>');
+      }
+
+      // STATE: verifying_address — waiting for fachada confirmation
+      if (leadStatus === 'verifying_address') {
+        if (isConfirmation(incomingText)) {
+          await supabase.from('leads').update({
+            status: 'recovered',
+            recovery_confirmed_at: new Date().toISOString()
+          }).eq('id', leadId);
+          const firstName = lead?.name?.split(' ')[0] || 'amig@';
+          const confirmMsg = `\u00a1Perfecto, ${firstName}! \u2705 Tu pedido de *${lead?.product_name || 'tu producto'}* está *100% confirmado*.\n\nEn breve recibirás la información del envío. \u00a1Gracias por tu compra! \uD83C\uDF81`;
+          await isTwilioClient.messages.create({
+            from: `whatsapp:+${storeTwilioPhone.replace('+', '')}`,
+            to: `whatsapp:+${customerPhone}`,
+            body: confirmMsg
+          });
+          await supabase.from('messages').insert({ lead_id: leadId, sender_type: 'ai', content: confirmMsg });
+        } else {
+          const productInfo = await fetchProductInfo(lead, store.id);
+          await handleSophia({ lead, productInfo, leadId, incomingText, storeTwilioPhone, customerPhone, store, supabase: supabase as any });
+        }
+        return res.status(200).send('<?xml version="1.0" encoding="UTF-8"?><Response></Response>');
+      }
+
+      // STATE: recovered — Sophia handles follow-up questions
+      const productInfo2 = await fetchProductInfo(lead, store.id);
+      await handleSophia({ lead, productInfo: productInfo2, leadId, incomingText, storeTwilioPhone, customerPhone, store, supabase: supabase as any });
       return res.status(200).send('<?xml version="1.0" encoding="UTF-8"?><Response></Response>');
     }
 
