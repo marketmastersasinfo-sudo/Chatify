@@ -1,8 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import {
   ShoppingCart, MessageSquare, MessageSquareText, MapPin,
-  CheckCircle2, Users, Search, Loader2, FileText, Store,
-  Ban, RefreshCcw, Send, Clock, TrendingUp, DollarSign, Zap
+  CheckCircle2, Users, Search, Loader2, Store,
+  Ban, Send, Clock, TrendingUp, DollarSign, Zap
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { CrmFilters } from '../components/CrmFilters';
