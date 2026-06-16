@@ -62,6 +62,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const formattedData = contents.map(c => {
         const local = localTemplates?.find(l => l.twilio_content_sid === c.sid);
         const types = c.types as any;
+        const components: any[] = [
+          {
+            type: 'BODY',
+            text: types['twilio/text']?.body || types['twilio/media']?.body || types['twilio/quick-reply']?.body || ''
+          }
+        ];
+
+        // Add buttons if quick-reply type exists
+        const quickReply = types['twilio/quick-reply'];
+        if (quickReply?.actions && quickReply.actions.length > 0) {
+          components.push({
+            type: 'BUTTONS',
+            buttons: quickReply.actions.map((a: any) => ({
+              type: 'QUICK_REPLY',
+              text: a.title
+            }))
+          });
+        }
+
         return {
           id: c.sid,
           name: local?.template_name || c.friendlyName || 'Sin Nombre',
@@ -69,12 +88,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           language: c.language,
           status: local?.twilio_approval_status || 'APPROVED', 
           created_at: local?.created_at || null,
-          components: [
-            {
-              type: 'BODY',
-              text: types['twilio/text']?.body || types['twilio/media']?.body || types['twilio/quick-reply']?.body || ''
-            }
-          ]
+          components
         };
       });
 

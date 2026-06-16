@@ -754,9 +754,19 @@ export function TemplateBuilder() {
                   <div key={idx} className="bg-gray-50 rounded-xl p-5 border border-gray-200">
                     <h4 className="text-xs font-bold text-blue-800 uppercase tracking-wider mb-3">Componente: {comp.type}</h4>
                     {comp.format && <p className="text-xs text-gray-500 mb-2 font-semibold">Formato: {comp.format}</p>}
-                    <p className="text-sm text-gray-800 whitespace-pre-wrap font-[system-ui] leading-relaxed">
-                      {comp.text || 'Contenido multimedia / sin texto'}
-                    </p>
+                    {comp.type === 'BUTTONS' ? (
+                      <div className="flex flex-wrap gap-2">
+                        {comp.buttons?.map((btn: any, bIdx: number) => (
+                          <span key={bIdx} className="bg-blue-50 text-blue-700 border border-blue-200 text-sm px-3 py-1.5 rounded-lg font-semibold">
+                            {btn.text}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-800 whitespace-pre-wrap font-[system-ui] leading-relaxed">
+                        {comp.text || 'Contenido multimedia / sin texto'}
+                      </p>
+                    )}
                     {comp.example?.body_text && (
                       <div className="mt-4 pt-3 border-t border-gray-200">
                         <p className="text-xs font-bold text-gray-500 mb-2">Ejemplos configurados:</p>
@@ -828,6 +838,21 @@ export function TemplateBuilder() {
                     </p>
                     <div className="text-[10px] text-gray-400 text-right mt-1">Ahora mismo</div>
                   </div>
+
+                  {/* Quick Reply Buttons in Detail Preview */}
+                  {(() => {
+                    const btnComp = selectedTemplateToView.components?.find((c: any) => c.type === 'BUTTONS');
+                    if (!btnComp?.buttons?.length) return null;
+                    return (
+                      <div className="flex flex-col gap-1 mt-1 w-[90%] self-start">
+                        {btnComp.buttons.map((btn: any, bIdx: number) => (
+                          <div key={bIdx} className="bg-white rounded-lg py-2 px-3 text-center shadow-sm">
+                            <span className="text-[#00A5F4] text-sm font-medium">{btn.text}</span>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
             </div>
