@@ -742,7 +742,7 @@ export function TemplateBuilder() {
                 <div>
                   <h3 className="text-2xl font-bold text-gray-900">{selectedTemplateToView.name}</h3>
                   <div className="flex items-center gap-3 mt-2">
-                    {getStatusBadge(selectedTemplateToView.status)}
+                    {getStatusBadge(selectedTemplateToView)}
                     <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{selectedTemplateToView.category}</span>
                     <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{selectedTemplateToView.language}</span>
                   </div>

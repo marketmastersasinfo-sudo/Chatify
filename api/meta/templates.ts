@@ -98,10 +98,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return {
           id: c.sid,
           name: local?.template_name || c.friendlyName || 'Sin Nombre',
-          category: local?.template_type === 'custom' ? 'UTILITY' : 'MARKETING',
+          category: approval.category || (local?.template_type === 'custom' ? 'UTILITY' : 'MARKETING'),
           language: c.language,
           status: local?.twilio_approval_status || 'APPROVED', 
-          created_at: local?.created_at || null,
+          created_at: local?.created_at || (c as any).dateCreated || null,
           components,
           approvalDetails: approval
         };
