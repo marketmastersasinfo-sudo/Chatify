@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { RefreshCcw, Plus, Image as ImageIcon, MessageSquareDashed, AlertCircle, CheckCircle2, Loader2, Save, X, Sparkles, Wand2 } from 'lucide-react';
+import { RefreshCcw, Plus, Image as ImageIcon, MessageSquareDashed, AlertCircle, CheckCircle2, Loader2, Save, X, Sparkles, Wand2, Link2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 export function TemplateBuilder() {
@@ -14,6 +14,10 @@ export function TemplateBuilder() {
   const [isCreating, setIsCreating] = useState(false);
   const [selectedTemplateToView, setSelectedTemplateToView] = useState<any>(null);
   const [saving, setSaving] = useState(false);
+
+  // Sync Names State
+  const [syncing, setSyncing] = useState(false);
+  const [syncResults, setSyncResults] = useState<any[] | null>(null);
   const [newTemplate, setNewTemplate] = useState({
     name: '',
     category: 'MARKETING',
@@ -117,6 +121,27 @@ export function TemplateBuilder() {
       setError(err.message);
     }
     setLoading(false);
+  }
+
+  async function handleSyncNames() {
+    if (!selectedStore) return;
+    setSyncing(true);
+    setSyncResults(null);
+    try {
+      const res = await fetch('/api/twilio/sync-template-names', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ storeId: selectedStore.id })
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Error sincronizando');
+      setSyncResults(json.results || []);
+      // Reload templates to reflect any status updates
+      fetchMetaTemplates(selectedStore.id);
+    } catch (err: any) {
+      setError(err.message);
+    }
+    setSyncing(false);
   }
 
   async function handleCreateTemplate() {
@@ -269,6 +294,38 @@ export function TemplateBuilder() {
           </div>
         )}
       </div>
+
+      {/* Sync Results Panel */}
+      {syncResults !== null && (
+        <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-bold text-gray-900 text-sm flex items-center gap-2">
+              <Link2 className="w-4 h-4 text-blue-600"/>
+              Resultado de Sincronización de Nombres en Twilio
+            </h3>
+            <button onClick={() => setSyncResults(null)} className="text-gray-400 hover:text-gray-600">
+              <X className="w-4 h-4"/>
+            </button>
+          </div>
+          {syncResults.length === 0 ? (
+            <p className="text-sm text-gray-500">No se encontraron plantillas para sincronizar. ¿Tienes plantillas con nombre configurado en esta tienda?</p>
+          ) : (
+            <div className="space-y-3">
+              {syncResults.map((r: any, i: number) => (
+                <div key={i} className="bg-gray-50 rounded-xl p-3 border border-gray-100">
+                  <p className="text-sm font-bold text-gray-800 font-mono">{r.name}</p>
+                  <p className="text-[10px] text-gray-400 mb-2">SID: {r.sid}</p>
+                  <ul className="space-y-0.5">
+                    {r.actions?.map((action: string, j: number) => (
+                      <li key={j} className="text-xs text-gray-600">{action}</li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {error && (
         <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-r-xl flex items-start gap-3">
@@ -567,6 +624,15 @@ export function TemplateBuilder() {
               className="text-gray-500 hover:text-blue-600 font-semibold text-sm flex items-center gap-1.5 transition-colors"
             >
               <RefreshCcw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`}/> Sincronizar
+            </button>
+            <button
+              onClick={handleSyncNames}
+              disabled={syncing || !selectedStore}
+              className="text-purple-600 hover:text-purple-800 font-semibold text-sm flex items-center gap-1.5 transition-colors border border-purple-200 bg-purple-50 hover:bg-purple-100 px-3 py-1.5 rounded-lg"
+              title="Actualiza el nombre de todas las plantillas en Twilio para que coincidan con el nombre configurado en Chatify"
+            >
+              {syncing ? <Loader2 className="w-4 h-4 animate-spin"/> : <Link2 className="w-4 h-4"/>}
+              {syncing ? 'Sincronizando...' : 'Nombres → Twilio'}
             </button>
             <button 
               onClick={() => setIsCreating(true)}
