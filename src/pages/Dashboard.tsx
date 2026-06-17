@@ -1,105 +1,92 @@
-import { useState } from 'react';
-import { Calendar as CalendarIcon, TrendingUp, TrendingDown, Users, ShoppingCart, DollarSign, Activity, Filter, ChevronDown, MessageSquare, Target } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Calendar as CalendarIcon, TrendingUp, TrendingDown, Users, ShoppingCart, DollarSign, Activity, Filter, ChevronDown, MessageSquare, Loader2 } from 'lucide-react';
 import { cn } from '../utils/cn';
-
-const funnels = {
-  whatsapp: {
-    title: "Ventas WhatsApp (Inbound)",
-    kpis: [
-      { label: "Leads Entrantes", value: "3,010", trend: "+12%", icon: Users, color: "text-blue-600", bg: "bg-blue-50" },
-      { label: "Interacción IA", value: "1,850", trend: "61% Conv", icon: Activity, color: "text-indigo-600", bg: "bg-indigo-50" },
-      { label: "Datos Recolectados", value: "845", trend: "45% Conv", icon: ShoppingCart, color: "text-purple-600", bg: "bg-purple-50" },
-      { label: "Pedidos Confirmados", value: "380", trend: "45% Cierre", icon: DollarSign, color: "text-green-600", bg: "bg-green-50" }
-    ],
-    funnel: [
-      { stage: "1. Leads Entrantes", count: 3010, percentage: 100, colorHex: "#3b82f6", color: "text-blue-700", bg: "bg-blue-50" },
-      { stage: "2. Interacción IA", count: 1850, percentage: 61.4, colorHex: "#6366f1", color: "text-indigo-700", bg: "bg-indigo-50", dropoffAnalysis: "Fricción Inicial: El cliente hizo clic en el anuncio pero ignoró el saludo de la IA. Revisa si el gancho del anuncio es engañoso o si el primer mensaje de la IA es muy largo." },
-      { stage: "3. Datos Recolectados", count: 845, percentage: 28.0, colorHex: "#a855f7", color: "text-purple-700", bg: "bg-purple-50", dropoffAnalysis: "Fricción de Datos: Hubo conversación, pero la persona no quiso dar su dirección. Posible falta de confianza. Ofrece pago contra entrega explícitamente." },
-      { stage: "4. Pedidos Confirmados", count: 380, percentage: 12.6, colorHex: "#22c55e", color: "text-green-700", bg: "bg-green-50", dropoffAnalysis: "Fricción de Cierre: Llegaron al final pero no confirmaron el pedido. Analiza si el costo de envío mató la venta o si hay una objeción de precio no resuelta." }
-    ]
-  },
-  carts: {
-    title: "Carritos Abandonados (Recuperación)",
-    kpis: [
-      { label: "Carritos Detectados", value: "1,200", trend: "+5%", icon: ShoppingCart, color: "text-blue-600", bg: "bg-blue-50" },
-      { label: "Plantillas Enviadas", value: "1,150", trend: "95% Envío", icon: MessageSquare, color: "text-indigo-600", bg: "bg-indigo-50" },
-      { label: "Respuestas al Bot", value: "450", trend: "39% Conv", icon: Users, color: "text-purple-600", bg: "bg-purple-50" },
-      { label: "Carritos Recuperados", value: "120", trend: "26% Cierre", icon: DollarSign, color: "text-green-600", bg: "bg-green-50" }
-    ],
-    funnel: [
-      { stage: "1. Carritos Detectados", count: 1200, percentage: 100, colorHex: "#3b82f6", color: "text-blue-700", bg: "bg-blue-50" },
-      { stage: "2. Plantillas Enviadas", count: 1150, percentage: 95.8, colorHex: "#6366f1", color: "text-indigo-700", bg: "bg-indigo-50", dropoffAnalysis: "Fallos de Envío: El número de teléfono dejado en el checkout es inválido o no tiene WhatsApp." },
-      { stage: "3. Respuestas al Bot", count: 450, percentage: 37.5, colorHex: "#a855f7", color: "text-purple-700", bg: "bg-purple-50", dropoffAnalysis: "Ignorados: El mensaje llegó pero no les interesó. Intenta ofrecer un cupón de descuento o un gancho más agresivo en el primer mensaje." },
-      { stage: "4. Carritos Recuperados", count: 120, percentage: 10.0, colorHex: "#22c55e", color: "text-green-700", bg: "bg-green-50", dropoffAnalysis: "Objeción Final: Respondieron al bot pero no terminaron comprando. Es vital que un humano lea estas conversaciones para ajustar el entrenamiento de la IA." }
-    ]
-  },
-  remarketing: {
-    title: "Remarketing (Seguimiento a Prospectos)",
-    kpis: [
-      { label: "Prospectos Calientes", value: "850", trend: "-", icon: Users, color: "text-blue-600", bg: "bg-blue-50" },
-      { label: "Mensajes Enviados", value: "800", trend: "94% Alcance", icon: MessageSquare, color: "text-indigo-600", bg: "bg-indigo-50" },
-      { label: "Respuestas Recibidas", value: "320", trend: "40% Click", icon: Activity, color: "text-purple-600", bg: "bg-purple-50" },
-      { label: "Ventas Remarketing", value: "65", trend: "20% Cierre", icon: DollarSign, color: "text-green-600", bg: "bg-green-50" }
-    ],
-    funnel: [
-      { stage: "1. Prospectos Calientes", count: 850, percentage: 100, colorHex: "#3b82f6", color: "text-blue-700", bg: "bg-blue-50" },
-      { stage: "2. Mensajes Enviados", count: 800, percentage: 94.1, colorHex: "#6366f1", color: "text-indigo-700", bg: "bg-indigo-50", dropoffAnalysis: "Pérdida de Contacto: Algunos números fueron bloqueados o ya no existen." },
-      { stage: "3. Respuestas Recibidas", count: 320, percentage: 37.6, colorHex: "#a855f7", color: "text-purple-700", bg: "bg-purple-50", dropoffAnalysis: "Falta de Interés: La oferta de Remarketing no es lo suficientemente atractiva comparada con el precio original." },
-      { stage: "4. Ventas Remarketing", count: 65, percentage: 7.6, colorHex: "#22c55e", color: "text-green-700", bg: "bg-green-50", dropoffAnalysis: "Fricción de Pago: Respondieron pero no concretaron. Quizás el proceso de pago manual es muy engorroso." }
-    ]
-  },
-  broadcast: {
-    title: "Difusión Masiva (Ráfagas)",
-    kpis: [
-      { label: "Mensajes Lanzados", value: "15,000", trend: "Ráfagas", icon: MessageSquare, color: "text-blue-600", bg: "bg-blue-50" },
-      { label: "Mensajes Leídos", value: "12,200", trend: "81% Open", icon: Activity, color: "text-indigo-600", bg: "bg-indigo-50" },
-      { label: "Clics / Respuestas", value: "1,850", trend: "15% Click", icon: Target, color: "text-purple-600", bg: "bg-purple-50" },
-      { label: "Re-compras", value: "210", trend: "11% Cierre", icon: DollarSign, color: "text-green-600", bg: "bg-green-50" }
-    ],
-    funnel: [
-      { stage: "1. Mensajes Lanzados", count: 15000, percentage: 100, colorHex: "#3b82f6", color: "text-blue-700", bg: "bg-blue-50" },
-      { stage: "2. Mensajes Leídos", count: 12200, percentage: 81.3, colorHex: "#6366f1", color: "text-indigo-700", bg: "bg-indigo-50", dropoffAnalysis: "Ignorados: Muchos no abrieron el mensaje. Asegúrate de enviar mensajes en horarios pico (7pm - 9pm)." },
-      { stage: "3. Clics / Respuestas", count: 1850, percentage: 12.3, colorHex: "#a855f7", color: "text-purple-700", bg: "bg-purple-50", dropoffAnalysis: "Bajo Engagement: Leyeron pero no hicieron clic. Falta urgencia (Ej: 'Solo por 24 horas') o un Call to Action claro." },
-      { stage: "4. Re-compras", count: 210, percentage: 1.4, colorHex: "#22c55e", color: "text-green-700", bg: "bg-green-50", dropoffAnalysis: "Abandono Web: Hicieron clic pero la página cargó lento o el producto estaba agotado. Revisa la landing page." }
-    ]
-  },
-  logistics: {
-    title: "Confirmación de Pedidos (Logística)",
-    kpis: [
-      { label: "Nuevos Pedidos", value: "850", trend: "+5%", icon: ShoppingCart, color: "text-blue-600", bg: "bg-blue-50" },
-      { label: "Confirmados", value: "720", trend: "84% Conv", icon: Target, color: "text-green-600", bg: "bg-green-50" },
-      { label: "Despachados", value: "690", trend: "95% Envío", icon: Activity, color: "text-indigo-600", bg: "bg-indigo-50" },
-      { label: "Cancelados", value: "30", trend: "4% Fuga", icon: Target, color: "text-red-600", bg: "bg-red-50" }
-    ],
-    funnel: [
-      { stage: "1. Nuevos Pedidos", count: 850, percentage: 100, colorHex: "#3b82f6", color: "text-blue-700", bg: "bg-blue-50" },
-      { stage: "2. Solicitud Enviada", count: 820, percentage: 96.4, colorHex: "#6366f1", color: "text-indigo-700", bg: "bg-indigo-50", dropoffAnalysis: "Falla de Contacto: El número de WhatsApp no existe o bloqueó al bot." },
-      { stage: "3. Confirmados 100%", count: 720, percentage: 84.7, colorHex: "#a855f7", color: "text-purple-700", bg: "bg-purple-50", dropoffAnalysis: "Dudas sin Resolver: El cliente pidió modificar la dirección o se arrepintió antes de despachar." },
-      { stage: "4. Despachados", count: 690, percentage: 81.1, colorHex: "#22c55e", color: "text-green-700", bg: "bg-green-50", dropoffAnalysis: "Novedad en Transportadora: Pedido devuelto por zona de difícil acceso o cliente ausente." }
-    ]
-  },
-  social: {
-    title: "Redes Sociales (IG & Messenger)",
-    kpis: [
-      { label: "Comentarios Públicos", value: "3,200", trend: "+12%", icon: MessageSquare, color: "text-blue-600", bg: "bg-blue-50" },
-      { label: "DMs Enviados", value: "2,850", trend: "89% Conv", icon: Activity, color: "text-indigo-600", bg: "bg-indigo-50" },
-      { label: "Ventas Instagram", value: "450", trend: "15% Cierre", icon: Target, color: "text-pink-600", bg: "bg-pink-50" },
-      { label: "Ventas Messenger", value: "120", trend: "4% Cierre", icon: Target, color: "text-blue-600", bg: "bg-blue-50" }
-    ],
-    funnel: [
-      { stage: "1. Comentarios Detectados", count: 3200, percentage: 100, colorHex: "#3b82f6", color: "text-blue-700", bg: "bg-blue-50" },
-      { stage: "2. DMs Enviados (Bot)", count: 2850, percentage: 89.0, colorHex: "#6366f1", color: "text-indigo-700", bg: "bg-indigo-50", dropoffAnalysis: "Filtro de IA: Comentarios que eran spam, insultos, o no requerían respuesta." },
-      { stage: "3. Conversación Activa", count: 1850, percentage: 57.8, colorHex: "#a855f7", color: "text-purple-700", bg: "bg-purple-50", dropoffAnalysis: "Visto Bueno: Recibieron el DM pero no respondieron. Revisa el gancho del mensaje automático." },
-      { stage: "4. Ventas Directas DM", count: 570, percentage: 17.8, colorHex: "#22c55e", color: "text-green-700", bg: "bg-green-50", dropoffAnalysis: "Derivados a WA: Muchos prefirieron pasarse a WhatsApp para cerrar o abandonaron por fricción de pago." }
-    ]
-  }
-};
+import { useAuth } from '../lib/auth';
+import { fetchDashboardData, processRemarketingFunnels, processSalesWaFunnels } from '../lib/dashboard-data';
+import { supabase } from '../lib/supabase';
 
 type TabType = 'whatsapp' | 'carts' | 'remarketing' | 'broadcast' | 'logistics' | 'social';
 
 export function Dashboard() {
+  const { user } = useAuth();
+  const storeIds = (user as any)?.storeIds || (user as any)?.storeAccess?.map((a: any) => a.storeId) || [];
   const [activeTab, setActiveTab] = useState<TabType>('whatsapp');
-  const currentData = funnels[activeTab];
+  
+  // Filter state
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [country, setCountry] = useState('all');
+  const [storeId, setStoreId] = useState('all');
+  
+  // Data state
+  const [leads, setLeads] = useState<any[]>([]);
+  const [stores, setStores] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch stores for dropdown
+  useEffect(() => {
+    async function loadStores() {
+      if (!storeIds || storeIds.length === 0) return;
+      const { data } = await supabase.from('stores').select('id, name, country').in('id', storeIds);
+      setStores(data || []);
+    }
+    loadStores();
+  }, [storeIds]);
+
+  // Fetch leads based on filters
+  useEffect(() => {
+    async function loadData() {
+      setLoading(true);
+      const data = await fetchDashboardData({ startDate, endDate, country, storeId }, storeIds);
+      setLeads(data);
+      setLoading(false);
+    }
+    loadData();
+  }, [startDate, endDate, country, storeId, storeIds]);
+
+  // Process data for the active tab
+  let currentData: any = { kpis: [], funnel: [], title: '' };
+  
+  if (activeTab === 'whatsapp') {
+    const processed = processSalesWaFunnels(leads);
+    currentData = {
+      title: "Ventas WhatsApp (Inbound)",
+      kpis: [
+        { label: "Leads Entrantes", value: processed.kpis.incoming.toString(), trend: "-", icon: Users, color: "text-blue-600", bg: "bg-blue-50" },
+        { label: "Interacción IA", value: processed.kpis.interaction.toString(), trend: "-", icon: Activity, color: "text-indigo-600", bg: "bg-indigo-50" },
+        { label: "Datos Recolectados", value: processed.kpis.dataCollected.toString(), trend: "-", icon: ShoppingCart, color: "text-purple-600", bg: "bg-purple-50" },
+        { label: "Pedidos Confirmados", value: processed.kpis.confirmed.toString(), trend: "-", icon: DollarSign, color: "text-green-600", bg: "bg-green-50" }
+      ],
+      funnel: processed.funnel
+    };
+  } else if (activeTab === 'carts') {
+    const processed = processRemarketingFunnels(leads);
+    currentData = {
+      title: "Carritos Abandonados (Recuperación)",
+      kpis: [
+        { label: "Carritos Detectados", value: processed.kpis.detected.toString(), trend: "-", icon: ShoppingCart, color: "text-blue-600", bg: "bg-blue-50" },
+        { label: "Plantillas Enviadas", value: processed.kpis.sentTemplates.toString(), trend: "-", icon: MessageSquare, color: "text-indigo-600", bg: "bg-indigo-50" },
+        { label: "Respuestas al Bot", value: processed.kpis.replies.toString(), trend: "-", icon: Users, color: "text-purple-600", bg: "bg-purple-50" },
+        { label: "Carritos Recuperados", value: processed.kpis.recovered.toString(), trend: "-", icon: DollarSign, color: "text-green-600", bg: "bg-green-50" }
+      ],
+      funnel: processed.funnel
+    };
+  } else {
+    // Placeholder for other tabs
+    currentData = {
+      title: "Módulo en Desarrollo (Próximamente)",
+      kpis: [
+        { label: "Datos", value: "0", trend: "-", icon: Activity, color: "text-gray-400", bg: "bg-gray-100" },
+        { label: "Datos", value: "0", trend: "-", icon: Activity, color: "text-gray-400", bg: "bg-gray-100" },
+        { label: "Datos", value: "0", trend: "-", icon: Activity, color: "text-gray-400", bg: "bg-gray-100" },
+        { label: "Datos", value: "0", trend: "-", icon: Activity, color: "text-gray-400", bg: "bg-gray-100" }
+      ],
+      funnel: [
+        { stage: "Fase 1", count: 0, percentage: 0, colorHex: "#9ca3af", color: "text-gray-700", bg: "bg-gray-100" },
+        { stage: "Fase 2", count: 0, percentage: 0, colorHex: "#9ca3af", color: "text-gray-700", bg: "bg-gray-100" }
+      ]
+    };
+  }
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
@@ -121,12 +108,12 @@ export function Dashboard() {
             <div className="flex items-center gap-2">
               <div className="relative flex-1">
                 <CalendarIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
-                <input type="date" className="w-full pl-8 pr-2 py-1.5 text-xs border border-gray-200 rounded-lg text-gray-600 focus:ring-1 focus:ring-blue-500 bg-gray-50/50" title="Desde" />
+                <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="w-full pl-8 pr-2 py-1.5 text-xs border border-gray-200 rounded-lg text-gray-600 focus:ring-1 focus:ring-blue-500 bg-gray-50/50" title="Desde" />
               </div>
               <span className="text-xs font-bold text-gray-400">a</span>
               <div className="relative flex-1">
                 <CalendarIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
-                <input type="date" className="w-full pl-8 pr-2 py-1.5 text-xs border border-gray-200 rounded-lg text-gray-600 focus:ring-1 focus:ring-blue-500 bg-gray-50/50" title="Hasta" />
+                <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="w-full pl-8 pr-2 py-1.5 text-xs border border-gray-200 rounded-lg text-gray-600 focus:ring-1 focus:ring-blue-500 bg-gray-50/50" title="Hasta" />
               </div>
             </div>
           </div>
@@ -134,7 +121,7 @@ export function Dashboard() {
           <div className="flex-1 min-w-[150px]">
             <label className="block text-xs font-bold text-gray-500 uppercase mb-1">País</label>
             <div className="relative">
-              <select className="w-full pl-3 pr-8 py-1.5 text-sm border border-gray-200 rounded-lg text-gray-700 appearance-none focus:ring-1 focus:ring-blue-500 bg-gray-50/50">
+              <select value={country} onChange={e => setCountry(e.target.value)} className="w-full pl-3 pr-8 py-1.5 text-sm border border-gray-200 rounded-lg text-gray-700 appearance-none focus:ring-1 focus:ring-blue-500 bg-gray-50/50">
                 <option value="all">Global (Todos)</option>
                 <option value="CO">Colombia</option>
                 <option value="MX">México</option>
@@ -146,9 +133,11 @@ export function Dashboard() {
           <div className="flex-1 min-w-[150px]">
             <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Tienda</label>
             <div className="relative">
-              <select className="w-full pl-3 pr-8 py-1.5 text-sm border border-gray-200 rounded-lg text-gray-700 appearance-none focus:ring-1 focus:ring-blue-500 bg-gray-50/50">
+              <select value={storeId} onChange={e => setStoreId(e.target.value)} className="w-full pl-3 pr-8 py-1.5 text-sm border border-gray-200 rounded-lg text-gray-700 appearance-none focus:ring-1 focus:ring-blue-500 bg-gray-50/50">
                 <option value="all">Todas las Tiendas</option>
-                <option value="dropi_co">Dropi Colombia</option>
+                {stores.map(s => (
+                  <option key={s.id} value={s.id}>{s.name}</option>
+                ))}
               </select>
               <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
             </div>
@@ -219,7 +208,7 @@ export function Dashboard() {
 
       {/* Dynamic Top KPIs */}
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-        {currentData.kpis.map((kpi, index) => (
+        {currentData.kpis.map((kpi: any, index: number) => (
           <div key={index} className="glass-card rounded-2xl p-6 relative overflow-hidden group hover:shadow-md transition-shadow">
             <div className="flex items-center gap-3">
               <div className={`p-2 rounded-lg ${kpi.bg}`}>
@@ -236,7 +225,7 @@ export function Dashboard() {
             {/* Visual Progress Bar in KPI */}
             {index > 0 && (
                <div className="mt-3 w-full bg-gray-100 rounded-full h-1.5">
-                  <div className={`h-1.5 rounded-full ${kpi.color.replace('text-', 'bg-')}`} style={{ width: kpi.trend.split('%')[0] + '%' }}></div>
+                  <div className={`h-1.5 rounded-full ${kpi.color.replace('text-', 'bg-')}`} style={{ width: '100%' }}></div>
                </div>
             )}
           </div>
@@ -249,7 +238,10 @@ export function Dashboard() {
         {/* SVG Literal Funnel Chart - Premium Split View */}
         <div className="glass-card rounded-2xl p-8 lg:col-span-2">
           <div className="flex justify-between items-center mb-8">
-            <h3 className="text-lg font-bold text-gray-900">Embudo Geométrico (Drop-off Visual)</h3>
+            <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+              Embudo Geométrico (Drop-off Visual)
+              {loading && <Loader2 className="w-4 h-4 animate-spin text-blue-600" />}
+            </h3>
           </div>
           
           <div className="relative w-full h-[600px] flex">
@@ -257,7 +249,7 @@ export function Dashboard() {
             {/* Left Side: Literal SVG Funnel */}
             <div className="w-[50%] h-full relative">
               <svg viewBox="0 0 500 600" className="w-full h-full drop-shadow-md" preserveAspectRatio="none">
-                {currentData.funnel.map((stage, i) => {
+                {currentData.funnel.map((stage: any, i: number) => {
                   // Calculate widths relative to 500px canvas
                   const calculateWidth = (percent: number) => Math.max(percent * 5, 80); // Base width 80px
                   
@@ -292,7 +284,7 @@ export function Dashboard() {
 
               {/* Labels inside the funnel */}
               <div className="absolute inset-0 flex flex-col justify-between pointer-events-none">
-                {currentData.funnel.map((stage, i) => (
+                {currentData.funnel.map((stage: any, i: number) => (
                   <div key={i} className="h-[150px] flex flex-col items-center justify-center">
                     <span className="text-gray-900 font-bold text-sm md:text-base drop-shadow-md text-center">{stage.stage}</span>
                     <span className="text-gray-900 font-black text-xl md:text-3xl drop-shadow-md tracking-tight">
@@ -305,7 +297,7 @@ export function Dashboard() {
 
             {/* Right Side: Analysis Cards with Connectors */}
             <div className="w-[50%] h-full relative pointer-events-none">
-              {currentData.funnel.map((stage, i) => {
+              {currentData.funnel.map((stage: any, i: number) => {
                 if (i === 0) return null; // No dropoff for first stage
                 
                 const prevStage = currentData.funnel[i-1];
