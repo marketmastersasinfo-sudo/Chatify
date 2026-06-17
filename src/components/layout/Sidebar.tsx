@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, MessageSquare, MapPin, Settings, Truck, ThumbsUp, Database, Megaphone, RefreshCcw, ShoppingCart, Smartphone, Search, Users } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, MapPin, Settings, Truck, ThumbsUp, Database, Megaphone, RefreshCcw, ShoppingCart, Smartphone, Search, Users, Target } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { useAuth } from '../../lib/auth';
 

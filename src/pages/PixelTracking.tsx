@@ -5,7 +5,8 @@ import { Target, Save, Loader2, RefreshCcw } from 'lucide-react';
 import { CountryFlag } from '../utils/flags';
 
 export function PixelTracking() {
-  const { storeIds, isAdmin } = useAuth();
+  const { user, isAdmin } = useAuth();
+  const storeIds = (user as any)?.storeIds || (user as any)?.storeAccess?.map((a: any) => a.storeId) || [];
   const [stores, setStores] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
@@ -28,7 +29,7 @@ export function PixelTracking() {
   const handleSave = async (store: any) => {
     setSaving(store.id);
     try {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('stores')
         .update({
           meta_pixel_id: store.meta_pixel_id,
