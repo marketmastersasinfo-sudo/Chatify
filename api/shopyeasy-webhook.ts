@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
+import { firePixelEvent } from './utils/_tracking.js';
 
 // No podemos importar módulos locales (como phoneFormatter) fácilmente en funciones Vercel root sin setup extra, 
 // así que copiamos la lógica de formateo aquí por simplicidad.
@@ -120,6 +121,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       if (insertError) throw insertError;
       leadId = newLead.id;
+
+      // 6. TRACKING: Disparar evento de Lead/SubmitForm
+      await firePixelEvent(supabase, leadId, 'Lead', Number(totalPrice) || 0, 'COP', formattedPhone).catch(console.error);
     } else {
       // Si el lead ya existe en Carritos, pero este nuevo webhook es una VENTA (logistics), 
       // debemos MOVER el lead al tablero de Logística porque el cliente finalmente compró.
@@ -179,6 +183,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (!response.ok) {
       return res.status(400).json({ error: 'Webhook processed but Template failed', details: result });
     }
+
+    // 7. TRACKING: Disparar evento de Contact al enviar el primer mensaje exitosamente
+    await firePixelEvent(supabase, leadId, 'Contact', Number(totalPrice) || 0, 'COP', formattedPhone).catch(console.error);
 
     return res.status(200).json({ success: true, message: 'Webhook processed and message sent!', leadId: leadId });
 

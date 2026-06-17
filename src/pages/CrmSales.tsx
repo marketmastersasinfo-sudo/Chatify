@@ -124,6 +124,29 @@ export function CrmSales() {
         .from('leads')
         .update({ status: targetStatus })
         .eq('id', draggedLeadId);
+        
+      // TRACKING: Disparar evento al soltar la tarjeta
+      const lead = leads.find(l => l.id === draggedLeadId);
+      if (lead) {
+        let eventName = '';
+        if (targetStatus === 'inquiry') eventName = 'AddToCart';
+        else if (targetStatus === 'negotiating') eventName = 'InitiateCheckout';
+        else if (targetStatus === 'closed') eventName = 'Purchase';
+        else if (targetStatus === 'new') eventName = 'ViewContent';
+
+        if (eventName) {
+          fetch('/api/tracking/fire-event', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              leadId: draggedLeadId,
+              eventName,
+              value: lead.total_price || 0,
+              currency: 'COP'
+            })
+          }).catch(console.error);
+        }
+      }
     } catch (e) {
       console.error(e);
       // Revert if error (omitted for brevity)

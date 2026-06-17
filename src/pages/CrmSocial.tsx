@@ -85,6 +85,30 @@ export function CrmSocial() {
         .from('leads')
         .update({ status: targetStatus })
         .eq('id', draggedLeadId);
+
+      // TRACKING: Disparar evento al soltar la tarjeta
+      const lead = leads.find(l => l.id === draggedLeadId);
+      if (lead) {
+        let eventName = '';
+        if (targetStatus === 'comentario') eventName = 'ViewContent';
+        else if (targetStatus === 'dm_enviado') eventName = 'Contact';
+        else if (targetStatus === 'charla_dm') eventName = 'AddToCart';
+        else if (targetStatus === 'derivado') eventName = 'Lead';
+        else if (targetStatus === 'venta_dm') eventName = 'Purchase';
+
+        if (eventName) {
+          fetch('/api/tracking/fire-event', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              leadId: draggedLeadId,
+              eventName,
+              value: lead.total_price || 0,
+              currency: 'COP'
+            })
+          }).catch(console.error);
+        }
+      }
     } catch (e) {
       console.error(e);
     }

@@ -404,11 +404,28 @@ async function handleSophia({ lead, productInfo, leadId, incomingText, storeTwil
       model: 'gpt-4o-mini',
       messages: aiMessages,
       temperature: 0.65,
-      max_tokens: 160
+      max_tokens: 200,
+      response_format: { type: 'json_object' }
     });
 
-    const aiReply = response.choices[0]?.message?.content?.trim() || '';
+    const aiOutput = response.choices[0]?.message?.content?.trim() || '{}';
+    let parsed: { reply: string, intent: string } = { reply: '', intent: 'None' };
+    
+    try {
+      parsed = JSON.parse(aiOutput);
+    } catch {
+      // Fallback si la IA no devuelve JSON válido
+      parsed.reply = aiOutput;
+    }
+
+    const aiReply = parsed.reply || '';
     if (!aiReply) return;
+
+    // Disparar Tracking Semántico si se detectó una intención válida
+    if (parsed.intent === 'AddToCart' || parsed.intent === 'InitiateCheckout') {
+      const { firePixelEvent } = await import('./utils/_tracking.js');
+      await firePixelEvent(sb, leadId, parsed.intent, lead?.total_price || 0, 'COP', customerPhone).catch(console.error);
+    }
 
     const isTwilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
     await isTwilioClient.messages.create({
