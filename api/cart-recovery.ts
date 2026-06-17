@@ -151,6 +151,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             for (const [key, val] of Object.entries(filtered)) {
               bodyText = bodyText.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), val);
             }
+            // Extraer botones interactivos
+            const buttons: string[] = [];
+            if (types['twilio/quick-reply']?.actions) {
+              for (const action of types['twilio/quick-reply'].actions) {
+                buttons.push(action.title || action.body || '');
+              }
+            }
+            if (types['twilio/call-to-action']?.actions) {
+              for (const action of types['twilio/call-to-action'].actions) {
+                buttons.push(action.title || action.url || '');
+              }
+            }
+            if (buttons.length > 0) {
+              bodyText += '\n\n' + buttons.map(b => `[BTN] ${b}`).join('\n');
+            }
           }
         } catch { /* ignore - use fallback text */ }
 

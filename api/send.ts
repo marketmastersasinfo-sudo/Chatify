@@ -89,6 +89,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       let bodyText = rawText || `[Plantilla Meta Enviada: ${template.template_name}]`;
       for (const key of Object.keys(contentVariables)) bodyText = bodyText.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), contentVariables[key]);
 
+      // Extraer botones interactivos de la plantilla
+      const buttons: string[] = [];
+      if (types['twilio/quick-reply']?.actions) {
+        for (const action of types['twilio/quick-reply'].actions) {
+          buttons.push(action.title || action.body || '');
+        }
+      }
+      if (types['twilio/call-to-action']?.actions) {
+        for (const action of types['twilio/call-to-action'].actions) {
+          buttons.push(action.title || action.url || '');
+        }
+      }
+      if (types['twilio/list-picker']?.items) {
+        for (const item of types['twilio/list-picker'].items) {
+          buttons.push(item.item || item.id || '');
+        }
+      }
+      // Concatenar botones al cuerpo del mensaje para visualización
+      if (buttons.length > 0) {
+        bodyText += '\n\n' + buttons.map(b => `[BTN] ${b}`).join('\n');
+      }
+
       const messageResult = await twilioClient.messages.create({
         from: fromNumber,
         to: toNumber,

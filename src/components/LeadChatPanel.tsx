@@ -289,25 +289,59 @@ export function LeadChatPanel({
                  No hay mensajes todavía. Envía un mensaje para iniciar la conversación.
                </div>
              ) : (
-               messages.map(msg => (
-                 <div key={msg.id} className={`flex flex-col ${msg.sender_type === 'human' || msg.sender_type === 'ai' ? 'items-end' : 'items-start'}`}>
-                   <div 
-                    className={`max-w-[80%] rounded-2xl px-4 py-2 shadow-sm whitespace-pre-wrap break-words ${
-                      msg.sender_type === 'human' ? 'bg-blue-600 text-white rounded-tr-none' : 
-                      msg.sender_type === 'ai' ? 'bg-purple-600 text-white rounded-tr-none' : 
-                      'bg-white border border-gray-100 text-gray-800 rounded-tl-none'
-                    }`}
-                  >
-                      {msg.metadata?.image_url && (
-                        <img src={msg.metadata.image_url} alt="Media" className="w-full h-auto rounded-xl mb-2 object-cover" />
-                      )}
-                      <p className="text-[15px] leading-relaxed">{msg.content}</p>
-                   </div>
-                   <span className="text-[10px] font-medium text-gray-400 mt-1.5 px-1">
-                      {msg.sender_type === 'ai' ? '🤖 Bot IA' : msg.sender_type === 'human' ? '👨‍💻 Tú' : '👤 Cliente'}
-                   </span>
-                 </div>
-               ))
+               messages.map(msg => {
+                  // Separar botones [BTN] del contenido principal
+                  const btnLines: string[] = [];
+                  const lines = msg.content.split('\n');
+                  const bodyLines: string[] = [];
+                  for (const line of lines) {
+                    const btnMatch = line.match(/^\[BTN\]\s*(.+)/);
+                    if (btnMatch) {
+                      btnLines.push(btnMatch[1].trim());
+                    } else {
+                      bodyLines.push(line);
+                    }
+                  }
+                  const cleanContent = bodyLines.join('\n').trim();
+                  const isSystemMsg = msg.content.startsWith('[SISTEMA]') || msg.content.startsWith('[Bot Carrito') || msg.content.startsWith('[ERROR') || msg.content.startsWith('[BOT');
+                  
+                  if (isSystemMsg && !cleanContent.includes('\u00a1') && !cleanContent.includes('Hola')) {
+                    return (
+                      <div key={msg.id} className="flex justify-center">
+                        <span className="bg-amber-50 text-amber-700 text-[11px] font-semibold px-3 py-1 rounded-full border border-amber-200">{cleanContent}</span>
+                      </div>
+                    );
+                  }
+
+                  return (
+                  <div key={msg.id} className={`flex flex-col ${msg.sender_type === 'human' || msg.sender_type === 'ai' ? 'items-end' : 'items-start'}`}>
+                    <div 
+                     className={`max-w-[80%] rounded-2xl px-4 py-2 shadow-sm whitespace-pre-wrap break-words ${
+                       msg.sender_type === 'human' ? 'bg-blue-600 text-white rounded-tr-none' : 
+                       msg.sender_type === 'ai' ? 'bg-purple-600 text-white rounded-tr-none' : 
+                       'bg-white border border-gray-100 text-gray-800 rounded-tl-none'
+                     }`}
+                   >
+                       {msg.metadata?.image_url && (
+                         <img src={msg.metadata.image_url} alt="Media" className="w-full h-auto rounded-xl mb-2 object-cover" />
+                       )}
+                       <p className="text-[15px] leading-relaxed">{cleanContent}</p>
+                    </div>
+                    {btnLines.length > 0 && (
+                      <div className="max-w-[80%] mt-1 flex flex-col gap-1">
+                        {btnLines.map((btn, i) => (
+                          <div key={i} className="bg-white border border-blue-200 text-blue-600 text-center text-sm font-semibold py-2 px-4 rounded-xl shadow-sm cursor-default">
+                            {btn}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <span className="text-[10px] font-medium text-gray-400 mt-1.5 px-1">
+                       {msg.sender_type === 'ai' ? '🤖 Bot IA' : msg.sender_type === 'human' ? '👨‍💻 Tú' : '👤 Cliente'}
+                    </span>
+                  </div>
+                  );
+                })
              )}
           </div>
 
