@@ -125,13 +125,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // 6. TRACKING: Disparar evento de Lead/SubmitForm
       await firePixelEvent(supabase, leadId, 'Lead', Number(totalPrice) || 0, 'COP', formattedPhone).catch(console.error);
     } else {
-      // Si el lead ya existe en Carritos, pero este nuevo webhook es una VENTA (logistics), 
-      // debemos MOVER el lead al tablero de Logística porque el cliente finalmente compró.
+      // Si el lead ya existe, debemos MOVER si es necesario y actualizar datos faltantes.
       const updates: any = {};
       
       if (targetBoard === 'logistics' && existingLead.board_type.includes('remarketing')) {
         updates.board_type = 'logistics';
         updates.status = 'nuevo';
+      }
+      
+      // Actualizar nombre si el existente es genérico ("Cliente", "Cliente WhatsApp") y ahora llega el real
+      if (customerName && existingLead.name && (['Cliente', 'Cliente WhatsApp', 'Amigo'].includes(existingLead.name) || !existingLead.name.trim())) {
+        updates.name = customerName;
       }
       
       // Actualizar datos de la venta si llegaron ahora (en carritos a veces no llegan)
@@ -148,8 +152,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
-    // 4. Llamar a nuestro propio endpoint interno para disparar la plantilla
-    // En producción (Vercel), podemos usar el fetch directo a nuestra misma URL
+    // ══════════════════════════════════════════════════════
+    // ENVÍO DE PLANTILLA: Solo para pedidos confirmados (logistics)
+    // Los carritos abandonados NO envían plantilla aquí.
+    // El cron job de cart-recovery.ts se encarga de la secuencia
+    // automática (T1 a los 30min, T2 a las 4hrs, T3 a las 24hrs).
+    // ══════════════════════════════════════════════════════
+    if (eventType === 'abandoned_cart') {
+      return res.status(200).json({ 
+        success: true, 
+        message: 'Carrito abandonado registrado. El cron de recuperación se encargará de los mensajes.',
+        leadId: leadId 
+      });
+    }
+
+    // Solo para order_confirmation / logistics:
     const host = req.headers.host || 'chatify-teal-xi.vercel.app';
     const protocol = host.includes('localhost') ? 'http' : 'https';
     
@@ -168,7 +185,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           department: department || '',
           totalPrice: totalPrice ? `$${totalPrice}` : '',
           orderId: realOrderId || '',
-          // Default mappings for the "confirmacion_pedido" template
           "1": customerName,
           "2": `${realAddress || ''} ${realCity ? ', ' + realCity : ''}`.trim(),
           "3": formattedPhone,
@@ -184,7 +200,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: 'Webhook processed but Template failed', details: result });
     }
 
-    // 7. TRACKING: Disparar evento de Contact al enviar el primer mensaje exitosamente
+    // TRACKING: Disparar evento de Contact al enviar el primer mensaje exitosamente
     await firePixelEvent(supabase, leadId, 'Contact', Number(totalPrice) || 0, 'COP', formattedPhone).catch(console.error);
 
     return res.status(200).json({ success: true, message: 'Webhook processed and message sent!', leadId: leadId });
