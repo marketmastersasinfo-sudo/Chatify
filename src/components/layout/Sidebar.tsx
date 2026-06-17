@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, MessageSquare, MapPin, Settings, Truck, ThumbsUp, Database, Megaphone, RefreshCcw, ShoppingCart, Smartphone, Search } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, MapPin, Settings, Truck, ThumbsUp, Database, Megaphone, RefreshCcw, ShoppingCart, Smartphone, Search, Users } from 'lucide-react';
 import { cn } from '../../utils/cn';
+import { useAuth } from '../../lib/auth';
 
 const navigation = [
   { name: 'Dashboard Central', href: '/', icon: LayoutDashboard },
@@ -20,6 +21,7 @@ const navigation = [
 
 
 export function Sidebar() {
+  const { isAdmin } = useAuth();
   return (
     <div className="flex h-full w-64 flex-col border-r border-gray-200 bg-white">
       <div className="flex h-16 shrink-0 items-center px-6 border-b border-gray-100">
@@ -48,6 +50,24 @@ export function Sidebar() {
               </NavLink>
             </li>
           ))}
+          {isAdmin && (
+            <li>
+              <NavLink
+                to="/users"
+                className={({ isActive }) =>
+                  cn(
+                    isActive
+                      ? 'bg-green-50/50 text-green-700 shadow-sm ring-1 ring-green-500/10'
+                      : 'text-green-600 hover:bg-green-50 hover:text-green-700',
+                    'group flex gap-x-3 rounded-xl p-3 text-sm font-bold leading-6 transition-all duration-200 mt-4 border border-green-100'
+                  )
+                }
+              >
+                <Users className={cn("h-5 w-5 shrink-0 transition-colors", 'text-inherit')} aria-hidden="true" />
+                Gestión de Usuarios
+              </NavLink>
+            </li>
+          )}
         </ul>
       </nav>
     </div>
