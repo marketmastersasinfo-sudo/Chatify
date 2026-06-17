@@ -29,7 +29,7 @@ export function UsersManagement() {
     setLoading(true);
     try {
       // Fetch users
-      const usersRes = await fetch('/api/admin/users', {
+      const usersRes = await fetch('/api/admin', {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (usersRes.ok) {
@@ -53,7 +53,7 @@ export function UsersManagement() {
     e.preventDefault();
     setCreating(true);
     try {
-      const res = await fetch('/api/admin/users', {
+      const res = await fetch('/api/admin', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -88,7 +88,7 @@ export function UsersManagement() {
     }));
 
     try {
-      const res = await fetch('/api/admin/users-access', {
+      const res = await fetch('/api/admin', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',

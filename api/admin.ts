@@ -56,25 +56,45 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   if (req.method === 'POST') {
-    try {
-      const { email, password, name, role } = req.body;
-      const hash = await bcrypt.hash(password, 10);
-      
-      const { data, error } = await supabase
-        .from('chatify_users')
-        .insert({
-          email: email.toLowerCase().trim(),
-          password_hash: hash,
-          name,
-          role: role || 'COLLABORATOR'
-        })
-        .select('id, email, name, role, created_at')
-        .single();
+    // If it has userId and storeId, it's an access update
+    const { userId, storeId, hasAccess, email, password, name, role } = req.body;
 
-      if (error) throw error;
-      return res.status(200).json({ ...data, storeAccess: [] });
-    } catch (e) {
-      return res.status(500).json({ error: 'Failed to create user' });
+    if (userId && storeId) {
+      // Users Access Update
+      try {
+        if (hasAccess) {
+          const { error } = await supabase.from('user_store_access').insert({ user_id: userId, store_id: storeId });
+          if (error && error.code !== '23505') throw error;
+        } else {
+          const { error } = await supabase.from('user_store_access').delete().match({ user_id: userId, store_id: storeId });
+          if (error) throw error;
+        }
+        return res.status(200).json({ success: true });
+      } catch (e) {
+        return res.status(500).json({ error: 'Failed to modify access' });
+      }
+    } else if (email && password && name) {
+      // Create user
+      try {
+        const hash = await bcrypt.hash(password, 10);
+        const { data, error } = await supabase
+          .from('chatify_users')
+          .insert({
+            email: email.toLowerCase().trim(),
+            password_hash: hash,
+            name,
+            role: role || 'COLLABORATOR'
+          })
+          .select('id, email, name, role, created_at')
+          .single();
+
+        if (error) throw error;
+        return res.status(200).json({ ...data, storeAccess: [] });
+      } catch (e) {
+        return res.status(500).json({ error: 'Failed to create user' });
+      }
+    } else {
+      return res.status(400).json({ error: 'Invalid parameters' });
     }
   }
 

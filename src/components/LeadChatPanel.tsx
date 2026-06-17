@@ -153,10 +153,11 @@ export function LeadChatPanel({
     if (!previewTemplate) return;
     setSendingTemplate(previewTemplate.id);
     try {
-      const res = await fetch('/api/send-template', {
+      const res = await fetch('/api/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          action: 'template',
           leadId: lead.id,
           templateId: previewTemplate.id,
           templateType: 'custom',
@@ -193,15 +194,10 @@ export function LeadChatPanel({
       }
       
       // Call the Vercel API to physically send the message to WhatsApp
-      await fetch('/api/send-message', {
+      await fetch('/api/send', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          leadId: lead.id,
-          message: newMessage
-        })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'message', leadId: lead.id, message: newMessage })
       });
 
     } catch(e) {

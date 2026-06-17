@@ -149,10 +149,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const host = req.headers.host || 'chatify-teal-xi.vercel.app';
     const protocol = host.includes('localhost') ? 'http' : 'https';
     
-    const response = await fetch(`${protocol}://${host}/api/send-template`, {
+    const response = await fetch(`${protocol}://${host}/api/send`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
+        action: 'template',
         leadId: leadId,
         templateType: eventType,
         variables: {
