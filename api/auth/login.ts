@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
-import bcrypt from 'bcryptjs';
+import * as bcrypt from 'bcryptjs';
 import { SignJWT } from 'jose';
 
 const supabase = createClient(
