@@ -197,8 +197,26 @@ export function CrmRemarketingCarts() {
     if (!draggedLeadId) return;
     const updates: any = { status: col.dropStatus };
     if (col.dropTouch !== undefined) updates.recovery_touch = col.dropTouch;
+    const lead = leads.find(l => l.id === draggedLeadId);
+    
     setLeads(prev => prev.map(l => l.id === draggedLeadId ? { ...l, ...updates } : l));
     await (supabase as any).from('leads').update(updates).eq('id', draggedLeadId);
+    
+    // Disparar evento de Tracking a FB CAPI, TikTok y Google si es recuperado
+    if (col.dropStatus === 'recovered' && lead) {
+      fetch('/api/tracking/fire-event', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          leadId: draggedLeadId,
+          eventName: 'Purchase',
+          value: lead.total_price ? Number(lead.total_price) : 85000,
+          currency: lead.stores?.country === 'MX' ? 'MXN' : 'COP',
+          phone: lead.phone
+        })
+      }).catch(err => console.error('Error firing pixel event', err));
+    }
+    
     setDraggedLeadId(null);
   };
 

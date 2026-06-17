@@ -17,6 +17,7 @@ import { TemplateBuilder } from './pages/TemplateBuilder';
 import { SearchResults } from './pages/SearchResults';
 import { Login } from './pages/Login';
 import { UsersManagement } from './pages/UsersManagement';
+import { PixelTracking } from './pages/PixelTracking';
 import { AuthProvider, useAuth } from './lib/auth';
 import { Navigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
@@ -60,6 +61,7 @@ function App() {
             <Route path="/broadcast" element={<Broadcast />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/templates" element={<TemplateBuilder />} />
+            <Route path="/tracking" element={<PixelTracking />} />
             <Route path="/search" element={<SearchResults />} />
             <Route path="/users" element={<UsersManagement />} />
           </Route>

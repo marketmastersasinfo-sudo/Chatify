@@ -15,6 +15,7 @@ const navigation = [
   { name: 'Difusión Masiva', href: '/broadcast', icon: Megaphone },
   { name: 'Organización Multitienda', href: '/stores', icon: MapPin },
   { name: 'Gestor de Plantillas Meta', href: '/templates', icon: MessageSquare },
+  { name: 'Tracking & Píxeles (API)', href: '/tracking', icon: Target },
   { name: 'Líneas y SIMs Virtuales', href: '/virtual-sims', icon: Smartphone },
   { name: 'Configuración Global', href: '/settings', icon: Settings },
 ];
