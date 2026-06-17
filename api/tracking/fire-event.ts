@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
+import crypto from 'crypto';
 
 const supabase = createClient(
   process.env.VITE_SUPABASE_URL || '',
@@ -39,7 +40,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const eventTime = Math.floor(Date.now() / 1000);
     const userPhone = phone || lead.phone;
     // Hash phone for CAPI (SHA256)
-    const crypto = await import('crypto');
     const hashedPhone = userPhone ? crypto.createHash('sha256').update(userPhone.replace(/\D/g, '')).digest('hex') : undefined;
 
     const results: any = {};

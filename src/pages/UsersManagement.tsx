@@ -24,10 +24,6 @@ export function UsersManagement() {
   
   const [openAccess, setOpenAccess] = useState<Record<string, boolean>>({});
 
-  useEffect(() => {
-    fetchData();
-  }, [token]);
-
   const fetchData = async () => {
     if (!token) return;
     setLoading(true);
@@ -48,6 +44,10 @@ export function UsersManagement() {
     }
     setLoading(false);
   };
+
+  useEffect(() => {
+    fetchData();
+  }, [token]);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
