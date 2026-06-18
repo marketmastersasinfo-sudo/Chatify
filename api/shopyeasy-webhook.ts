@@ -92,7 +92,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       targetStatus = 'abandoned';
     }
 
-    // 4. Revisar si el lead ya existe para esta tienda (Prevención global del error 42P10)
+    // 4. Revisar si el lead ya existe para esta tienda
     const { data: existingLead } = await supabase
       .from('leads')
       .select('*')
@@ -102,8 +102,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     let leadId = existingLead?.id;
 
-    if (!existingLead) {
-      // 5. Insertar Lead (sin upsert, inserción directa y segura)
+    // ══════════════════════════════════════════════════════
+    // CARRITOS ABANDONADOS: Siempre crear un lead nuevo si es un producto diferente
+    // o si el lead existente ya fue procesado (bot_sent, recovered, lost).
+    // Esto asegura que cada carrito abandonado quede registrado individualmente.
+    // ══════════════════════════════════════════════════════
+    const shouldCreateNew = !existingLead || (
+      eventType === 'abandoned_cart' && (
+        existingLead.product_name !== realProductName ||
+        !['abandoned'].includes(existingLead.status)
+      )
+    );
+
+    if (shouldCreateNew) {
+      // 5. Insertar Lead nuevo
       const { data: newLead, error: insertError } = await supabase.from('leads').insert({
         store_id: store.id,
         name: customerName,
@@ -116,6 +128,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         department: department || null,
         total_price: totalPrice || null,
         product_name: realProductName || null,
+        recovery_touch: eventType === 'abandoned_cart' ? 0 : undefined,
         notes: `Order ID: ${realOrderId}\nRAW PAYLOAD: ${JSON.stringify(req.body)}`
       }).select().single();
 
@@ -125,7 +138,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // 6. TRACKING: Disparar evento de Lead/SubmitForm
       await firePixelEvent(supabase, leadId, 'Lead', Number(totalPrice) || 0, 'COP', formattedPhone).catch(console.error);
     } else {
-      // Si el lead ya existe, debemos MOVER si es necesario y actualizar datos faltantes.
+      // Si el lead ya existe y NO es carrito nuevo, actualizar datos faltantes.
       const updates: any = {};
       
       if (targetBoard === 'logistics' && existingLead.board_type.includes('remarketing')) {
@@ -133,12 +146,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         updates.status = 'nuevo';
       }
       
-      // Actualizar nombre si el existente es genérico ("Cliente", "Cliente WhatsApp") y ahora llega el real
+      // Actualizar nombre si el existente es genérico
       if (customerName && existingLead.name && (['Cliente', 'Cliente WhatsApp', 'Amigo'].includes(existingLead.name) || !existingLead.name.trim())) {
         updates.name = customerName;
       }
       
-      // Actualizar datos de la venta si llegaron ahora (en carritos a veces no llegan)
+      // Actualizar datos faltantes
       if (realCity && !existingLead.city) updates.city = realCity;
       if (realAddress && !existingLead.address) updates.address = realAddress;
       if (department && !existingLead.department) updates.department = department;
