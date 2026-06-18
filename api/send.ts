@@ -151,7 +151,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       // Log in messages table with the actual message content
       await supabase.from('messages').insert({
-        lead_id: lead.id,
+        lead_id: leadId,
         sender_type: 'human',
         content: bodyText,
         template_id: template.id

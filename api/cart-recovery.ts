@@ -84,7 +84,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Load recovery templates per store (or global fallback)
     const { data: allTemplates } = await supabase
       .from('store_templates')
-      .select('id, store_id, template_type, twilio_content_sid, sent_count')
+      .select('id, store_id, template_type, twilio_content_sid, sent_count, template_name')
       .in('template_type', ['recuperar_carrito_t1', 'recuperar_carrito_t2', 'recuperar_carrito_t3', 'abandoned_cart'])
       .eq('is_active', true);
 
