@@ -427,6 +427,28 @@ async function handleSophia({ lead, productInfo, leadId, incomingText, storeTwil
       await firePixelEvent(sb, leadId, parsed.intent, lead?.total_price || 0, 'COP', customerPhone).catch(console.error);
     }
 
+    // ══════════════════════════════════════════════════════
+    // MOVER LEAD AUTOMÁTICAMENTE cuando Sophia confirma un pedido
+    // Si la IA detecta intención de Purchase/confirmación,
+    // mover el lead al tablero/estado correcto.
+    // ══════════════════════════════════════════════════════
+    if (parsed.intent === 'Purchase' || parsed.intent === 'OrderConfirmed') {
+      const leadBoard = lead?.board_type || '';
+      if (leadBoard.includes('remarketing')) {
+        // Carrito recuperado → Mover a "Venta Recuperada"
+        await sb.from('leads').update({ 
+          status: 'recovered',
+          recovery_confirmed_at: new Date().toISOString()
+        }).eq('id', leadId);
+      } else if (leadBoard === 'logistics') {
+        // Logística → Mover a "Confirmado"
+        await sb.from('leads').update({ status: 'confirmado' }).eq('id', leadId);
+      }
+      // Disparar evento Purchase al píxel
+      const { firePixelEvent } = await import('./utils/_tracking.js');
+      await firePixelEvent(sb, leadId, 'Purchase', lead?.total_price || 0, 'COP', customerPhone).catch(console.error);
+    }
+
     const isTwilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
     await isTwilioClient.messages.create({
       from: `whatsapp:+${storeTwilioPhone.replace('+', '')}`,

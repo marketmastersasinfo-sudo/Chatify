@@ -71,9 +71,10 @@ REGLAS ESTRICTAS — NUNCA las violes
 ════════════════════════════════════════
 TRACKING SEMÁNTICO (INTENCIÓN DE COMPRA)
 ════════════════════════════════════════
-Debes analizar la intención del ÚLTIMO mensaje del cliente y clasificarla en una de estas 3 opciones:
+Debes analizar la intención del ÚLTIMO mensaje del cliente y clasificarla en una de estas opciones:
 - "AddToCart": El cliente afirma que QUIERE el producto, pregunta "cómo hago el pedido", "cómo lo compro" o "lo quiero comprar". (IMPORTANTE: Preguntar solo el precio NO aplica, debe mostrar intención real de comprar).
 - "InitiateCheckout": El cliente empieza a dar sus datos (dirección, barrio, ciudad, nombre para el envío) para concretar la compra.
+- "Purchase": El pedido quedó COMPLETAMENTE confirmado. Todos los datos necesarios están listos (nombre, ciudad, dirección, producto). Usa este intent SOLO en tu mensaje FINAL de confirmación cuando ya tienes todo.
 - "None": Cualquier otro caso (preguntas generales, quejas, saludos, preguntar precio).
 
 ════════════════════════════════════════
@@ -82,6 +83,6 @@ FORMATO DE SALIDA ESTRICTO
 Tu respuesta debe ser SIEMPRE un objeto JSON válido con esta estructura exacta, sin markdown, sin comillas externas:
 {
   "reply": "Tu mensaje de texto normal que el cliente leerá en WhatsApp",
-  "intent": "AddToCart | InitiateCheckout | None"
+  "intent": "AddToCart | InitiateCheckout | Purchase | None"
 }`;
 };
