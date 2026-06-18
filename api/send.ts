@@ -92,24 +92,35 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       // Extraer botones interactivos de la plantilla
       const buttons: string[] = [];
-      if (types['twilio/quick-reply']?.actions) {
-        for (const action of types['twilio/quick-reply'].actions) {
-          buttons.push(action.title || action.body || '');
+      const extractActions = (actions: any[]) => {
+        if (!actions || !Array.isArray(actions)) return;
+        for (const action of actions) {
+          buttons.push(action.title || action.body || action.url || action.id || JSON.stringify(action));
         }
-      }
-      if (types['twilio/call-to-action']?.actions) {
-        for (const action of types['twilio/call-to-action'].actions) {
-          buttons.push(action.title || action.url || '');
-        }
-      }
+      };
+
+      if (types['twilio/quick-reply']?.actions) extractActions(types['twilio/quick-reply'].actions);
+      if (types['twilio/call-to-action']?.actions) extractActions(types['twilio/call-to-action'].actions);
       if (types['twilio/list-picker']?.items) {
         for (const item of types['twilio/list-picker'].items) {
           buttons.push(item.item || item.id || '');
         }
       }
+      if (types['whatsapp/card']?.actions) extractActions(types['whatsapp/card'].actions);
+      
+      // Fallback genérico para buscar 'actions' en cualquier type
+      if (buttons.length === 0) {
+        for (const typeKey of Object.keys(types)) {
+          if (types[typeKey]?.actions) extractActions(types[typeKey].actions);
+        }
+      }
+
       // Concatenar botones al cuerpo del mensaje para visualización
       if (buttons.length > 0) {
-        bodyText += '\n\n' + buttons.map(b => `[BTN] ${b}`).join('\n');
+        bodyText += '\n\n' + buttons.map(b => `[BOTÓN] ${b}`).join('\n');
+      } else {
+        // Debug: si no hay botones, mostrar qué tipos de contenido devolvió Twilio
+        // bodyText += `\n\n(No buttons detected. Types: ${Object.keys(types).join(', ')})`;
       }
 
       const messageResult = await twilioClient.messages.create({
