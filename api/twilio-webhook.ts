@@ -155,6 +155,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           (ButtonText?.toLowerCase().includes('confirmar'));
 
         if (isOrderConfirmed) {
+          // Track Conversion for A/B Testing
+          try {
+            const { data: lastMsg } = await supabase.from('messages')
+              .select('template_id')
+              .eq('lead_id', leadId)
+              .not('template_id', 'is', null)
+              .order('created_at', { ascending: false })
+              .limit(1)
+              .single();
+            if (lastMsg && lastMsg.template_id) {
+              const { data: tmpl } = await supabase.from('store_templates').select('conversion_count').eq('id', lastMsg.template_id).single();
+              if (tmpl) await supabase.from('store_templates').update({ conversion_count: (tmpl.conversion_count || 0) + 1 }).eq('id', lastMsg.template_id);
+            }
+          } catch (err) { console.error('Error tracking conversion', err); }
+
           // Move to next state IMMEDIATELY before anything else
           await supabase.from('leads').update({ status: 'address_confirming' }).eq('id', leadId);
 

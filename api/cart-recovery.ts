@@ -84,19 +84,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Load recovery templates per store (or global fallback)
     const { data: allTemplates } = await supabase
       .from('store_templates')
-      .select('store_id, template_name, twilio_content_sid')
-      .in('template_name', ['recuperar_carrito_t1', 'recuperar_carrito_t2', 'recuperar_carrito_t3',
-                             'recuperar_carritos_abandonados']); // legacy name fallback
+      .select('id, store_id, template_type, twilio_content_sid, sent_count')
+      .in('template_type', ['recuperar_carrito_t1', 'recuperar_carrito_t2', 'recuperar_carrito_t3', 'abandoned_cart'])
+      .eq('is_active', true);
 
     const getTemplate = (storeId: string, touch: number) => {
-      const names = {
-        1: ['recuperar_carrito_t1', 'recuperar_carritos_abandonados'],
-        2: ['recuperar_carrito_t2', 'recuperar_carritos_abandonados'],
-        3: ['recuperar_carrito_t3', 'recuperar_carritos_abandonados'],
-      }[touch] || [];
-      for (const name of names) {
-        const t = allTemplates?.find(t => t.store_id === storeId && t.template_name === name);
-        if (t) return t;
+      const type = `recuperar_carrito_t${touch}`;
+      const matches = allTemplates?.filter(t => t.store_id === storeId && (t.template_type === type || t.template_type === 'abandoned_cart')) || [];
+      if (matches.length > 0) {
+        return matches[Math.floor(Math.random() * matches.length)];
       }
       return null;
     };
@@ -177,8 +173,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         await supabase.from('messages').insert({
           lead_id: lead.id,
           sender_type: 'human',
-          content: bodyText
+          content: bodyText,
+          template_id: template.id
         });
+
+        // Update sent count for analytics
+        await supabase.from('store_templates').update({ sent_count: (template.sent_count || 0) + 1 }).eq('id', template.id);
 
         return true;
       } catch (e: any) {

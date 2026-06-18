@@ -135,17 +135,38 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         return {
           id: c.sid,
+          db_id: local?.id,
           name: local?.template_name || c.friendlyName || 'Sin Nombre',
           category: approval.category || (local?.template_type === 'custom' ? 'UTILITY' : 'MARKETING'),
           language: c.language,
           status: local?.twilio_approval_status || 'APPROVED', 
           created_at: local?.created_at || (c as any).dateCreated || null,
+          is_active: local?.is_active ?? true,
+          sent_count: local?.sent_count || 0,
+          conversion_count: local?.conversion_count || 0,
           components,
           approvalDetails: approval
         };
       });
 
       return res.status(200).json({ success: true, data: formattedData });
+    }
+
+    // ==========================================
+    // PATCH: Toggle is_active status of a template
+    // ==========================================
+    if (req.method === 'PATCH') {
+      const { templateId, is_active } = req.body;
+      if (!templateId) return res.status(400).json({ error: 'Falta templateId' });
+
+      const { data, error } = await supabase
+        .from('store_templates')
+        .update({ is_active })
+        .eq('id', templateId)
+        .select();
+
+      if (error) return res.status(500).json({ error: error.message });
+      return res.status(200).json({ success: true, data });
     }
 
     // ==========================================

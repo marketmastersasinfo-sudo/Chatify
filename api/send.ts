@@ -56,11 +56,30 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       let template;
       if (templateId) {
-        const { data } = await supabase.from('store_templates').select('twilio_content_sid, template_name').eq('id', templateId).single();
+        const { data } = await supabase.from('store_templates').select('id, twilio_content_sid, template_name, sent_count').eq('id', templateId).single();
         template = data;
       } else {
-        const { data } = await supabase.from('store_templates').select('twilio_content_sid, template_name').eq('store_id', lead.store_id).eq('template_type', templateType).single();
-        template = data;
+        const { data, error } = await supabase
+          .from('store_templates')
+          .select('id, twilio_content_sid, template_name, sent_count')
+          .eq('store_id', lead.store_id)
+          .eq('template_type', templateType)
+          .eq('is_active', true);
+        
+        if (!data || data.length === 0) {
+          // Fallback por si no hay activas: buscar cualquiera (para no romper envíos críticos)
+          const { data: fallback } = await supabase
+            .from('store_templates')
+            .select('id, twilio_content_sid, template_name, sent_count')
+            .eq('store_id', lead.store_id)
+            .eq('template_type', templateType)
+            .limit(1)
+            .single();
+          template = fallback;
+        } else {
+          // A/B Testing: Elegir una al azar
+          template = data[Math.floor(Math.random() * data.length)];
+        }
       }
 
       if (!template || !template.twilio_content_sid) return res.status(400).json({ error: 'Store has no template configured.' });
@@ -130,8 +149,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         contentVariables: Object.keys(contentVariables).length > 0 ? JSON.stringify(contentVariables) : undefined,
       });
 
-      await supabase.from('messages').insert({ lead_id: leadId, sender_type: 'human', content: bodyText });
-      return res.status(200).json({ success: true, messageId: messageResult.sid, bodyText });
+      // Log in messages table with the actual message content
+      await supabase.from('messages').insert({
+        lead_id: lead.id,
+        sender_type: 'human',
+        content: bodyText,
+        template_id: template.id
+      });
+
+      // Update sent count for analytics
+      await supabase.from('store_templates').update({ sent_count: (template.sent_count || 0) + 1 }).eq('id', template.id);
+
+      return res.status(200).json({ success: true, messageId: messageResult.sid });
     }
 
     return res.status(400).json({ error: 'Invalid action' });

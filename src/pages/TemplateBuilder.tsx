@@ -164,6 +164,24 @@ export function TemplateBuilder() {
     setDeletingTemplate(null);
   }
 
+  async function handleToggleActive(templateId: string, currentStatus: boolean) {
+    const newStatus = !currentStatus;
+    // Update local state immediately for optimistic UI
+    setTemplates(prev => prev.map(t => t.db_id === templateId ? { ...t, is_active: newStatus } : t));
+    try {
+      const res = await fetch(`/api/meta/templates`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ templateId, is_active: newStatus })
+      });
+      if (!res.ok) throw new Error('Error al actualizar estado');
+    } catch (err: any) {
+      console.error(err);
+      // Revert if failed
+      setTemplates(prev => prev.map(t => t.db_id === templateId ? { ...t, is_active: currentStatus } : t));
+    }
+  }
+
   async function handleCreateTemplate() {
     if (!selectedStore) return;
     setSaving(true);
@@ -690,15 +708,16 @@ export function TemplateBuilder() {
               <tr className="bg-white border-b border-gray-100 text-xs uppercase tracking-wider text-gray-500 font-bold">
                 <th className="p-4 pl-6">Nombre de Plantilla</th>
                 <th className="p-4">Categoría</th>
-                <th className="p-4">Idioma</th>
+                <th className="p-4">Rendimiento (A/B)</th>
                 <th className="p-4">Estado (Meta)</th>
+                <th className="p-4 text-center">Activa</th>
                 <th className="p-4 text-right pr-6">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 text-sm">
               {templates.length === 0 && !loading ? (
                 <tr>
-                  <td colSpan={5} className="p-8 text-center text-gray-500">
+                  <td colSpan={6} className="p-8 text-center text-gray-500">
                     No se encontraron plantillas. Haz clic en "Sincronizar" o crea una nueva.
                   </td>
                 </tr>
@@ -707,9 +726,31 @@ export function TemplateBuilder() {
                   <tr key={tpl.id} className="hover:bg-gray-50/50 transition-colors">
                     <td className="p-4 pl-6 font-bold text-gray-900">{tpl.name}</td>
                     <td className="p-4 text-gray-600 font-medium text-xs">{tpl.category}</td>
-                    <td className="p-4 text-gray-500">{tpl.language}</td>
+                    <td className="p-4">
+                      <div className="flex flex-col">
+                        <span className="text-xs text-gray-500">Enviados: <strong className="text-gray-800">{tpl.sent_count || 0}</strong></span>
+                        <span className="text-xs text-gray-500">Convertidos: <strong className="text-blue-600">{tpl.conversion_count || 0}</strong></span>
+                        {tpl.sent_count > 0 && (
+                          <span className="text-xs font-bold text-green-600 mt-0.5">
+                            {Math.round(((tpl.conversion_count || 0) / tpl.sent_count) * 100)}% Tasa
+                          </span>
+                        )}
+                      </div>
+                    </td>
                     <td className="p-4">
                       {getStatusBadge(tpl)}
+                    </td>
+                    <td className="p-4 text-center">
+                      {tpl.db_id ? (
+                        <button 
+                          onClick={() => handleToggleActive(tpl.db_id, tpl.is_active)}
+                          className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${tpl.is_active ? 'bg-blue-600' : 'bg-gray-300'}`}
+                        >
+                          <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${tpl.is_active ? 'translate-x-4.5' : 'translate-x-1'}`} />
+                        </button>
+                      ) : (
+                        <span className="text-xs text-gray-400" title="Plantilla no guardada en base de datos local">-</span>
+                      )}
                     </td>
                     <td className="p-4 text-right pr-6">
                       <div className="flex items-center justify-end gap-3">
