@@ -764,8 +764,9 @@ export function TemplateBuilder() {
       {/* Trophy Cards */}
       {(() => {
         const activeTpls = templates.filter(t => t.sent_count > 0);
-        if (activeTpls.length === 0) return null;
-        const winner = [...activeTpls].sort((a, b) => (b.conversion_rate || 0) - (a.conversion_rate || 0))[0];
+        const winner = activeTpls.length > 0 
+          ? [...activeTpls].sort((a, b) => (b.conversion_rate || 0) - (a.conversion_rate || 0))[0]
+          : null;
         
         return (
           <div className="mb-8 grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -775,11 +776,11 @@ export function TemplateBuilder() {
                 <div className="bg-yellow-100 p-2 rounded-xl text-2xl">🏆</div>
                 <div>
                   <h4 className="text-xs font-bold text-yellow-800 uppercase tracking-wider">Plantilla Ganadora</h4>
-                  <p className="text-sm font-bold text-gray-900">{winner.name}</p>
+                  <p className="text-sm font-bold text-gray-900">{winner ? winner.name : 'Aún sin datos'}</p>
                 </div>
               </div>
               <div className="flex items-end gap-2 relative z-10">
-                <span className="text-3xl font-black text-yellow-600">{winner.conversion_rate || 0}%</span>
+                <span className="text-3xl font-black text-yellow-600">{winner ? (winner.conversion_rate || 0) : 0}%</span>
                 <span className="text-xs font-semibold text-yellow-700 mb-1">Tasa de Conversión</span>
               </div>
             </div>
@@ -860,11 +861,9 @@ export function TemplateBuilder() {
                       <div className="flex flex-col">
                         <span className="text-xs text-gray-500">Enviados: <strong className="text-gray-800">{tpl.sent_count || 0}</strong></span>
                         <span className="text-xs text-gray-500">Convertidos: <strong className="text-blue-600">{tpl.conversion_count || 0}</strong></span>
-                        {tpl.sent_count > 0 && (
-                          <span className="text-xs font-bold text-green-600 mt-0.5">
-                            {Math.round(((tpl.conversion_count || 0) / tpl.sent_count) * 100)}% Tasa
-                          </span>
-                        )}
+                        <span className="text-xs font-bold text-green-600 mt-0.5">
+                          {tpl.conversion_rate || 0}% Tasa
+                        </span>
                       </div>
                     </td>
                     <td className="p-4">
