@@ -1,11 +1,15 @@
-import { Bell, Search, AlertCircle } from 'lucide-react';
-import { useState, useRef } from 'react';
+import { Bell, Search, AlertCircle, LogOut, ChevronDown } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../lib/auth';
 
 export function Header() {
   const [query, setQuery] = useState('');
+  const [menuOpen, setMenuOpen] = useState(false);
   const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const { user, signOut } = useAuth();
 
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
@@ -15,13 +19,28 @@ export function Header() {
     }
   }
 
-  // Live search: navigate as user types (debounced via SearchResults component)
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     const val = e.target.value;
     setQuery(val);
     if (val.trim().length >= 2) {
       navigate(`/search?q=${encodeURIComponent(val.trim())}`, { replace: true });
     }
+  }
+
+  // Cerrar menú al hacer click fuera
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  async function handleLogout() {
+    await signOut();
+    navigate('/login');
   }
 
   return (
@@ -56,17 +75,42 @@ export function Header() {
             <Bell className="h-5 w-5" aria-hidden="true" />
           </button>
           <div className="hidden lg:block lg:h-6 lg:w-px lg:bg-gray-200" aria-hidden="true" />
-          <div className="flex items-center gap-x-4 cursor-pointer hover:bg-gray-50 p-2 rounded-lg transition-colors">
-            <img
-              className="h-8 w-8 rounded-full bg-gray-50 object-cover ring-2 ring-white"
-              src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
-              alt="Admin"
-            />
-            <span className="hidden lg:flex lg:items-center">
-              <span className="text-sm font-semibold leading-6 text-gray-700" aria-hidden="true">
-                Usuario Admin
+          
+          {/* User Menu with Dropdown */}
+          <div className="relative" ref={menuRef}>
+            <button 
+              onClick={() => setMenuOpen(!menuOpen)}
+              className="flex items-center gap-x-3 cursor-pointer hover:bg-gray-50 p-2 rounded-lg transition-colors"
+            >
+              <img
+                className="h-8 w-8 rounded-full bg-gray-50 object-cover ring-2 ring-white"
+                src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
+                alt="Admin"
+              />
+              <span className="hidden lg:flex lg:items-center gap-1">
+                <span className="text-sm font-semibold leading-6 text-gray-700" aria-hidden="true">
+                  {user?.email?.split('@')[0] || 'Usuario'}
+                </span>
+                <ChevronDown className={`w-3.5 h-3.5 text-gray-400 transition-transform ${menuOpen ? 'rotate-180' : ''}`} />
               </span>
-            </span>
+            </button>
+
+            {/* Dropdown Menu */}
+            {menuOpen && (
+              <div className="absolute right-0 mt-2 w-56 origin-top-right rounded-xl bg-white shadow-lg ring-1 ring-black/5 focus:outline-none overflow-hidden z-50">
+                <div className="px-4 py-3 border-b border-gray-100">
+                  <p className="text-xs text-gray-500">Sesión iniciada como</p>
+                  <p className="text-sm font-semibold text-gray-900 truncate">{user?.email || 'admin'}</p>
+                </div>
+                <button
+                  onClick={handleLogout}
+                  className="flex w-full items-center gap-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                >
+                  <LogOut className="w-4 h-4" />
+                  Cerrar Sesión
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
