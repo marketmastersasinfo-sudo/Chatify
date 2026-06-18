@@ -28,9 +28,43 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 
     // ==========================================
-    // GET: Obtener todas las plantillas de Twilio
+    // GET: Obtener analíticas o todas las plantillas
     // ==========================================
     if (req.method === 'GET') {
+      const { action, startDate, endDate } = req.query;
+
+      // --- ANALYTICS MODE ---
+      if (action === 'analytics') {
+        const { data: templates } = await supabase.from('store_templates').select('id, template_name, template_type, is_active').eq('store_id', storeId as string);
+        if (!templates || templates.length === 0) return res.status(200).json({ success: true, data: [] });
+
+        let query = supabase.from('messages').select('template_id, is_conversion, created_at, converted_at').in('template_id', templates.map(t => t.id));
+        if (startDate) query = query.gte('created_at', startDate as string);
+        if (endDate) query = query.lte('created_at', endDate as string);
+
+        const { data: messages, error } = await query;
+        if (error) throw error;
+
+        const analyticsMap: Record<string, { sent: number, converted: number }> = {};
+        templates.forEach(t => analyticsMap[t.id] = { sent: 0, converted: 0 });
+        messages?.forEach(msg => {
+          if (msg.template_id && analyticsMap[msg.template_id]) {
+            analyticsMap[msg.template_id].sent += 1;
+            if (msg.is_conversion) analyticsMap[msg.template_id].converted += 1;
+          }
+        });
+
+        const results = templates.map(t => ({
+          ...t,
+          sent_count: analyticsMap[t.id].sent,
+          conversion_count: analyticsMap[t.id].converted,
+          conversion_rate: analyticsMap[t.id].sent > 0 ? Math.round((analyticsMap[t.id].converted / analyticsMap[t.id].sent) * 100) : 0
+        }));
+
+        return res.status(200).json({ success: true, data: results });
+      }
+
+      // --- NORMAL TEMPLATE FETCH MODE ---
       const contents = await twilioClient.content.v1.contents.list({ limit: 100 });
       
       // Fetch our local templates to get the proper names and categories

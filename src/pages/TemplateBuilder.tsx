@@ -141,7 +141,7 @@ export function TemplateBuilder() {
     if (!selectedStore) return;
     setAnalyticsLoading(true);
     try {
-      let url = `/api/meta/analytics?storeId=${selectedStore.id}`;
+      let url = `/api/meta/templates?storeId=${selectedStore.id}&action=analytics`;
       
       const now = new Date();
       let start = '';
