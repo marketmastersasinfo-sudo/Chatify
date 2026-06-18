@@ -55,12 +55,14 @@ export function processRemarketingFunnels(leads: any[], averageTicket = 85000) {
   // 4. Carritos Recuperados ('recovered')
 
   // Filter leads to only remarketing
-  const remarketingLeads = leads.filter(l => l.board_type === 'remarketing');
+  const remarketingLeads = leads.filter(l => (l.board_type || '').includes('remarketing'));
 
   const detected = remarketingLeads.length;
   
+  // Plantillas enviadas = todos excepto los que apenas fueron detectados (abandoned sin touch)
   const sentTemplates = remarketingLeads.filter(l => 
-    ['bot_sent', 'client_replied', 'recovered', 'lost'].includes(l.status)
+    ['bot_sent', 'client_replied', 'verifying_address', 'recovered', 'lost'].includes(l.status) ||
+    (l.recovery_touch && l.recovery_touch > 0)
   ).length;
 
   const replies = remarketingLeads.filter(l => 

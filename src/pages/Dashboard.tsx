@@ -116,6 +116,21 @@ export function Dashboard() {
                 <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="w-full pl-8 pr-2 py-1.5 text-xs border border-gray-200 rounded-lg text-gray-600 focus:ring-1 focus:ring-blue-500 bg-gray-50/50" title="Hasta" />
               </div>
             </div>
+            {/* Quick Date Filters */}
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              {[
+                { label: 'Hoy', fn: () => { const t = new Date().toISOString().split('T')[0]; setStartDate(t); setEndDate(t); } },
+                { label: 'Ayer', fn: () => { const y = new Date(Date.now() - 86400000).toISOString().split('T')[0]; setStartDate(y); setEndDate(y); } },
+                { label: '7 días', fn: () => { setStartDate(new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0]); setEndDate(new Date().toISOString().split('T')[0]); } },
+                { label: '30 días', fn: () => { setStartDate(new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0]); setEndDate(new Date().toISOString().split('T')[0]); } },
+                { label: 'Este mes', fn: () => { const now = new Date(); setStartDate(new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]); setEndDate(now.toISOString().split('T')[0]); } },
+                { label: 'Todo', fn: () => { setStartDate(''); setEndDate(''); } }
+              ].map(q => (
+                <button key={q.label} onClick={q.fn} className="px-2.5 py-1 text-[11px] font-semibold rounded-md border border-gray-200 text-gray-600 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition-colors">
+                  {q.label}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="flex-1 min-w-[150px]">
