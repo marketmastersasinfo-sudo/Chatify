@@ -8,28 +8,24 @@ export interface DashboardFilters {
 }
 
 export async function fetchDashboardData(filters: DashboardFilters, allowedStoreIds: string[]) {
-  // If user has no store access, return empty
   if (!allowedStoreIds || allowedStoreIds.length === 0) return [];
 
   let query = supabase.from('leads').select('*, stores!inner(country)');
 
-  // Filter by allowed stores
   if (filters.storeId && filters.storeId !== 'all') {
     if (allowedStoreIds.includes(filters.storeId)) {
       query = query.eq('store_id', filters.storeId);
     } else {
-      return []; // Trying to access a store they don't have access to
+      return [];
     }
   } else {
     query = query.in('store_id', allowedStoreIds);
   }
 
-  // Filter by country
   if (filters.country && filters.country !== 'all') {
     query = query.eq('stores.country', filters.country);
   }
 
-  // Filter by date
   if (filters.startDate) {
     query = query.gte('created_at', `${filters.startDate}T00:00:00.000Z`);
   }
@@ -47,19 +43,46 @@ export async function fetchDashboardData(filters: DashboardFilters, allowedStore
   return data || [];
 }
 
-export function processRemarketingFunnels(leads: any[], averageTicket = 85000) {
-  // Funnel:
-  // 1. Carritos Detectados (Total leads)
-  // 2. Plantillas Enviadas ('bot_sent', 'client_replied', 'recovered', 'lost')
-  // 3. Respuestas al Bot ('client_replied', 'verifying_address', 'recovered')
-  // 4. Carritos Recuperados ('recovered')
+// ══════════════════════════════════════
+// 1. VENTAS WHATSAPP (Inbound)
+// ══════════════════════════════════════
+export function processSalesWaFunnels(leads: any[]) {
+  const salesLeads = leads.filter(l => l.board_type === 'sales_wa');
 
-  // Filter leads to only remarketing
-  const remarketingLeads = leads.filter(l => (l.board_type || '').includes('remarketing'));
+  const incoming = salesLeads.length;
+  const interaction = salesLeads.filter(l => 
+    !['nuevo', 'cold_lead'].includes(l.status)
+  ).length;
+  const dataCollected = salesLeads.filter(l => 
+    ['verifying_address', 'address_confirming', 'confirmado', 'recovered', 'despachado', 'entregado'].includes(l.status)
+  ).length;
+  const confirmed = salesLeads.filter(l => 
+    ['confirmado', 'recovered', 'despachado', 'entregado'].includes(l.status)
+  ).length;
+
+  const revenue = salesLeads
+    .filter(l => ['confirmado', 'recovered', 'despachado', 'entregado'].includes(l.status))
+    .reduce((sum, l) => sum + (l.total_price || 0), 0);
+
+  return {
+    kpis: { incoming, interaction, dataCollected, confirmed, revenue },
+    funnel: [
+      { stage: "1. Leads Entrantes", count: incoming, percentage: 100, colorHex: "#3b82f6", color: "text-blue-700", bg: "bg-blue-50" },
+      { stage: "2. Interacción IA", count: interaction, percentage: incoming > 0 ? Math.round((interaction/incoming)*100) : 0, colorHex: "#6366f1", color: "text-indigo-700", bg: "bg-indigo-50", dropoffAnalysis: "Fricción Inicial: El cliente no respondió o ignoró al bot." },
+      { stage: "3. Datos Recolectados", count: dataCollected, percentage: incoming > 0 ? Math.round((dataCollected/incoming)*100) : 0, colorHex: "#a855f7", color: "text-purple-700", bg: "bg-purple-50", dropoffAnalysis: "Fricción de Datos: El cliente no compartió su dirección o datos." },
+      { stage: "4. Pedidos Confirmados", count: confirmed, percentage: incoming > 0 ? Math.round((confirmed/incoming)*100) : 0, colorHex: "#22c55e", color: "text-green-700", bg: "bg-green-50", dropoffAnalysis: "Fricción de Cierre: Dieron datos pero no confirmaron." }
+    ]
+  };
+}
+
+// ══════════════════════════════════════
+// 2. CARRITOS ABANDONADOS (Recuperación)
+// ══════════════════════════════════════
+export function processRemarketingFunnels(leads: any[]) {
+  const remarketingLeads = leads.filter(l => (l.board_type || '').includes('remarketing_cart'));
 
   const detected = remarketingLeads.length;
   
-  // Plantillas enviadas = todos excepto los que apenas fueron detectados (abandoned sin touch)
   const sentTemplates = remarketingLeads.filter(l => 
     ['bot_sent', 'client_replied', 'verifying_address', 'recovered', 'lost'].includes(l.status) ||
     (l.recovery_touch && l.recovery_touch > 0)
@@ -71,77 +94,124 @@ export function processRemarketingFunnels(leads: any[], averageTicket = 85000) {
 
   const recovered = remarketingLeads.filter(l => l.status === 'recovered').length;
 
-  const revenue = recovered * averageTicket;
+  const revenue = remarketingLeads
+    .filter(l => l.status === 'recovered')
+    .reduce((sum, l) => sum + (l.total_price || 0), 0);
 
   return {
-    kpis: {
-      detected,
-      sentTemplates,
-      replies,
-      recovered,
-      revenue
-    },
+    kpis: { detected, sentTemplates, replies, recovered, revenue },
     funnel: [
-      {
-        stage: "1. Carritos Detectados",
-        count: detected,
-        percentage: 100,
-        colorHex: "#3b82f6",
-        color: "text-blue-700",
-        bg: "bg-blue-50"
-      },
-      {
-        stage: "2. Plantillas Enviadas",
-        count: sentTemplates,
-        percentage: detected > 0 ? Math.round((sentTemplates / detected) * 100) : 0,
-        colorHex: "#6366f1",
-        color: "text-indigo-700",
-        bg: "bg-indigo-50",
-        dropoffAnalysis: "Fallos de Envío: El número de teléfono dejado en el checkout es inválido o no tiene WhatsApp."
-      },
-      {
-        stage: "3. Respuestas al Bot",
-        count: replies,
-        percentage: detected > 0 ? Math.round((replies / detected) * 100) : 0,
-        colorHex: "#a855f7",
-        color: "text-purple-700",
-        bg: "bg-purple-50",
-        dropoffAnalysis: "Ignorados: El mensaje llegó pero no les interesó."
-      },
-      {
-        stage: "4. Carritos Recuperados",
-        count: recovered,
-        percentage: detected > 0 ? Math.round((recovered / detected) * 100) : 0,
-        colorHex: "#22c55e",
-        color: "text-green-700",
-        bg: "bg-green-50",
-        dropoffAnalysis: "Fricción Final: Respondieron pero no compraron."
-      }
+      { stage: "1. Carritos Detectados", count: detected, percentage: 100, colorHex: "#3b82f6", color: "text-blue-700", bg: "bg-blue-50" },
+      { stage: "2. Plantillas Enviadas", count: sentTemplates, percentage: detected > 0 ? Math.round((sentTemplates / detected) * 100) : 0, colorHex: "#6366f1", color: "text-indigo-700", bg: "bg-indigo-50", dropoffAnalysis: "Fallos de Envío: Número inválido o sin WhatsApp." },
+      { stage: "3. Respuestas al Bot", count: replies, percentage: detected > 0 ? Math.round((replies / detected) * 100) : 0, colorHex: "#a855f7", color: "text-purple-700", bg: "bg-purple-50", dropoffAnalysis: "Ignorados: El mensaje llegó pero no les interesó." },
+      { stage: "4. Carritos Recuperados", count: recovered, percentage: detected > 0 ? Math.round((recovered / detected) * 100) : 0, colorHex: "#22c55e", color: "text-green-700", bg: "bg-green-50", dropoffAnalysis: "Fricción Final: Respondieron pero no compraron." }
     ]
   };
 }
 
-export function processSalesWaFunnels(leads: any[], averageTicket = 85000) {
-  const salesLeads = leads.filter(l => l.board_type === 'sales_wa');
+// ══════════════════════════════════════
+// 3. REMARKETING ACTIVO (WhatsApp outbound)
+// ══════════════════════════════════════
+export function processRemarketingWaFunnels(leads: any[]) {
+  // remarketing_wa or remarketing (not remarketing_carts)
+  const rmLeads = leads.filter(l => l.board_type === 'remarketing' || l.board_type === 'remarketing_wa');
 
-  const incoming = salesLeads.length;
-  const interaction = salesLeads.filter(l => ['bot_replied', 'human_escalated', 'recovered', 'lost'].includes(l.status)).length;
-  const dataCollected = salesLeads.filter(l => ['verifying_address', 'recovered'].includes(l.status)).length;
-  const confirmed = salesLeads.filter(l => l.status === 'recovered').length;
+  const total = rmLeads.length;
+  const contacted = rmLeads.filter(l => !['cold_lead', 'nuevo'].includes(l.status)).length;
+  const engaged = rmLeads.filter(l => ['client_replied', 'verifying_address', 'recovered', 'warm'].includes(l.status)).length;
+  const converted = rmLeads.filter(l => ['recovered', 'confirmado'].includes(l.status)).length;
+
+  const revenue = rmLeads
+    .filter(l => ['recovered', 'confirmado'].includes(l.status))
+    .reduce((sum, l) => sum + (l.total_price || 0), 0);
 
   return {
-    kpis: {
-      incoming,
-      interaction,
-      dataCollected,
-      confirmed,
-      revenue: confirmed * averageTicket
-    },
+    kpis: { total, contacted, engaged, converted, revenue },
     funnel: [
-      { stage: "1. Leads Entrantes", count: incoming, percentage: 100, colorHex: "#3b82f6", color: "text-blue-700", bg: "bg-blue-50" },
-      { stage: "2. Interacción IA", count: interaction, percentage: incoming > 0 ? Math.round((interaction/incoming)*100) : 0, colorHex: "#6366f1", color: "text-indigo-700", bg: "bg-indigo-50", dropoffAnalysis: "Fricción Inicial: El cliente ignoró el saludo de la IA." },
-      { stage: "3. Datos Recolectados", count: dataCollected, percentage: incoming > 0 ? Math.round((dataCollected/incoming)*100) : 0, colorHex: "#a855f7", color: "text-purple-700", bg: "bg-purple-50", dropoffAnalysis: "Fricción de Datos: No quiso dar su dirección." },
-      { stage: "4. Pedidos Confirmados", count: confirmed, percentage: incoming > 0 ? Math.round((confirmed/incoming)*100) : 0, colorHex: "#22c55e", color: "text-green-700", bg: "bg-green-50", dropoffAnalysis: "Fricción de Cierre: No confirmaron el pedido." }
+      { stage: "1. Base de Leads", count: total, percentage: 100, colorHex: "#f59e0b", color: "text-amber-700", bg: "bg-amber-50" },
+      { stage: "2. Contactados", count: contacted, percentage: total > 0 ? Math.round((contacted/total)*100) : 0, colorHex: "#f97316", color: "text-orange-700", bg: "bg-orange-50", dropoffAnalysis: "No Contactados: El mensaje no fue enviado o falló." },
+      { stage: "3. Enganchados", count: engaged, percentage: total > 0 ? Math.round((engaged/total)*100) : 0, colorHex: "#ef4444", color: "text-red-700", bg: "bg-red-50", dropoffAnalysis: "Sin Respuesta: Leyeron pero no respondieron." },
+      { stage: "4. Convertidos", count: converted, percentage: total > 0 ? Math.round((converted/total)*100) : 0, colorHex: "#22c55e", color: "text-green-700", bg: "bg-green-50", dropoffAnalysis: "Fricción de Cierre: Interactuaron pero no compraron." }
     ]
+  };
+}
+
+// ══════════════════════════════════════
+// 5. CONFIRMACIÓN DE PEDIDOS (Logística)
+// ══════════════════════════════════════
+export function processLogisticsFunnels(leads: any[]) {
+  const logLeads = leads.filter(l => l.board_type === 'logistics');
+
+  const total = logLeads.length;
+  const contacted = logLeads.filter(l => !['nuevo'].includes(l.status) || (l.recovery_touch && l.recovery_touch > 0)).length;
+  const addressVerified = logLeads.filter(l => 
+    ['address_confirming', 'confirmado', 'despachado', 'entregado'].includes(l.status)
+  ).length;
+  const confirmed = logLeads.filter(l => 
+    ['confirmado', 'despachado', 'entregado'].includes(l.status)
+  ).length;
+
+  const revenue = logLeads
+    .filter(l => ['confirmado', 'despachado', 'entregado'].includes(l.status))
+    .reduce((sum, l) => sum + (l.total_price || 0), 0);
+
+  return {
+    kpis: { total, contacted, addressVerified, confirmed, revenue },
+    funnel: [
+      { stage: "1. Pedidos Recibidos", count: total, percentage: 100, colorHex: "#8b5cf6", color: "text-violet-700", bg: "bg-violet-50" },
+      { stage: "2. Contactados", count: contacted, percentage: total > 0 ? Math.round((contacted/total)*100) : 0, colorHex: "#6366f1", color: "text-indigo-700", bg: "bg-indigo-50", dropoffAnalysis: "Sin Respuesta: No contestaron la llamada o template de confirmación." },
+      { stage: "3. Dirección Verificada", count: addressVerified, percentage: total > 0 ? Math.round((addressVerified/total)*100) : 0, colorHex: "#3b82f6", color: "text-blue-700", bg: "bg-blue-50", dropoffAnalysis: "Sin Dirección: Contestaron pero no confirmaron la dirección de entrega." },
+      { stage: "4. Confirmados", count: confirmed, percentage: total > 0 ? Math.round((confirmed/total)*100) : 0, colorHex: "#22c55e", color: "text-green-700", bg: "bg-green-50", dropoffAnalysis: "Cancelados: Verificaron dirección pero cancelaron el pedido." }
+    ]
+  };
+}
+
+// ══════════════════════════════════════
+// 6. REDES SOCIALES
+// ══════════════════════════════════════
+export function processSocialFunnels(leads: any[]) {
+  const socialLeads = leads.filter(l => l.board_type === 'social_media' || l.board_type === 'sales_social');
+
+  const total = socialLeads.length;
+  const engaged = socialLeads.filter(l => !['nuevo', 'cold_lead'].includes(l.status)).length;
+  const interested = socialLeads.filter(l => 
+    ['client_replied', 'verifying_address', 'recovered', 'confirmado', 'warm'].includes(l.status)
+  ).length;
+  const converted = socialLeads.filter(l => 
+    ['recovered', 'confirmado'].includes(l.status)
+  ).length;
+
+  const revenue = socialLeads
+    .filter(l => ['recovered', 'confirmado'].includes(l.status))
+    .reduce((sum, l) => sum + (l.total_price || 0), 0);
+
+  return {
+    kpis: { total, engaged, interested, converted, revenue },
+    funnel: [
+      { stage: "1. Leads Sociales", count: total, percentage: 100, colorHex: "#ec4899", color: "text-pink-700", bg: "bg-pink-50" },
+      { stage: "2. Enganchados", count: engaged, percentage: total > 0 ? Math.round((engaged/total)*100) : 0, colorHex: "#f43f5e", color: "text-rose-700", bg: "bg-rose-50", dropoffAnalysis: "Sin Interacción: Escribieron en redes pero no siguieron conversando." },
+      { stage: "3. Interesados", count: interested, percentage: total > 0 ? Math.round((interested/total)*100) : 0, colorHex: "#a855f7", color: "text-purple-700", bg: "bg-purple-50", dropoffAnalysis: "Perdida de Interés: Mostraron interés pero no quisieron comprar." },
+      { stage: "4. Convertidos", count: converted, percentage: total > 0 ? Math.round((converted/total)*100) : 0, colorHex: "#22c55e", color: "text-green-700", bg: "bg-green-50", dropoffAnalysis: "Fricción de Cierre: Interesados que no concretaron la compra." }
+    ]
+  };
+}
+
+// ══════════════════════════════════════
+// GLOBAL: Calcular métricas IA
+// ══════════════════════════════════════
+export function processAIMetrics(leads: any[]) {
+  // Leads cerrados por el bot (no tuvieron intervención humana)
+  const confirmedLeads = leads.filter(l => ['recovered', 'confirmado', 'despachado', 'entregado'].includes(l.status));
+  const total = confirmedLeads.length;
+  if (total === 0) return { aiPercent: 0, humanPercent: 0, totalClosed: 0 };
+
+  // Un lead fue cerrado con intervención humana si tiene algún mensaje de tipo 'human'
+  const humanIntervened = confirmedLeads.filter(l => l.has_human_intervention).length;
+  const aiOnly = total - humanIntervened;
+
+  return {
+    aiPercent: total > 0 ? Math.round((aiOnly / total) * 100) : 0,
+    humanPercent: total > 0 ? Math.round((humanIntervened / total) * 100) : 0,
+    totalClosed: total
   };
 }

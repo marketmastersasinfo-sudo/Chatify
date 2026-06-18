@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Calendar as CalendarIcon, TrendingUp, TrendingDown, Users, ShoppingCart, DollarSign, Activity, Filter, ChevronDown, MessageSquare, Loader2 } from 'lucide-react';
+import { Calendar as CalendarIcon, TrendingUp, TrendingDown, Users, ShoppingCart, DollarSign, Activity, Filter, ChevronDown, MessageSquare, Loader2, Send, Truck, Share2 } from 'lucide-react';
 import { cn } from '../utils/cn';
 import { useAuth } from '../lib/auth';
-import { fetchDashboardData, processRemarketingFunnels, processSalesWaFunnels } from '../lib/dashboard-data';
+import { fetchDashboardData, processRemarketingFunnels, processSalesWaFunnels, processRemarketingWaFunnels, processLogisticsFunnels, processSocialFunnels, processAIMetrics } from '../lib/dashboard-data';
 import { supabase } from '../lib/supabase';
 
 type TabType = 'whatsapp' | 'carts' | 'remarketing' | 'broadcast' | 'logistics' | 'social';
@@ -45,48 +45,91 @@ export function Dashboard() {
   }, [startDate, endDate, country, storeId, storeIds]);
 
   // Process data for the active tab
-  let currentData: any = { kpis: [], funnel: [], title: '' };
+  let currentData: any = { kpis: [], funnel: [], title: '', revenue: 0 };
   
   if (activeTab === 'whatsapp') {
-    const processed = processSalesWaFunnels(leads);
+    const p = processSalesWaFunnels(leads);
     currentData = {
       title: "Ventas WhatsApp (Inbound)",
+      revenue: p.kpis.revenue,
       kpis: [
-        { label: "Leads Entrantes", value: processed.kpis.incoming.toString(), trend: "-", icon: Users, color: "text-blue-600", bg: "bg-blue-50" },
-        { label: "Interacción IA", value: processed.kpis.interaction.toString(), trend: "-", icon: Activity, color: "text-indigo-600", bg: "bg-indigo-50" },
-        { label: "Datos Recolectados", value: processed.kpis.dataCollected.toString(), trend: "-", icon: ShoppingCart, color: "text-purple-600", bg: "bg-purple-50" },
-        { label: "Pedidos Confirmados", value: processed.kpis.confirmed.toString(), trend: "-", icon: DollarSign, color: "text-green-600", bg: "bg-green-50" }
+        { label: "Leads Entrantes", value: p.kpis.incoming.toString(), icon: Users, color: "text-blue-600", bg: "bg-blue-50" },
+        { label: "Interacción IA", value: p.kpis.interaction.toString(), icon: Activity, color: "text-indigo-600", bg: "bg-indigo-50" },
+        { label: "Datos Recolectados", value: p.kpis.dataCollected.toString(), icon: ShoppingCart, color: "text-purple-600", bg: "bg-purple-50" },
+        { label: "Pedidos Confirmados", value: p.kpis.confirmed.toString(), icon: DollarSign, color: "text-green-600", bg: "bg-green-50" }
       ],
-      funnel: processed.funnel
+      funnel: p.funnel
     };
   } else if (activeTab === 'carts') {
-    const processed = processRemarketingFunnels(leads);
+    const p = processRemarketingFunnels(leads);
     currentData = {
       title: "Carritos Abandonados (Recuperación)",
+      revenue: p.kpis.revenue,
       kpis: [
-        { label: "Carritos Detectados", value: processed.kpis.detected.toString(), trend: "-", icon: ShoppingCart, color: "text-blue-600", bg: "bg-blue-50" },
-        { label: "Plantillas Enviadas", value: processed.kpis.sentTemplates.toString(), trend: "-", icon: MessageSquare, color: "text-indigo-600", bg: "bg-indigo-50" },
-        { label: "Respuestas al Bot", value: processed.kpis.replies.toString(), trend: "-", icon: Users, color: "text-purple-600", bg: "bg-purple-50" },
-        { label: "Carritos Recuperados", value: processed.kpis.recovered.toString(), trend: "-", icon: DollarSign, color: "text-green-600", bg: "bg-green-50" }
+        { label: "Carritos Detectados", value: p.kpis.detected.toString(), icon: ShoppingCart, color: "text-blue-600", bg: "bg-blue-50" },
+        { label: "Plantillas Enviadas", value: p.kpis.sentTemplates.toString(), icon: MessageSquare, color: "text-indigo-600", bg: "bg-indigo-50" },
+        { label: "Respuestas al Bot", value: p.kpis.replies.toString(), icon: Users, color: "text-purple-600", bg: "bg-purple-50" },
+        { label: "Carritos Recuperados", value: p.kpis.recovered.toString(), icon: DollarSign, color: "text-green-600", bg: "bg-green-50" }
       ],
-      funnel: processed.funnel
+      funnel: p.funnel
     };
-  } else {
-    // Placeholder for other tabs
+  } else if (activeTab === 'remarketing') {
+    const p = processRemarketingWaFunnels(leads);
     currentData = {
-      title: "Módulo en Desarrollo (Próximamente)",
+      title: "Remarketing Activo (Outbound WhatsApp)",
+      revenue: p.kpis.revenue,
       kpis: [
-        { label: "Datos", value: "0", trend: "-", icon: Activity, color: "text-gray-400", bg: "bg-gray-100" },
-        { label: "Datos", value: "0", trend: "-", icon: Activity, color: "text-gray-400", bg: "bg-gray-100" },
-        { label: "Datos", value: "0", trend: "-", icon: Activity, color: "text-gray-400", bg: "bg-gray-100" },
-        { label: "Datos", value: "0", trend: "-", icon: Activity, color: "text-gray-400", bg: "bg-gray-100" }
+        { label: "Base de Leads", value: p.kpis.total.toString(), icon: Users, color: "text-amber-600", bg: "bg-amber-50" },
+        { label: "Contactados", value: p.kpis.contacted.toString(), icon: Send, color: "text-orange-600", bg: "bg-orange-50" },
+        { label: "Enganchados", value: p.kpis.engaged.toString(), icon: Activity, color: "text-red-600", bg: "bg-red-50" },
+        { label: "Convertidos", value: p.kpis.converted.toString(), icon: DollarSign, color: "text-green-600", bg: "bg-green-50" }
       ],
-      funnel: [
-        { stage: "Fase 1", count: 0, percentage: 0, colorHex: "#9ca3af", color: "text-gray-700", bg: "bg-gray-100" },
-        { stage: "Fase 2", count: 0, percentage: 0, colorHex: "#9ca3af", color: "text-gray-700", bg: "bg-gray-100" }
-      ]
+      funnel: p.funnel
+    };
+  } else if (activeTab === 'broadcast') {
+    // Difusión Masiva - por ahora usa los mismos datos de remarketing_wa
+    const p = processRemarketingWaFunnels(leads);
+    currentData = {
+      title: "Difusión Masiva (Campañas)",
+      revenue: p.kpis.revenue,
+      kpis: [
+        { label: "Mensajes Enviados", value: p.kpis.total.toString(), icon: Send, color: "text-cyan-600", bg: "bg-cyan-50" },
+        { label: "Entregados", value: p.kpis.contacted.toString(), icon: MessageSquare, color: "text-teal-600", bg: "bg-teal-50" },
+        { label: "Respuestas", value: p.kpis.engaged.toString(), icon: Users, color: "text-emerald-600", bg: "bg-emerald-50" },
+        { label: "Conversiones", value: p.kpis.converted.toString(), icon: DollarSign, color: "text-green-600", bg: "bg-green-50" }
+      ],
+      funnel: p.funnel
+    };
+  } else if (activeTab === 'logistics') {
+    const p = processLogisticsFunnels(leads);
+    currentData = {
+      title: "Confirmación de Pedidos (Logística)",
+      revenue: p.kpis.revenue,
+      kpis: [
+        { label: "Pedidos Recibidos", value: p.kpis.total.toString(), icon: Truck, color: "text-violet-600", bg: "bg-violet-50" },
+        { label: "Contactados", value: p.kpis.contacted.toString(), icon: MessageSquare, color: "text-indigo-600", bg: "bg-indigo-50" },
+        { label: "Dirección Verificada", value: p.kpis.addressVerified.toString(), icon: Activity, color: "text-blue-600", bg: "bg-blue-50" },
+        { label: "Confirmados", value: p.kpis.confirmed.toString(), icon: DollarSign, color: "text-green-600", bg: "bg-green-50" }
+      ],
+      funnel: p.funnel
+    };
+  } else if (activeTab === 'social') {
+    const p = processSocialFunnels(leads);
+    currentData = {
+      title: "Redes Sociales (Instagram, Facebook, TikTok)",
+      revenue: p.kpis.revenue,
+      kpis: [
+        { label: "Leads Sociales", value: p.kpis.total.toString(), icon: Share2, color: "text-pink-600", bg: "bg-pink-50" },
+        { label: "Enganchados", value: p.kpis.engaged.toString(), icon: Activity, color: "text-rose-600", bg: "bg-rose-50" },
+        { label: "Interesados", value: p.kpis.interested.toString(), icon: Users, color: "text-purple-600", bg: "bg-purple-50" },
+        { label: "Convertidos", value: p.kpis.converted.toString(), icon: DollarSign, color: "text-green-600", bg: "bg-green-50" }
+      ],
+      funnel: p.funnel
     };
   }
+
+  // AI Metrics
+  const aiMetrics = processAIMetrics(leads);
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
@@ -360,29 +403,56 @@ export function Dashboard() {
           </div>
         </div>
 
-        {/* Effectiveness Donut Chart */}
+        {/* Effectiveness Donut Chart + Revenue */}
         <div className="glass-card rounded-2xl p-6 flex flex-col items-center justify-center">
-          <h3 className="text-lg font-bold text-gray-900 w-full text-left mb-6">Cierres 100% IA</h3>
-          <div className="relative w-48 h-48">
-            <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90">
-              <circle cx="50" cy="50" r="40" fill="transparent" stroke="#f3f4f6" strokeWidth="15" />
-              <circle cx="50" cy="50" r="40" fill="transparent" stroke="#3b82f6" strokeWidth="15" strokeDasharray="251.2" strokeDashoffset="36.8" className="transition-all duration-1000 ease-out" />
-              <circle cx="50" cy="50" r="40" fill="transparent" stroke="#a855f7" strokeWidth="15" strokeDasharray="251.2" strokeDashoffset="214.4" />
-            </svg>
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-3xl font-bold text-gray-900">85%</span>
-              <span className="text-xs text-gray-500 text-center px-4">Efectividad IA</span>
+          <h3 className="text-lg font-bold text-gray-900 w-full text-left mb-2">Cierres 100% IA</h3>
+          <p className="text-xs text-gray-500 w-full text-left mb-4">{aiMetrics.totalClosed} pedidos cerrados</p>
+          
+          {aiMetrics.totalClosed > 0 ? (
+            <>
+              <div className="relative w-44 h-44">
+                <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90">
+                  <circle cx="50" cy="50" r="40" fill="transparent" stroke="#f3f4f6" strokeWidth="15" />
+                  <circle cx="50" cy="50" r="40" fill="transparent" stroke="#3b82f6" strokeWidth="15" 
+                    strokeDasharray="251.2" 
+                    strokeDashoffset={251.2 - (251.2 * aiMetrics.aiPercent / 100)} 
+                    className="transition-all duration-1000 ease-out" />
+                  <circle cx="50" cy="50" r="40" fill="transparent" stroke="#a855f7" strokeWidth="15" 
+                    strokeDasharray="251.2" 
+                    strokeDashoffset={251.2 - (251.2 * aiMetrics.humanPercent / 100)} />
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <span className="text-3xl font-bold text-gray-900">{aiMetrics.aiPercent}%</span>
+                  <span className="text-xs text-gray-500 text-center px-4">Efectividad IA</span>
+                </div>
+              </div>
+              <div className="mt-6 w-full space-y-3">
+                <div className="flex justify-between items-center text-sm">
+                  <span className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-blue-500"></div> Cerrado por Bot</span>
+                  <span className="font-semibold text-gray-900">{aiMetrics.aiPercent}%</span>
+                </div>
+                <div className="flex justify-between items-center text-sm">
+                  <span className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-purple-500"></div> Intervención Humana</span>
+                  <span className="font-semibold text-gray-900">{aiMetrics.humanPercent}%</span>
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="flex-1 flex items-center justify-center text-gray-400 text-sm py-12">
+              Aún no hay pedidos cerrados para analizar
             </div>
-          </div>
-          <div className="mt-8 w-full space-y-3">
-            <div className="flex justify-between items-center text-sm">
-              <span className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-blue-500"></div> Cerrado por Bot</span>
-              <span className="font-semibold text-gray-900">85.3%</span>
+          )}
+          
+          {/* Revenue Card */}
+          <div className="mt-6 w-full p-4 rounded-xl bg-gradient-to-r from-green-50 to-emerald-50 border border-green-100">
+            <div className="flex items-center gap-2 mb-1">
+              <DollarSign className="w-4 h-4 text-green-600" />
+              <span className="text-xs font-bold text-green-700 uppercase">Ingresos del Tab</span>
             </div>
-            <div className="flex justify-between items-center text-sm">
-              <span className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-purple-500"></div> Intervención Humana</span>
-              <span className="font-semibold text-gray-900">14.7%</span>
-            </div>
+            <span className="text-2xl font-black text-green-800">
+              ${(currentData.revenue || 0).toLocaleString('es-CO')}
+            </span>
+            <span className="text-xs text-green-600 ml-1">COP</span>
           </div>
         </div>
       </div>
