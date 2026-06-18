@@ -9,7 +9,7 @@ export function Header() {
   const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
-  const { user, signOut } = useAuth();
+  const { user, logout } = useAuth();
 
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
@@ -38,9 +38,8 @@ export function Header() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  async function handleLogout() {
-    await signOut();
-    navigate('/login');
+  function handleLogout() {
+    logout();
   }
 
   return (
