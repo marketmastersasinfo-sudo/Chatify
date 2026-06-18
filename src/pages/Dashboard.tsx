@@ -128,8 +128,14 @@ export function Dashboard() {
     };
   }
 
-  // AI Metrics
-  const aiMetrics = processAIMetrics(leads);
+  // AI Metrics - filtrados por tab activo
+  const tabFilteredLeads = activeTab === 'whatsapp' ? leads.filter(l => l.board_type === 'sales_wa')
+    : activeTab === 'carts' ? leads.filter(l => (l.board_type || '').includes('remarketing_cart'))
+    : activeTab === 'remarketing' ? leads.filter(l => l.board_type === 'remarketing' || l.board_type === 'remarketing_wa')
+    : activeTab === 'logistics' ? leads.filter(l => l.board_type === 'logistics')
+    : activeTab === 'social' ? leads.filter(l => l.board_type === 'social_media' || l.board_type === 'sales_social')
+    : leads;
+  const aiMetrics = processAIMetrics(tabFilteredLeads);
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
@@ -359,7 +365,7 @@ export function Dashboard() {
                 if (i === 0) return null; // No dropoff for first stage
                 
                 const prevStage = currentData.funnel[i-1];
-                const dropPercent = Math.round(((prevStage.count - stage.count) / prevStage.count) * 100);
+                const dropPercent = prevStage.count > 0 ? Math.round(((prevStage.count - stage.count) / prevStage.count) * 100) : 0;
                 const dropCount = prevStage.count - stage.count;
 
                 if (dropPercent <= 0) return null;
