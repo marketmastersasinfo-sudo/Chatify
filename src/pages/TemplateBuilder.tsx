@@ -126,6 +126,64 @@ export function TemplateBuilder() {
     setLoading(false);
   }
 
+  // Timeframe and Analytics State
+  const [timeframe, setTimeframe] = useState<'today'|'yesterday'|'7d'|'month'|'custom'|'all'>('all');
+  const [customDates, setCustomDates] = useState({ start: '', end: '' });
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
+
+  useEffect(() => {
+    if (selectedStore && templates.length > 0 && !loading) {
+      fetchAnalytics();
+    }
+  }, [timeframe, customDates, selectedStore]);
+
+  async function fetchAnalytics() {
+    if (!selectedStore) return;
+    setAnalyticsLoading(true);
+    try {
+      let url = `/api/meta/analytics?storeId=${selectedStore.id}`;
+      
+      const now = new Date();
+      let start = '';
+      let end = '';
+
+      if (timeframe === 'today') {
+        start = new Date(now.setHours(0,0,0,0)).toISOString();
+      } else if (timeframe === 'yesterday') {
+        const y = new Date(now);
+        y.setDate(y.getDate() - 1);
+        start = new Date(y.setHours(0,0,0,0)).toISOString();
+        end = new Date(y.setHours(23,59,59,999)).toISOString();
+      } else if (timeframe === '7d') {
+        const d = new Date(now);
+        d.setDate(d.getDate() - 7);
+        start = d.toISOString();
+      } else if (timeframe === 'month') {
+        start = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+      } else if (timeframe === 'custom' && customDates.start && customDates.end) {
+        start = new Date(customDates.start).toISOString();
+        end = new Date(customDates.end + 'T23:59:59.999Z').toISOString();
+      }
+
+      if (start) url += `&startDate=${encodeURIComponent(start)}`;
+      if (end) url += `&endDate=${encodeURIComponent(end)}`;
+
+      const res = await fetch(url);
+      const json = await res.json();
+      if (res.ok && json.data) {
+        // Merge analytics into existing templates state
+        setTemplates(prev => prev.map(t => {
+          const stats = json.data.find((a: any) => a.id === t.db_id);
+          if (stats) {
+            return { ...t, sent_count: stats.sent_count, conversion_count: stats.conversion_count, conversion_rate: stats.conversion_rate };
+          }
+          return t;
+        }));
+      }
+    } catch (e) { console.error('Analytics error:', e); }
+    setAnalyticsLoading(false);
+  }
+
   async function handleSyncNames() {
     if (!selectedStore) return;
     setSyncing(true);
@@ -668,6 +726,78 @@ export function TemplateBuilder() {
           </div>
         </div>
       )}
+
+      {/* Analytics Dashboard Header */}
+      <div className="mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <Sparkles className="w-6 h-6 text-yellow-500" /> Rendimiento A/B
+            {analyticsLoading && <Loader2 className="w-4 h-4 text-blue-500 animate-spin ml-2" />}
+          </h2>
+          <p className="text-sm text-gray-500">Mide el impacto de tus plantillas y elige la ganadora.</p>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3 bg-white p-2 rounded-xl border border-gray-200 shadow-sm">
+          <select 
+            value={timeframe}
+            onChange={(e) => setTimeframe(e.target.value as any)}
+            className="text-sm font-semibold text-gray-700 bg-transparent border-none focus:ring-0 cursor-pointer"
+          >
+            <option value="today">Hoy</option>
+            <option value="yesterday">Ayer</option>
+            <option value="7d">Últimos 7 días</option>
+            <option value="month">Este Mes</option>
+            <option value="all">Histórico Total</option>
+            <option value="custom">Rango Personalizado</option>
+          </select>
+
+          {timeframe === 'custom' && (
+            <div className="flex items-center gap-2 border-l border-gray-200 pl-3">
+              <input type="date" className="text-xs border border-gray-300 rounded px-2 py-1" value={customDates.start} onChange={e => setCustomDates({...customDates, start: e.target.value})} />
+              <span className="text-gray-400">-</span>
+              <input type="date" className="text-xs border border-gray-300 rounded px-2 py-1" value={customDates.end} onChange={e => setCustomDates({...customDates, end: e.target.value})} />
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Trophy Cards */}
+      {(() => {
+        const activeTpls = templates.filter(t => t.sent_count > 0);
+        if (activeTpls.length === 0) return null;
+        const winner = [...activeTpls].sort((a, b) => (b.conversion_rate || 0) - (a.conversion_rate || 0))[0];
+        
+        return (
+          <div className="mb-8 grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-gradient-to-br from-yellow-50 to-orange-50 border border-yellow-200 rounded-2xl p-5 shadow-sm relative overflow-hidden">
+              <div className="absolute -right-4 -top-4 opacity-10"><Sparkles className="w-24 h-24 text-yellow-600"/></div>
+              <div className="flex items-center gap-3 mb-3 relative z-10">
+                <div className="bg-yellow-100 p-2 rounded-xl text-2xl">🏆</div>
+                <div>
+                  <h4 className="text-xs font-bold text-yellow-800 uppercase tracking-wider">Plantilla Ganadora</h4>
+                  <p className="text-sm font-bold text-gray-900">{winner.name}</p>
+                </div>
+              </div>
+              <div className="flex items-end gap-2 relative z-10">
+                <span className="text-3xl font-black text-yellow-600">{winner.conversion_rate || 0}%</span>
+                <span className="text-xs font-semibold text-yellow-700 mb-1">Tasa de Conversión</span>
+              </div>
+            </div>
+
+            <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
+              <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Total Enviados</h4>
+              <div className="text-3xl font-black text-gray-800">{activeTpls.reduce((acc, t) => acc + (t.sent_count || 0), 0)}</div>
+              <p className="text-xs font-semibold text-gray-500 mt-1">En el rango seleccionado</p>
+            </div>
+
+            <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
+              <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Total Conversiones</h4>
+              <div className="text-3xl font-black text-blue-600">{activeTpls.reduce((acc, t) => acc + (t.conversion_count || 0), 0)}</div>
+              <p className="text-xs font-semibold text-gray-500 mt-1">En el rango seleccionado</p>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Main List */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
