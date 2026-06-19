@@ -213,6 +213,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           }
         } else {
           // Client sent something else — let Sophia handle it (product questions, etc.)
+          await supabase.from('leads').update({ status: 'sophia_handling' }).eq('id', leadId);
           const productInfo = await fetchProductInfo(lead, store.id);
           await handleSophia({ lead, productInfo, leadId, incomingText, storeTwilioPhone, customerPhone, store, supabase: supabase as any });
         }
@@ -233,6 +234,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           await supabase.from('messages').insert({ lead_id: leadId, sender_type: 'ai', content: closeMsg });
         } else {
           // Client said the address is WRONG or asked something — let Sophia handle it
+          await supabase.from('leads').update({ status: 'sophia_handling' }).eq('id', leadId);
           const productInfo = await fetchProductInfo(lead, store.id);
           await handleSophia({ lead, productInfo, leadId, incomingText, storeTwilioPhone, customerPhone, store, supabase: supabase as any });
         }
