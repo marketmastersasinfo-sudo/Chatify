@@ -7,6 +7,7 @@ interface Message {
   sender_type: string;
   content: string;
   metadata?: any;
+  created_at?: string;
 }
 
 export function LeadChatPanel({ 
