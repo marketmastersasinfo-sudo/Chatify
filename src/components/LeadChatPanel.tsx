@@ -295,7 +295,7 @@ export function LeadChatPanel({
                   const lines = msg.content.split('\n');
                   const bodyLines: string[] = [];
                   for (const line of lines) {
-                    const btnMatch = line.match(/^\[BTN\]\s*(.+)/);
+                    const btnMatch = line.match(/^\[BOTÓN\]\s*(.+)/);
                     if (btnMatch) {
                       btnLines.push(btnMatch[1].trim());
                     } else {
@@ -316,7 +316,7 @@ export function LeadChatPanel({
                   return (
                   <div key={msg.id} className={`flex flex-col ${msg.sender_type === 'human' || msg.sender_type === 'ai' ? 'items-end' : 'items-start'}`}>
                     <div 
-                     className={`max-w-[80%] rounded-2xl px-4 py-2 shadow-sm whitespace-pre-wrap break-words ${
+                     className={`max-w-[80%] rounded-2xl px-4 pt-2 pb-5 shadow-sm whitespace-pre-wrap break-words relative ${
                        msg.sender_type === 'human' ? 'bg-blue-600 text-white rounded-tr-none' : 
                        msg.sender_type === 'ai' ? 'bg-purple-600 text-white rounded-tr-none' : 
                        'bg-white border border-gray-100 text-gray-800 rounded-tl-none'
@@ -326,17 +326,20 @@ export function LeadChatPanel({
                          <img src={msg.metadata.image_url} alt="Media" className="w-full h-auto rounded-xl mb-2 object-cover" />
                        )}
                        <p className="text-[15px] leading-relaxed">{cleanContent}</p>
+                       <span className="absolute bottom-1 right-3 text-[10px] opacity-70">
+                         {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                       </span>
                     </div>
                     {btnLines.length > 0 && (
-                      <div className="max-w-[80%] mt-1 flex flex-col gap-1">
+                      <div className="max-w-[80%] mt-1 flex flex-col gap-1 w-full items-end">
                         {btnLines.map((btn, i) => (
-                          <div key={i} className="bg-white border border-blue-200 text-blue-600 text-center text-sm font-semibold py-2 px-4 rounded-xl shadow-sm cursor-default">
+                          <div key={i} className="bg-white border border-blue-200 text-blue-600 text-center text-[13px] font-bold py-2 px-4 rounded-xl shadow-sm cursor-default w-full">
                             {btn}
                           </div>
                         ))}
                       </div>
                     )}
-                    <span className="text-[10px] font-medium text-gray-400 mt-1.5 px-1">
+                    <span className="text-[10px] font-medium text-gray-400 mt-1 px-1">
                        {msg.sender_type === 'ai' ? '🤖 Bot IA' : msg.sender_type === 'human' ? '👨‍💻 Tú' : '👤 Cliente'}
                     </span>
                   </div>
