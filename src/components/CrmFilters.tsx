@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Calendar, Filter, Store, Globe } from 'lucide-react';
+import { useAuth } from '../lib/auth';
 
 export interface CrmFilterState {
   storeId: string;
@@ -16,6 +17,7 @@ interface CrmFiltersProps {
 }
 
 export function CrmFilters({ onFilterChange, initialStoreId }: CrmFiltersProps) {
+  const { user } = useAuth();
   const [stores, setStores] = useState<any[]>([]);
   const [countries, setCountries] = useState<string[]>([]);
   
@@ -26,12 +28,23 @@ export function CrmFilters({ onFilterChange, initialStoreId }: CrmFiltersProps) 
   const [customEnd, setCustomEnd] = useState<string>('');
 
   useEffect(() => {
-    loadStores();
-  }, []);
+    if (user) loadStores();
+  }, [user]);
 
   async function loadStores() {
     try {
-      const { data } = await supabase.from('stores').select('*').order('name');
+      let query = supabase.from('stores').select('*').order('name');
+      if (user?.role !== 'SUPER_ADMIN') {
+        const storeIds = user?.storeIds || [];
+        if (storeIds.length === 0) {
+          setStores([]);
+          setCountries([]);
+          return;
+        }
+        query = query.in('id', storeIds);
+      }
+
+      const { data } = await query;
       if (data && data.length > 0) {
         setStores(data);
         

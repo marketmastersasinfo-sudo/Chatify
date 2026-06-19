@@ -1,21 +1,34 @@
 import { useState, useEffect } from 'react';
 import { Store, Image as ImageIcon, Loader2, MessageSquareDashed } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { useAuth } from '../lib/auth';
 
 export function TemplateManager() {
+  const { user } = useAuth();
   const [stores, setStores] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [templates, setTemplates] = useState<any[]>([]);
   const [savingStore, setSavingStore] = useState<string | null>(null);
 
   useEffect(() => {
-    loadData();
-  }, []);
+    if (user) loadData();
+  }, [user]);
 
   async function loadData() {
     setLoading(true);
     // Load stores
-    const { data: storesData } = await (supabase as any).from('stores').select('*').order('name');
+    let query = (supabase as any).from('stores').select('*').order('name');
+    if (user?.role !== 'SUPER_ADMIN') {
+      const storeIds = user?.storeIds || [];
+      if (storeIds.length === 0) {
+        setStores([]);
+        setTemplates([]);
+        setLoading(false);
+        return;
+      }
+      query = query.in('id', storeIds);
+    }
+    const { data: storesData } = await query;
     setStores(storesData || []);
 
     // Load templates

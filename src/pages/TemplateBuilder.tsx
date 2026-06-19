@@ -98,7 +98,17 @@ export function TemplateBuilder() {
 
   async function loadStores() {
     try {
-      const { data } = await supabase.from('stores').select('*').order('name');
+      let query = supabase.from('stores').select('*').order('name');
+      if (user?.role !== 'SUPER_ADMIN') {
+        const storeIds = user?.storeIds || [];
+        if (storeIds.length === 0) {
+          setStores([]);
+          return;
+        }
+        query = query.in('id', storeIds);
+      }
+      
+      const { data } = await query;
       setStores(data || []);
       if (data && data.length > 0) setSelectedStore(data[0]);
     } catch (err) {
