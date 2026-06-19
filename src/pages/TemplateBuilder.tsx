@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { RefreshCcw, Plus, Image as ImageIcon, MessageSquareDashed, AlertCircle, CheckCircle2, Loader2, Save, X, Sparkles, Wand2, Link2, Trash2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { useAuth } from '../lib/auth';
 
 export function TemplateBuilder() {
+  const { user } = useAuth();
   const [stores, setStores] = useState<any[]>([]);
   const [selectedStore, setSelectedStore] = useState<any>(null);
   
