@@ -199,11 +199,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           totalPrice: totalPrice ? `$${totalPrice}` : '',
           orderId: realOrderId || '',
           "1": customerName,
-          "2": `${realAddress || ''} ${realCity ? ', ' + realCity : ''}`.trim(),
-          "3": formattedPhone,
-          "4": realProductName || 'tu pedido',
-          "5": totalPrice ? `$${totalPrice}` : '',
-          "6": realOrderId ? `#${realOrderId}` : ''
+          "2": realProductName || 'tu pedido',
+          "3": totalPrice ? `$${totalPrice}` : '',
+          "4": realAddress || 'tu dirección',
+          "5": `${realCity || ''} ${department ? ', ' + department : ''}`.trim() || 'tu ciudad',
+          "6": formattedPhone || ''
         }
       })
     });
