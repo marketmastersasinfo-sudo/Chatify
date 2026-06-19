@@ -227,7 +227,7 @@ export function TemplateBuilder() {
     // Update local state immediately for optimistic UI
     setTemplates(prev => prev.map(t => t.db_id === templateId ? { ...t, is_active: newStatus } : t));
     try {
-      const res = await fetch(`/api/meta/templates`, {
+      const res = await fetch(`/api/meta/templates?storeId=${selectedStore?.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ templateId, is_active: newStatus })
