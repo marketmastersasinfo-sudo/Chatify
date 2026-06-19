@@ -19,7 +19,12 @@ export function PixelTracking() {
     setLoading(true);
     let query = supabase.from('stores').select('*').order('country');
     if (!isAdmin) {
-      query = query.in('id', storeIds || []);
+      if (!storeIds || storeIds.length === 0) {
+        setStores([]);
+        setLoading(false);
+        return;
+      }
+      query = query.in('id', storeIds);
     }
     const { data } = await query;
     setStores(data || []);
