@@ -202,7 +202,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           "2": `${realAddress || ''} ${realCity ? ', ' + realCity : ''}`.trim(),
           "3": formattedPhone,
           "4": realProductName || 'tu pedido',
-          "5": totalPrice ? `$${totalPrice}` : ''
+          "5": totalPrice ? `$${totalPrice}` : '',
+          "6": realOrderId ? `#${realOrderId}` : ''
         }
       })
     });

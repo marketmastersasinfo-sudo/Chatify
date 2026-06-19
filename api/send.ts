@@ -108,6 +108,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       let bodyText = rawText || `[Plantilla Meta Enviada: ${template.template_name}]`;
       for (const key of Object.keys(contentVariables)) bodyText = bodyText.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), contentVariables[key]);
+      
+      // Limpiar cualquier {{numero}} sobrante que no se haya reemplazado
+      bodyText = bodyText.replace(/\{\{\d+\}\}/g, '');
 
       // Extraer botones interactivos de la plantilla
       const buttons: string[] = [];
