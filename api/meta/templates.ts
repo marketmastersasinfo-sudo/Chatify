@@ -375,6 +375,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).json({ success: true, message: `Plantilla ${sid} eliminada de Twilio y Chatify.` });
     }
 
+    // ==========================================
+    // PATCH: Activar o desactivar una plantilla
+    // ==========================================
+    if (req.method === 'PATCH') {
+      const { templateId, is_active } = req.body || {};
+      if (!templateId) return res.status(400).json({ error: 'Falta templateId' });
+
+      const { error } = await supabase
+        .from('store_templates')
+        .update({ is_active })
+        .eq('id', templateId);
+
+      if (error) throw error;
+      return res.status(200).json({ success: true, message: `Plantilla actualizada a ${is_active}` });
+    }
+
     return res.status(405).json({ error: 'Method not allowed' });
 
   } catch (error: any) {
