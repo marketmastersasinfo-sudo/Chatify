@@ -328,7 +328,7 @@ export function LeadChatPanel({
                        )}
                        <p className="text-[15px] leading-relaxed">{cleanContent}</p>
                        <span className="absolute bottom-1 right-3 text-[10px] opacity-70">
-                         {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                         {msg.created_at ? new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
                        </span>
                     </div>
                     {btnLines.length > 0 && (
