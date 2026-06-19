@@ -1,4 +1,4 @@
-export const buildSophiaPrompt = (leadInfo: any, productInfo: any, variantInfo?: string) => {
+export const buildSophiaPrompt = (leadInfo: any, productInfo: any, variantInfo?: string, coverageData?: string) => {
   // Parse product master_prompt — stored as JSON: { whatsapp: "...", social: "..." }
   let productContext = '';
   if (productInfo?.master_prompt) {
@@ -81,9 +81,12 @@ Debes analizar la intención del ÚLTIMO mensaje del cliente y clasificarla en u
 ════════════════════════════════════════
 FORMATO DE SALIDA ESTRICTO
 ════════════════════════════════════════
-Tu respuesta debe ser SIEMPRE un objeto JSON válido con esta estructura exacta, sin markdown, sin comillas externas:
+OUTPUT FORMAT:
+Return a raw JSON object (NO markdown formatting, NO \`\`\`json) with the following structure:
 {
-  "reply": "Tu mensaje de texto normal que el cliente leerá en WhatsApp",
-  "intent": "AddToCart | InitiateCheckout | Purchase | None"
+  "reply": "El mensaje de WhatsApp que le enviarás al cliente.",
+  "intent": "El estado de la conversación (Purchase, Support, Objection, General, InitiateCheckout, ObjectionPrice)",
+  "extracted_city": "La ciudad de entrega si el cliente la mencionó, de lo contrario un string vacío",
+  "extracted_address": "La dirección de entrega si el cliente la mencionó, de lo contrario un string vacío"
 }`;
 };

@@ -381,6 +381,10 @@ async function fetchProductInfo(lead: any, storeId: string): Promise<any> {
   return data;
 }
 
+// Cache global para cobertura
+let cachedCoverage: string | null = null;
+let lastCoverageFetch = 0;
+
 async function handleSophia({ lead, productInfo, leadId, incomingText, storeTwilioPhone, customerPhone, store, supabase: sb }: {
   lead: any; productInfo: any; leadId: string; incomingText: string;
   storeTwilioPhone: string; customerPhone: string; store: any; supabase: any;
@@ -409,11 +413,24 @@ async function handleSophia({ lead, productInfo, leadId, incomingText, storeTwil
   const { buildSophiaPrompt } = await import('./utils/_sophia-prompt.js');
   const { OpenAI } = await import('openai');
 
+  const storeSlug = store?.slug || '';
+  if (!cachedCoverage || Date.now() - lastCoverageFetch > 1000 * 60 * 60) {
+    try {
+      const res = await fetch(`https://shopyeasy-seven.vercel.app/api/coverage${storeSlug ? `?store=${storeSlug}` : ''}`);
+      if (res.ok) {
+        cachedCoverage = JSON.stringify(await res.json());
+        lastCoverageFetch = Date.now();
+      }
+    } catch (e) {
+      console.error('Error fetching coverage:', e);
+    }
+  }
+
   // Get the full confirmation template message — it has the complete order: name, products, variants, price
   const variantInfo = await getTemplateMessageContext(leadId);
 
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-  const aiMessages: any[] = [{ role: 'system', content: buildSophiaPrompt(lead || {}, productInfo, variantInfo) }];
+  const aiMessages: any[] = [{ role: 'system', content: buildSophiaPrompt(lead || {}, productInfo, variantInfo, cachedCoverage || undefined) }];
 
   for (const msg of recentMessages) {
     if (msg.content.startsWith('[')) continue; // skip system/debug messages
@@ -433,7 +450,7 @@ async function handleSophia({ lead, productInfo, leadId, incomingText, storeTwil
     });
 
     const aiOutput = response.choices[0]?.message?.content?.trim() || '{}';
-    let parsed: { reply: string, intent: string } = { reply: '', intent: 'None' };
+    let parsed: { reply: string, intent: string, extracted_city?: string, extracted_address?: string } = { reply: '', intent: 'None' };
     
     try {
       parsed = JSON.parse(aiOutput);
@@ -442,7 +459,7 @@ async function handleSophia({ lead, productInfo, leadId, incomingText, storeTwil
       parsed.reply = aiOutput;
     }
 
-    const aiReply = parsed.reply || '';
+    let aiReply = parsed.reply || '';
     if (!aiReply) return;
 
     // Disparar Tracking Semántico si se detectó una intención válida
@@ -451,29 +468,61 @@ async function handleSophia({ lead, productInfo, leadId, incomingText, storeTwil
       await firePixelEvent(sb, leadId, parsed.intent, lead?.total_price || 0, 'COP', customerPhone).catch(console.error);
     }
 
-    // ══════════════════════════════════════════════════════
-    // MOVER LEAD AUTOMÁTICAMENTE cuando Sophia confirma un pedido
-    // Si la IA detecta intención de Purchase/confirmación,
-    // mover el lead al tablero/estado correcto.
-    // ══════════════════════════════════════════════════════
-    if (parsed.intent === 'Purchase' || parsed.intent === 'OrderConfirmed') {
-      const leadBoard = lead?.board_type || '';
-      if (leadBoard.includes('remarketing')) {
-        // Carrito recuperado → Mover a "Venta Recuperada"
-        await sb.from('leads').update({ 
-          status: 'recovered',
-          recovery_confirmed_at: new Date().toISOString()
-        }).eq('id', leadId);
-      } else if (leadBoard === 'logistics') {
-        // Logística → Mover a "Confirmado"
-        await sb.from('leads').update({ status: 'confirmado' }).eq('id', leadId);
+    // Guardar dirección si la IA la extrajo
+    let newAddress = lead?.address || '';
+    let newCity = lead?.city || '';
+    let addressUpdated = false;
+
+    if (parsed.extracted_address || parsed.extracted_city) {
+      const updateData: any = {};
+      if (parsed.extracted_address && !lead?.address) { updateData.address = parsed.extracted_address; newAddress = parsed.extracted_address; addressUpdated = true; }
+      if (parsed.extracted_city && !lead?.city) { updateData.city = parsed.extracted_city; newCity = parsed.extracted_city; addressUpdated = true; }
+      
+      if (addressUpdated) {
+        await sb.from('leads').update(updateData).eq('id', leadId);
       }
-      // Disparar evento Purchase al píxel
-      const { firePixelEvent } = await import('./utils/_tracking.js');
-      await firePixelEvent(sb, leadId, 'Purchase', lead?.total_price || 0, 'COP', customerPhone).catch(console.error);
     }
 
     const isTwilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+
+    // ══════════════════════════════════════════════════════
+    // MOVER LEAD AUTOMÁTICAMENTE o INTERCEPTAR STREET VIEW
+    // ══════════════════════════════════════════════════════
+    if (parsed.intent === 'Purchase' || parsed.intent === 'OrderConfirmed' || parsed.intent === 'InitiateCheckout') {
+      
+      // INTERCEPTAR PARA STREET VIEW
+      if (lead?.status !== 'verifying_address' && newAddress && newCity) {
+        await sb.from('leads').update({ status: 'verifying_address' }).eq('id', leadId);
+        const { data: orgData } = await sb.from('organizations').select('google_maps_api_key').eq('id', store.organization_id);
+        const apiKey = (orgData as any)?.[0]?.google_maps_api_key || 'AIzaSyD3amxq4t9GA892zO4C70nbnPGqnG4Ct-A';
+        const mapQuery = encodeURIComponent(`${newAddress}, ${newCity}`);
+        const streetViewUrl = `https://maps.googleapis.com/maps/api/streetview?size=600x400&location=${mapQuery}&key=${apiKey}`;
+        
+        aiReply = `¡Excelente! 🎉 Tengo toda la información. Para asegurar que la entrega de tu pedido sea perfecta, ¿esta es la fachada correcta de tu dirección? 🏠📍`;
+        
+        await isTwilioClient.messages.create({
+          from: `whatsapp:+${storeTwilioPhone.replace('+', '')}`,
+          to: `whatsapp:+${customerPhone}`,
+          body: aiReply,
+          mediaUrl: [streetViewUrl]
+        });
+        await sb.from('messages').insert({ lead_id: leadId, sender_type: 'ai', content: `[Automated Street View] ${aiReply}\nImage: ${streetViewUrl}` });
+        return; // Detener flujo aquí, no cerrar el pedido aún
+      }
+
+      // CIERRE NORMAL DE PEDIDO (Si ya se verificó la dirección)
+      if (lead?.status === 'verifying_address' || (!newAddress && !newCity)) {
+        const leadBoard = lead?.board_type || '';
+        if (leadBoard.includes('remarketing')) {
+          await sb.from('leads').update({ status: 'recovered', recovery_confirmed_at: new Date().toISOString() }).eq('id', leadId);
+        } else if (leadBoard === 'logistics') {
+          await sb.from('leads').update({ status: 'confirmado' }).eq('id', leadId);
+        }
+        const { firePixelEvent } = await import('./utils/_tracking.js');
+        await firePixelEvent(sb, leadId, 'Purchase', lead?.total_price || 0, 'COP', customerPhone).catch(console.error);
+      }
+    }
+
     await isTwilioClient.messages.create({
       from: `whatsapp:+${storeTwilioPhone.replace('+', '')}`,
       to: `whatsapp:+${customerPhone}`,
