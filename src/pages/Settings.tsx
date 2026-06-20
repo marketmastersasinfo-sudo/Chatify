@@ -97,11 +97,11 @@ export function Settings() {
   }
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-12">
-      <div className="sm:flex sm:items-center sm:justify-between">
+    <div className="space-y-6 max-w-7xl mx-auto pb-12 relative">
+      <div className="sm:flex sm:items-center sm:justify-between sticky top-0 z-10 bg-white/80 backdrop-blur-md p-4 -mx-4 border-b border-gray-100 shadow-sm rounded-b-xl">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-gray-900">Configuración Global (v2)</h1>
-          <p className="mt-2 text-sm text-gray-500">
+          <p className="mt-1 text-sm text-gray-500">
             Credenciales maestras, integraciones y motores de Inteligencia Artificial.
           </p>
         </div>
