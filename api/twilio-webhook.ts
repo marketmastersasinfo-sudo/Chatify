@@ -485,14 +485,20 @@ async function handleSophia({ lead, productInfo, leadId, incomingText, storeTwil
 
     if (parsed.extracted_address || parsed.extracted_city || parsed.extracted_last_name || parsed.extracted_department || parsed.extracted_sector || parsed.extracted_postal_code) {
       const updateData: any = {};
-      if (parsed.extracted_address && !lead?.address) { updateData.address = parsed.extracted_address; newAddress = parsed.extracted_address; addressUpdated = true; }
-      if (parsed.extracted_city && !lead?.city) { updateData.city = parsed.extracted_city; newCity = parsed.extracted_city; addressUpdated = true; }
+      // PERMITIR ACTUALIZAR DIRECCIÓN/CIUDAD AUNQUE YA EXISTAN
+      if (parsed.extracted_address && parsed.extracted_address !== lead?.address) { updateData.address = parsed.extracted_address; newAddress = parsed.extracted_address; addressUpdated = true; }
+      if (parsed.extracted_city && parsed.extracted_city !== lead?.city) { updateData.city = parsed.extracted_city; newCity = parsed.extracted_city; addressUpdated = true; }
       if (parsed.extracted_last_name && !lead?.last_name) { updateData.last_name = parsed.extracted_last_name; addressUpdated = true; }
       if (parsed.extracted_department && !lead?.department) { updateData.department = parsed.extracted_department; addressUpdated = true; }
       if (parsed.extracted_sector && !lead?.sector) { updateData.sector = parsed.extracted_sector; addressUpdated = true; }
       if (parsed.extracted_postal_code && !lead?.postal_code) { updateData.postal_code = parsed.extracted_postal_code; addressUpdated = true; }
       
       if (addressUpdated) {
+        // Si estábamos en verificación de fachada y el cliente cambió la dirección, lo devolvemos a negociando para forzar una nueva foto
+        if (lead && (lead.status === 'verifying_address' || lead.status === 'closed' || lead.status === 'confirmado')) {
+          updateData.status = 'negotiating';
+          lead.status = 'negotiating';
+        }
         await sb.from('leads').update(updateData).eq('id', leadId);
       }
     }
