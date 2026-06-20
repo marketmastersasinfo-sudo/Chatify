@@ -84,6 +84,31 @@ export function CrmRemarketingWa() {
         .from('leads')
         .update({ status: targetStatus })
         .eq('id', draggedLeadId);
+
+      // TRACKING
+      const lead = leads.find(l => l.id === draggedLeadId);
+      if (lead) {
+        let eventName = '';
+        if (targetStatus === 'cold_lead') eventName = 'ViewContent';
+        else if (targetStatus === 'qualifying') eventName = 'Lead';
+        else if (targetStatus === 'hot_lead') eventName = 'AddToCart';
+        else if (targetStatus === 'negotiating') eventName = 'InitiateCheckout';
+        else if (targetStatus === 'recovered') eventName = 'Purchase';
+
+        if (eventName) {
+          fetch('/api/tracking/fire-event', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              leadId: draggedLeadId,
+              eventName,
+              value: lead.total_price || 0,
+              currency: lead.stores?.country === 'MX' ? 'MXN' : 'COP',
+              phone: lead.phone
+            })
+          }).catch(console.error);
+        }
+      }
     } catch (e) {
       console.error(e);
     }

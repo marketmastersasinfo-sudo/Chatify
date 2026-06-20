@@ -540,8 +540,7 @@ async function handleSophia({ lead, productInfo, leadId, incomingText, storeTwil
         const streetViewUrl = `https://maps.googleapis.com/maps/api/streetview?size=600x400&location=${mapQuery}&key=${apiKey}`;
         
         // 🎯 Disparar evento "AddPaymentInfo" ya que el cliente dio sus datos de envío (Equivalente en Pago Contra Entrega)
-        const { firePixelEvent } = await import('./utils/_tracking.js');
-        await firePixelEvent(sb, leadId, 'AddPaymentInfo', lead?.total_price || 0, 'COP', customerPhone).catch(console.error);
+        // Eliminado a petición del usuario para el flujo COD.
 
         aiReply = `¡Excelente! 🎉 Tengo toda la información. Para asegurar que la entrega de tu pedido sea perfecta, ¿esta es la fachada correcta de tu dirección? 🏠📍`;
         
