@@ -193,8 +193,9 @@ export function Dashboard() {
             <div className="relative">
               <select value={country} onChange={e => setCountry(e.target.value)} className="w-full pl-3 pr-8 py-1.5 text-sm border border-gray-200 rounded-lg text-gray-700 appearance-none focus:ring-1 focus:ring-blue-500 bg-gray-50/50">
                 <option value="all">Global (Todos)</option>
-                <option value="CO">Colombia</option>
-                <option value="MX">México</option>
+                {Array.from(new Set(stores.map(s => s.country).filter(Boolean))).sort().map(c => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
               </select>
               <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
             </div>
@@ -205,7 +206,7 @@ export function Dashboard() {
             <div className="relative">
               <select value={storeId} onChange={e => setStoreId(e.target.value)} className="w-full pl-3 pr-8 py-1.5 text-sm border border-gray-200 rounded-lg text-gray-700 appearance-none focus:ring-1 focus:ring-blue-500 bg-gray-50/50">
                 <option value="all">Todas las Tiendas</option>
-                {stores.map(s => (
+                {[...stores].sort((a, b) => a.name.localeCompare(b.name)).map(s => (
                   <option key={s.id} value={s.id}>{s.name}</option>
                 ))}
               </select>
