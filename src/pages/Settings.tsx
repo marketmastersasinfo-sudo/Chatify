@@ -336,7 +336,36 @@ export function Settings() {
               </div>
             </div>
 
-
+            <div className="mt-6 pt-4 border-t border-gray-200">
+              <label className="block text-sm font-semibold text-gray-900 mb-2">Probar Conexión en Vivo (Opcional)</label>
+              <p className="text-xs text-gray-500 mb-3">Si quieres ver el evento en la pestaña de "Probar eventos" de Facebook, pega aquí el código de prueba que te da Facebook (ej. TEST12345) y haz clic en probar.</p>
+              <div className="flex gap-2 max-w-md">
+                <input type="text" placeholder="TEST..." className="w-48 px-3 py-2 border border-gray-200 rounded-lg text-sm" id="metaTestCode" />
+                <button 
+                  onClick={() => {
+                    const code = (document.getElementById('metaTestCode') as HTMLInputElement).value;
+                    const btn = document.getElementById('testBtnMeta');
+                    if (btn) btn.innerHTML = 'Enviando...';
+                    fetch('/api/tracking/fire-event', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ 
+                        leadId: 'TEST', eventName: 'Purchase', value: 85000, currency: 'COP', 
+                        testEventCode: code || undefined,
+                        overrides: { metaPixelId, metaCapiToken }
+                      })
+                    }).then(r => r.json()).then(data => {
+                      if (btn) btn.innerHTML = 'Enviar Venta de Prueba';
+                      alert('Respuesta de Meta:\\n\\n' + JSON.stringify(data.results?.facebook || data, null, 2));
+                    }).catch(e => alert('Error: ' + e.message));
+                  }}
+                  id="testBtnMeta"
+                  className="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-bold shadow hover:bg-purple-500 transition-colors"
+                >
+                  Enviar Venta de Prueba
+                </button>
+              </div>
+            </div>
           </div>
 
           <div className="flex items-center gap-3 mb-6 mt-8">
@@ -360,6 +389,34 @@ export function Settings() {
               <div className="md:col-span-2">
                 <label className="block text-sm font-semibold text-gray-900 mb-1">Access Token (Events API)</label>
                 <input type="password" value={tiktokAccessToken} onChange={(e) => setTiktokAccessToken(e.target.value)} placeholder="..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+              </div>
+            </div>
+
+            <div className="mt-6 pt-4 border-t border-gray-200">
+              <label className="block text-sm font-semibold text-gray-900 mb-2">Probar Conexión en Vivo (Opcional)</label>
+              <p className="text-xs text-gray-500 mb-3">Haz clic para enviar un evento simulado a TikTok y verificar que tu Access Token es válido.</p>
+              <div className="flex gap-2 max-w-md">
+                <button 
+                  onClick={() => {
+                    const btn = document.getElementById('testBtnTiktok');
+                    if (btn) btn.innerHTML = 'Enviando...';
+                    fetch('/api/tracking/fire-event', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ 
+                        leadId: 'TEST', eventName: 'Purchase', value: 85000, currency: 'COP',
+                        overrides: { tiktokPixelId, tiktokAccessToken }
+                      })
+                    }).then(r => r.json()).then(data => {
+                      if (btn) btn.innerHTML = 'Enviar Venta de Prueba';
+                      alert('Respuesta de TikTok:\\n\\n' + JSON.stringify(data.results?.tiktok || data, null, 2));
+                    }).catch(e => alert('Error: ' + e.message));
+                  }}
+                  id="testBtnTiktok"
+                  className="px-4 py-2 bg-black text-white rounded-lg text-sm font-bold shadow hover:bg-gray-800 transition-colors"
+                >
+                  Enviar Venta de Prueba
+                </button>
               </div>
             </div>
           </div>
@@ -414,57 +471,57 @@ export function Settings() {
                 </div>
               </div>
             </div>
-          </div>
 
-          <div className="mt-8 p-6 bg-purple-50 rounded-xl border border-purple-200 max-w-3xl">
-            <h2 className="text-lg font-bold text-purple-900 mb-2">Probar Todos los Píxeles (Global Test)</h2>
-            <p className="text-sm text-purple-700 mb-4">
-              Al hacer clic en el botón, Chatify enviará una compra de prueba simulada ($85.000) al mismo tiempo a <b>Facebook, TikTok y Google Analytics 4</b> usando las credenciales que acabas de ingresar arriba.
-              <br/><br/>
-              <i>Nota: Si quieres que el evento aparezca en la pestaña "Probar eventos" de Facebook, pega aquí tu código de prueba (ej. TEST12345). Google y TikTok lo recibirán de todos modos.</i>
-            </p>
-            <div className="flex gap-2 max-w-md">
-              <input type="text" placeholder="TEST... (Solo para Facebook)" className="w-64 px-3 py-2 border border-purple-200 rounded-lg text-sm" id="metaTestCode" />
-              <button 
-                onClick={() => {
-                  const code = (document.getElementById('metaTestCode') as HTMLInputElement).value;
-                  const btn = document.getElementById('testBtn');
-                  if (btn) btn.innerHTML = 'Enviando Prueba Global...';
-                  fetch('/api/tracking/fire-event', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                      leadId: 'TEST', 
-                      eventName: 'Purchase', 
-                      value: 85000, 
-                      currency: 'COP', 
-                      testEventCode: code || undefined,
-                      overrides: {
-                        metaPixelId: metaPixelId,
-                        metaCapiToken: metaCapiToken,
-                        tiktokPixelId: tiktokPixelId,
-                        tiktokAccessToken: tiktokAccessToken,
-                        ga4MeasurementId: ga4MeasurementId,
-                        ga4ApiSecret: ga4ApiSecret
-                      }
-                    })
-                  })
-                  .then(r => r.json())
-                  .then(data => {
-                    if (btn) btn.innerHTML = '¡Prueba Global Enviada!';
-                    alert('Status de los Servidores (Meta, TikTok, GA4):\\n\\n' + JSON.stringify(data.results || data, null, 2));
-                  })
-                  .catch(e => alert('Error: ' + e.message));
-                }}
-                id="testBtn"
-                className="px-6 py-2 bg-purple-600 text-white rounded-lg text-sm font-bold shadow-lg hover:bg-purple-700 transition-colors whitespace-nowrap"
-              >
-                Lanzar Prueba Global 🚀
-              </button>
+            <div className="mt-6 pt-4 border-t border-gray-200">
+              <label className="block text-sm font-semibold text-gray-900 mb-2">Probar Conexión en Vivo (Opcional)</label>
+              <p className="text-xs text-gray-500 mb-3">Si quieres ver el evento en la pestaña de "Probar eventos" de Facebook, pega aquí el código de prueba que te da Facebook (ej. TEST12345) y haz clic en probar.</p>
+              <div className="flex gap-2 max-w-md">
+                <input type="text" placeholder="TEST..." className="w-48 px-3 py-2 border border-gray-200 rounded-lg text-sm" id="metaTestCode" />
+                <button 
+                  onClick={() => {
+                    const code = (document.getElementById('metaTestCode') as HTMLInputElement).value;
+                    const btn = document.getElementById('testBtnMeta');
+                    if (btn) btn.innerHTML = 'Enviando...';
+                    fetch('/api/tracking/fire-event', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ 
+                        leadId: 'TEST', eventName: 'Purchase', value: 85000, currency: 'COP', 
+                        testEventCode: code || undefined,
+                        overrides: { metaPixelId, metaCapiToken }
+                      })
+                    }).then(r => r.json()).then(data => {
+                      if (btn) btn.innerHTML = 'Enviar Venta de Prueba';
+                      alert('Respuesta de Meta:\\n\\n' + JSON.stringify(data.results?.facebook || data, null, 2));
+                    }).catch(e => alert('Error: ' + e.message));
+                  }}
+              <p className="text-xs text-gray-500 mb-3">Haz clic para enviar una compra a GA4. Aparecerá en el <b>DebugView</b> de Google Analytics en tiempo real.</p>
+              <div className="flex gap-2 max-w-md">
+                <button 
+                  onClick={() => {
+                    const btn = document.getElementById('testBtnGa4');
+                    if (btn) btn.innerHTML = 'Enviando...';
+                    fetch('/api/tracking/fire-event', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ 
+                        leadId: 'TEST', eventName: 'Purchase', value: 85000, currency: 'COP',
+                        overrides: { ga4MeasurementId, ga4ApiSecret }
+                      })
+                    }).then(r => r.json()).then(data => {
+                      if (btn) btn.innerHTML = 'Enviar Venta de Prueba';
+                      alert('Respuesta de GA4 (204 = Éxito):\\n\\n' + JSON.stringify(data.results?.google || data, null, 2));
+                    }).catch(e => alert('Error: ' + e.message));
+                  }}
+                  id="testBtnGa4"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold shadow hover:bg-blue-700 transition-colors"
+                >
+                  Enviar Venta de Prueba
+                </button>
+              </div>
             </div>
           </div>
         </div>
-
       </div>
     </div>
   );
