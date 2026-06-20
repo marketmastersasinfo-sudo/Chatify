@@ -202,7 +202,7 @@ export async function firePixelEvent(
       };
       
       try {
-        const ga4Res = await fetch(`https://www.google-analytics.com/debug/mp/collect?measurement_id=${target.id}&api_secret=${target.token}`, {
+        const ga4Res = await fetch(`https://www.google-analytics.com/mp/collect?measurement_id=${target.id}&api_secret=${target.token}`, {
           method: 'POST',
           body: JSON.stringify(ga4Payload)
         });
