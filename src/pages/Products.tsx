@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { ShoppingBag, Image as ImageIcon, Music, Loader2, Save, Trash2, Tag, Copy, Store, Plus } from 'lucide-react';
+import { Image as ImageIcon, Music, Loader2, Save, Trash2, Copy, Store, Plus } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import imageCompression from 'browser-image-compression';
 
@@ -43,7 +43,7 @@ export function Products() {
         const { data: allStores } = await supabase
           .from('stores')
           .select('*')
-          .eq('organization_id', orgs[0].id)
+          .eq('organization_id', (orgs as any[])[0].id)
           .order('name');
         
         if (allStores && allStores.length > 0) {
@@ -105,7 +105,7 @@ export function Products() {
       const mediaAssetsStr = JSON.stringify(mediaAssets);
       
       if (editingProduct) {
-        const { data, error } = await supabase.from('products').update({
+        const { data, error } = await (supabase as any).from('products').update({
           name,
           price: parseFloat(price),
           master_prompt,
@@ -117,13 +117,13 @@ export function Products() {
           setIsAdding(false);
         }
       } else {
-        const { data, error } = await supabase.from('products').insert({
+        const { data, error } = await (supabase as any).from('products').insert({
           store_id: selectedStore.id,
           name,
           price: parseFloat(price),
           master_prompt,
           media_assets: mediaAssetsStr
-        } as any).select().single();
+        }).select().single();
         
         if (data && !error) {
           setProducts([data, ...products]);

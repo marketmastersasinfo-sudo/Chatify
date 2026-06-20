@@ -12,6 +12,7 @@ const navigation = [
   { name: 'Remarketing (Carritos)', href: '/crm-remarketing-carts', icon: ShoppingCart },
   { name: 'Remarketing (Chats WA)', href: '/crm-remarketing-wa', icon: RefreshCcw },
   { name: 'Base de Datos', href: '/database', icon: Database },
+  { name: 'Difusión Masiva', href: '/broadcast', icon: Megaphone },
   { name: 'Catálogo de Productos', href: '/products', icon: ShoppingBag },
   { name: 'Organización Multitienda', href: '/stores', icon: MapPin },
   { name: 'Gestor de Plantillas Meta', href: '/templates', icon: MessageSquare },

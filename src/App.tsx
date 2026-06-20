@@ -16,6 +16,7 @@ import { VirtualSims } from './pages/VirtualSims';
 import { TemplateBuilder } from './pages/TemplateBuilder';
 import { SearchResults } from './pages/SearchResults';
 import { Login } from './pages/Login';
+import { UsersManagement } from './pages/UsersManagement';
 import { PixelTracking } from './pages/PixelTracking';
 import { Products } from './pages/Products';
 import { AuthProvider, useAuth } from './lib/auth';
