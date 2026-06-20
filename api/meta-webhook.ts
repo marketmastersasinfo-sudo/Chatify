@@ -66,11 +66,36 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
             // C. Si no existe, lo creamos
             if (!lead) {
+              // Walink Smart Parser (Anti-Friction)
+              let detectedProduct = null;
+              let detectedSource = 'WhatsApp Orgánico';
+              
+              const lowerText = text.toLowerCase();
+              
+              // 1. Detectar Fuente de Tráfico
+              if (lowerText.includes('facebook') || lowerText.includes(' fb ') || lowerText.includes('meta')) {
+                detectedSource = 'Facebook Ads';
+              } else if (lowerText.includes('tiktok') || lowerText.includes('tik tok')) {
+                detectedSource = 'TikTok Ads';
+              } else if (lowerText.includes('instagram') || lowerText.includes(' ig ')) {
+                detectedSource = 'Instagram Ads';
+              }
+              
+              // 2. Detectar Nombre del Producto
+              if (text.includes(':')) {
+                const parts = text.split(':');
+                if (parts.length > 1) {
+                  // Limpiar puntuación extraña al final (puntos, comas, etc)
+                  detectedProduct = parts[1].trim().replace(/[\.,!¡¿\?]+$/, '');
+                }
+              }
+
               const { data: newLead } = await supabase.from('leads').insert({
                 store_id: store.id,
                 name: name,
                 phone: phone,
-                traffic_source: 'WhatsApp Orgánico',
+                traffic_source: detectedSource,
+                product_name: detectedProduct,
                 board_type: 'sales_wa',
                 status: 'new'
               }).select().single();

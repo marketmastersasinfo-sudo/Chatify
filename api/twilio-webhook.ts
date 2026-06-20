@@ -98,14 +98,39 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     let leadId = lead?.id;
 
     if (!lead) {
+      // Walink Smart Parser (Anti-Friction)
+      const incomingBody = Body || '';
+      let detectedProduct = null;
+      let detectedSource = 'whatsapp_direct';
+      
+      const lowerText = incomingBody.toLowerCase();
+      
+      // 1. Detectar Fuente de Tráfico
+      if (lowerText.includes('facebook') || lowerText.includes(' fb ') || lowerText.includes('meta')) {
+        detectedSource = 'Facebook Ads';
+      } else if (lowerText.includes('tiktok') || lowerText.includes('tik tok')) {
+        detectedSource = 'TikTok Ads';
+      } else if (lowerText.includes('instagram') || lowerText.includes(' ig ')) {
+        detectedSource = 'Instagram Ads';
+      }
+      
+      // 2. Detectar Nombre del Producto
+      if (incomingBody.includes(':')) {
+        const parts = incomingBody.split(':');
+        if (parts.length > 1) {
+          detectedProduct = parts[1].trim().replace(/[\.,!¡¿\?]+$/, '');
+        }
+      }
+
       // Create new lead for unknown inbound contacts
       const { data: newLead } = await supabase.from('leads').insert({
         store_id: store.id,
         name: ProfileName || 'Cliente WhatsApp',
         phone: customerPhone,
+        product_name: detectedProduct,
         status: 'new',
         board_type: 'sales_wa',
-        traffic_source: 'whatsapp_direct',
+        traffic_source: detectedSource,
         is_banned: false
       }).select().single();
       if (newLead) {
