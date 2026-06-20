@@ -70,10 +70,16 @@ export function Settings() {
         }
         if (data) setOrgId(data.id);
       } else {
-        const { error } = await (supabase as any).from('organizations').update(payload).eq('id', orgId);
+        const { data, error } = await (supabase as any).from('organizations').update(payload).eq('id', orgId).select();
         if (error) {
           console.error("Update error:", error);
           alert('Error: ' + error.message);
+          setSaving(false);
+          return;
+        }
+        if (!data || data.length === 0) {
+          console.error("Update returned 0 rows. RLS might be blocking this update.");
+          alert('Error Crítico: Supabase no permitió guardar (Actualizó 0 filas). Revisa las políticas RLS de la tabla organizations.');
           setSaving(false);
           return;
         }
