@@ -83,7 +83,6 @@ export function Settings() {
           setSaving(false);
           return;
         }
-        alert("Debug: Supabase guardó el Píxel: " + data[0].meta_pixel_id + " en la Org ID: " + data[0].id);
       }
       
       setSaveSuccess(true);
