@@ -135,17 +135,33 @@ export async function firePixelEvent(
     
     for (const target of ga4Targets) {
       const clientId = hashedPhone || crypto.randomUUID();
+      
+      const ga4EventNameMap: Record<string, string> = {
+        'ViewContent': 'view_item',
+        'AddToCart': 'add_to_cart',
+        'InitiateCheckout': 'begin_checkout',
+        'Purchase': 'purchase',
+        'Lead': 'generate_lead',
+        'Contact': 'generate_lead',
+        'SubmitForm': 'generate_lead'
+      };
+      const ga4EventName = ga4EventNameMap[eventName] || eventName.toLowerCase();
+
       const ga4Payload = {
         client_id: clientId,
         events: [{
-          name: eventName === 'Lead' || eventName === 'SubmitForm' ? 'generate_lead' : 
-                eventName === 'Purchase' ? 'purchase' : 
-                eventName.toLowerCase(),
+          name: ga4EventName,
           params: {
             value: value || lead?.total_price || 0,
             currency: currency,
             session_id: '123',
-            debug_mode: 1
+            debug_mode: 1,
+            items: lead?.product_name ? [{
+              item_id: 'ITEM_01',
+              item_name: lead.product_name,
+              price: value || lead?.total_price || 0,
+              quantity: 1
+            }] : undefined
           }
         }]
       };
