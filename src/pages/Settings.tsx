@@ -9,6 +9,14 @@ export function Settings() {
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
+  // Global Tracking Pixels
+  const [metaPixelId, setMetaPixelId] = useState('');
+  const [metaCapiToken, setMetaCapiToken] = useState('');
+  const [tiktokPixelId, setTiktokPixelId] = useState('');
+  const [tiktokAccessToken, setTiktokAccessToken] = useState('');
+  const [ga4MeasurementId, setGa4MeasurementId] = useState('');
+  const [ga4ApiSecret, setGa4ApiSecret] = useState('');
+
   useEffect(() => {
     loadSettings();
   }, []);
@@ -19,6 +27,12 @@ export function Settings() {
       if (data) {
         setOrgId(data.id);
         setGoogleMapsKey(data.google_maps_api_key || '');
+        setMetaPixelId(data.meta_pixel_id || '');
+        setMetaCapiToken(data.meta_capi_token || '');
+        setTiktokPixelId(data.tiktok_pixel_id || '');
+        setTiktokAccessToken(data.tiktok_access_token || '');
+        setGa4MeasurementId(data.ga4_measurement_id || '');
+        setGa4ApiSecret(data.ga4_api_secret || '');
       }
     } catch (e) {
       console.error(e);
@@ -28,16 +42,22 @@ export function Settings() {
   async function handleSaveSettings() {
     setSaving(true);
     try {
+      const payload = {
+        name: 'Mi Organización',
+        google_maps_api_key: googleMapsKey,
+        meta_pixel_id: metaPixelId,
+        meta_capi_token: metaCapiToken,
+        tiktok_pixel_id: tiktokPixelId,
+        tiktok_access_token: tiktokAccessToken,
+        ga4_measurement_id: ga4MeasurementId,
+        ga4_api_secret: ga4ApiSecret
+      };
+
       if (!orgId) {
-        const { data } = await (supabase as any).from('organizations').insert({
-          name: 'Mi Organización',
-          google_maps_api_key: googleMapsKey
-        }).select().single();
+        const { data } = await (supabase as any).from('organizations').insert(payload).select().single();
         if (data) setOrgId(data.id);
       } else {
-        await (supabase as any).from('organizations').update({
-          google_maps_api_key: googleMapsKey
-        }).eq('id', orgId);
+        await (supabase as any).from('organizations').update(payload).eq('id', orgId);
       }
       
       setSaveSuccess(true);
@@ -259,11 +279,11 @@ export function Settings() {
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-900 mb-1">ID del Píxel</label>
-                <input type="text" placeholder="1029384756..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" defaultValue="847592038475" />
+                <input type="text" value={metaPixelId} onChange={(e) => setMetaPixelId(e.target.value)} placeholder="1029384756..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
               </div>
               <div className="md:col-span-2">
                 <label className="block text-sm font-semibold text-gray-900 mb-1">Token de Acceso (CAPI)</label>
-                <input type="password" placeholder="EAA..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" defaultValue="EAAQxABCDEF123" />
+                <input type="password" value={metaCapiToken} onChange={(e) => setMetaCapiToken(e.target.value)} placeholder="EAA..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
               </div>
             </div>
           </div>
@@ -288,11 +308,11 @@ export function Settings() {
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-900 mb-1">ID del Píxel TikTok</label>
-                <input type="text" placeholder="C..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+                <input type="text" value={tiktokPixelId} onChange={(e) => setTiktokPixelId(e.target.value)} placeholder="C..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
               </div>
               <div className="md:col-span-2">
                 <label className="block text-sm font-semibold text-gray-900 mb-1">Access Token (Events API)</label>
-                <input type="password" placeholder="..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+                <input type="password" value={tiktokAccessToken} onChange={(e) => setTiktokAccessToken(e.target.value)} placeholder="..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
               </div>
             </div>
           </div>
@@ -317,11 +337,11 @@ export function Settings() {
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-900 mb-1">Measurement ID (G-...)</label>
-                <input type="text" placeholder="G-XXXXXXXXXX" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+                <input type="text" value={ga4MeasurementId} onChange={(e) => setGa4MeasurementId(e.target.value)} placeholder="G-XXXXXXXXXX" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
               </div>
               <div className="md:col-span-2">
                 <label className="block text-sm font-semibold text-gray-900 mb-1">API Secret (Measurement Protocol)</label>
-                <input type="password" placeholder="..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+                <input type="password" value={ga4ApiSecret} onChange={(e) => setGa4ApiSecret(e.target.value)} placeholder="..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
               </div>
             </div>
           </div>
