@@ -202,11 +202,12 @@ export async function firePixelEvent(
       };
       
       try {
-        const ga4Res = await fetch(`https://www.google-analytics.com/mp/collect?measurement_id=${target.id}&api_secret=${target.token}`, {
+        const ga4Res = await fetch(`https://www.google-analytics.com/debug/mp/collect?measurement_id=${target.id}&api_secret=${target.token}`, {
           method: 'POST',
           body: JSON.stringify(ga4Payload)
         });
-        results.google.push({ status: ga4Res.ok ? 'Sent' : 'Error', id: target.id, code: ga4Res.status });
+        const ga4Data = await ga4Res.json().catch(() => ({}));
+        results.google.push({ status: ga4Res.ok ? 'Sent' : 'Error', id: target.id, code: ga4Res.status, validation: ga4Data.validationMessages });
       } catch (e: any) {
         results.google.push({ error: 'Failed to send to GA4', id: target.id, details: e.message });
       }
