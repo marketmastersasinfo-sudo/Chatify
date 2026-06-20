@@ -72,8 +72,7 @@ export async function firePixelEvent(
         data: [{
           event_name: eventName,
           event_time: eventTime,
-          action_source: "business_messaging",
-          messaging_channel: "whatsapp",
+          action_source: "system_generated",
           user_data: {
             ph: hashedPhone ? [hashedPhone] : [],
             ctwa_clid: lead?.ctwa_clid || undefined
