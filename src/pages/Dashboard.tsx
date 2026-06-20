@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react';
 import { Calendar as CalendarIcon, TrendingUp, TrendingDown, Users, ShoppingCart, DollarSign, Activity, Filter, ChevronDown, MessageSquare, Loader2, Send, Truck, Share2 } from 'lucide-react';
 import { cn } from '../utils/cn';
 import { useAuth } from '../lib/auth';
-import { fetchDashboardData, processRemarketingFunnels, processSalesWaFunnels, processRemarketingWaFunnels, processLogisticsFunnels, processSocialFunnels, processAIMetrics } from '../lib/dashboard-data';
+import { fetchDashboardData, processRemarketingFunnels, processSalesWaFunnels, processRemarketingWaFunnels, processLogisticsFunnels, processSocialFunnels, processAIMetrics, processAdvancedInsights } from '../lib/dashboard-data';
 import { supabase } from '../lib/supabase';
+import { AdvancedInsights } from '../components/dashboard/AdvancedInsights';
 
 type TabType = 'whatsapp' | 'carts' | 'remarketing' | 'broadcast' | 'logistics' | 'social';
 
@@ -469,6 +470,10 @@ export function Dashboard() {
           </div>
         </div>
       </div>
+
+      {/* Advanced Insights Module (Joyas Ocultas) */}
+      <AdvancedInsights insightsData={processAdvancedInsights(leads)} leads={leads} />
+
     </div>
   );
 }

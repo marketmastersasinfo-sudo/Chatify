@@ -215,3 +215,119 @@ export function processAIMetrics(leads: any[]) {
     totalClosed: total
   };
 }
+
+// ══════════════════════════════════════
+// ADVANCED INSIGHTS (JOYAS OCULTAS)
+// ══════════════════════════════════════
+
+export function processAdvancedInsights(leads: any[]) {
+  // 1. HEATMAP (Día vs Hora)
+  const heatmapData = Array(7).fill(0).map(() => Array(24).fill(0));
+  const confirmedLeads = leads.filter(l => ['confirmado', 'recovered', 'despachado', 'entregado'].includes(l.status));
+  
+  confirmedLeads.forEach(l => {
+    if (l.created_at) {
+      const d = new Date(l.created_at);
+      // getDay: 0=Sun, 1=Mon... we'll map 0=Sun
+      heatmapData[d.getDay()][d.getHours()]++;
+    }
+  });
+
+  // 2. CALIDAD DE TRÁFICO
+  const trafficMap = new Map<string, { total: number, converted: number, revenue: number }>();
+  leads.forEach(l => {
+    const source = l.traffic_source || 'Desconocido/Orgánico';
+    const isConverted = ['confirmado', 'recovered', 'despachado', 'entregado'].includes(l.status);
+    
+    if (!trafficMap.has(source)) {
+      trafficMap.set(source, { total: 0, converted: 0, revenue: 0 });
+    }
+    const data = trafficMap.get(source)!;
+    data.total++;
+    if (isConverted) {
+      data.converted++;
+      data.revenue += (l.total_price || 0);
+    }
+  });
+  const trafficQuality = Array.from(trafficMap.entries()).map(([source, data]) => ({
+    source,
+    ...data,
+    conversionRate: data.total > 0 ? (data.converted / data.total) * 100 : 0
+  })).sort((a, b) => b.revenue - a.revenue);
+
+  // 3. RETENCIÓN Y LTV (Basado en phone)
+  const phoneMap = new Map<string, number>();
+  confirmedLeads.forEach(l => {
+    if (l.phone) {
+      phoneMap.set(l.phone, (phoneMap.get(l.phone) || 0) + 1);
+    }
+  });
+  
+  let repeatCustomers = 0;
+  let singleCustomers = 0;
+  phoneMap.forEach(count => {
+    if (count > 1) repeatCustomers++;
+    else singleCustomers++;
+  });
+  
+  const totalUniqueCustomers = repeatCustomers + singleCustomers;
+  const retentionRate = totalUniqueCustomers > 0 ? (repeatCustomers / totalUniqueCustomers) * 100 : 0;
+
+  // 4. FRICCIÓN POR PRODUCTO
+  const productMap = new Map<string, { total: number, abandoned: number }>();
+  leads.forEach(l => {
+    if (l.product_name) {
+      const isLost = ['lost', 'cold_lead'].includes(l.status);
+      if (!productMap.has(l.product_name)) {
+        productMap.set(l.product_name, { total: 0, abandoned: 0 });
+      }
+      const data = productMap.get(l.product_name)!;
+      data.total++;
+      if (isLost) data.abandoned++;
+    }
+  });
+  const productFriction = Array.from(productMap.entries())
+    .map(([name, data]) => ({
+      name,
+      ...data,
+      dropoffRate: data.total > 0 ? (data.abandoned / data.total) * 100 : 0
+    }))
+    .filter(p => p.total > 1) // At least 2 leads to show up
+    .sort((a, b) => b.dropoffRate - a.dropoffRate)
+    .slice(0, 10);
+
+  // 6. GEOREFERENCIACIÓN (Demografía de Interés)
+  const cityMap = new Map<string, { total: number, converted: number, revenue: number }>();
+  leads.forEach(l => {
+    // Si no hay ciudad, es Fricción Inicial
+    const city = l.city ? l.city.trim().toUpperCase() : 'DESCONOCIDA (Fricción Inicial)';
+    const isConverted = ['confirmado', 'recovered', 'despachado', 'entregado'].includes(l.status);
+    
+    if (!cityMap.has(city)) {
+      cityMap.set(city, { total: 0, converted: 0, revenue: 0 });
+    }
+    const data = cityMap.get(city)!;
+    data.total++;
+    if (isConverted) {
+      data.converted++;
+      data.revenue += (l.total_price || 0);
+    }
+  });
+  
+  const geoDemographics = Array.from(cityMap.entries())
+    .map(([city, data]) => ({
+      city,
+      ...data,
+      conversionRate: data.total > 0 ? (data.converted / data.total) * 100 : 0
+    }))
+    .sort((a, b) => b.revenue - a.revenue)
+    .slice(0, 15);
+
+  return {
+    heatmapData,
+    trafficQuality,
+    retention: { repeatCustomers, totalUniqueCustomers, retentionRate },
+    productFriction,
+    geoDemographics
+  };
+}
