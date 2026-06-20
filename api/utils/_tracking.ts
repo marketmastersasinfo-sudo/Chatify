@@ -7,7 +7,8 @@ export async function firePixelEvent(
   eventName: string, 
   value?: number, 
   currency: string = "COP", 
-  phoneFallback?: string
+  phoneFallback?: string,
+  testEventCode?: string
 ) {
   try {
     let lead: any = null;
@@ -64,7 +65,7 @@ export async function firePixelEvent(
     const fbTargets = getUniqueTargets(store?.meta_pixel_id, store?.meta_capi_token, org?.meta_pixel_id, org?.meta_capi_token);
     
     for (const target of fbTargets) {
-      const fbPayload = {
+      const fbPayload: any = {
         data: [{
           event_name: eventName,
           event_time: eventTime,
@@ -80,6 +81,10 @@ export async function firePixelEvent(
           }
         }]
       };
+
+      if (testEventCode) {
+        fbPayload.test_event_code = testEventCode;
+      }
 
       try {
         const fbRes = await fetch(`https://graph.facebook.com/v19.0/${target.id}/events?access_token=${target.token}`, {
