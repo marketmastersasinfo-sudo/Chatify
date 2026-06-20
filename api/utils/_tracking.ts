@@ -57,6 +57,12 @@ export async function firePixelEvent(
 
     const hashedPhone = userPhone ? crypto.createHash('sha256').update(userPhone.replace(/\D/g, '')).digest('hex') : undefined;
     
+    // --- Detección Inteligente de Divisa (Multitienda/Multipais) ---
+    const currencyMap: Record<string, string> = {
+      'CO': 'COP', 'MX': 'MXN', 'PE': 'PEN', 'EC': 'USD', 'CL': 'CLP', 'AR': 'ARS'
+    };
+    const finalCurrency = (store?.country && currencyMap[store.country]) || currency;
+
     // Hashear parámetros adicionales para subir la calidad del evento (EMQ a 10/10)
     let fn, ln;
     if (lead?.name) {
@@ -103,7 +109,9 @@ export async function firePixelEvent(
           user_data: userData,
           custom_data: {
             value: value || lead?.total_price || 0,
-            currency: currency
+            currency: finalCurrency,
+            content_name: lead?.product_name || undefined,
+            contents: lead?.product_name ? [{ id: 'ITEM_01', quantity: 1, item_price: value || lead?.total_price || 0 }] : []
           }
         }]
       };
@@ -137,8 +145,9 @@ export async function firePixelEvent(
           user: { phone_number: hashedPhone }
         },
         properties: {
+          contents: lead?.product_name ? [{ price: value || lead?.total_price || 0, quantity: 1, content_id: 'ITEM_01', content_name: lead.product_name }] : [],
           value: value || lead?.total_price || 0,
-          currency: currency
+          currency: finalCurrency
         }
       };
 
@@ -177,7 +186,7 @@ export async function firePixelEvent(
           name: ga4EventName,
           params: {
             value: value || lead?.total_price || 0,
-            currency: currency,
+            currency: finalCurrency,
             session_id: '123',
             debug_mode: 1,
             items: lead?.product_name ? [{
