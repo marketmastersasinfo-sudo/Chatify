@@ -189,6 +189,7 @@ export async function firePixelEvent(
             currency: finalCurrency,
             session_id: '123',
             debug_mode: 1,
+            transaction_id: ga4EventName === 'purchase' ? (lead?.id || leadId || crypto.randomUUID()) : undefined,
             items: lead?.product_name ? [{
               item_id: 'ITEM_01',
               item_name: lead.product_name,

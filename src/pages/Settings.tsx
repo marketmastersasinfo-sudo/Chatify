@@ -300,10 +300,6 @@ export function Settings() {
           <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 max-w-3xl mb-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-semibold text-gray-900 mb-1">Nombre del Píxel</label>
-                <input type="text" placeholder="Ej: Píxel Respaldo Agencia" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" defaultValue="Pixel Maestro Chatify" />
-              </div>
-              <div>
                 <label className="block text-sm font-semibold text-gray-900 mb-1">ID del Píxel</label>
                 <input type="text" value={metaPixelId} onChange={(e) => setMetaPixelId(e.target.value)} placeholder="1029384756..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
               </div>
@@ -400,10 +396,6 @@ export function Settings() {
           <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 max-w-3xl mb-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-semibold text-gray-900 mb-1">Nombre del Píxel</label>
-                <input type="text" placeholder="Ej: TikTok Maestro" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
-              </div>
-              <div>
                 <label className="block text-sm font-semibold text-gray-900 mb-1">ID del Píxel TikTok</label>
                 <input type="text" value={tiktokPixelId} onChange={(e) => setTiktokPixelId(e.target.value)} placeholder="C..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
               </div>
@@ -428,10 +420,6 @@ export function Settings() {
 
           <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 max-w-3xl">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-semibold text-gray-900 mb-1">Nombre</label>
-                <input type="text" placeholder="Ej: GA4 Chatify" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
-              </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-900 mb-1">Measurement ID (G-...)</label>
                 <input type="text" value={ga4MeasurementId} onChange={(e) => setGa4MeasurementId(e.target.value)} placeholder="G-XXXXXXXXXX" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
