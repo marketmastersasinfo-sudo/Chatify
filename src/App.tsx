@@ -12,12 +12,10 @@ import { Comments } from './pages/Comments';
 import { Broadcast } from './pages/Broadcast';
 import { CrmRemarketingCarts } from './pages/CrmRemarketingCarts';
 import { CrmRemarketingWa } from './pages/CrmRemarketingWa';
-import { VirtualSims } from './pages/VirtualSims';
 import { TemplateBuilder } from './pages/TemplateBuilder';
 import { SearchResults } from './pages/SearchResults';
 import { Login } from './pages/Login';
 import { UsersManagement } from './pages/UsersManagement';
-import { PixelTracking } from './pages/PixelTracking';
 import { Products } from './pages/Products';
 import { AuthProvider, useAuth } from './lib/auth';
 import { Navigate } from 'react-router-dom';
@@ -58,12 +56,10 @@ function App() {
             <Route path="/orders" element={<Orders />} />
             <Route path="/stores" element={<Stores />} />
             <Route path="/products" element={<Products />} />
-            <Route path="/virtual-sims" element={<VirtualSims />} />
             <Route path="/comments" element={<Comments />} />
             <Route path="/broadcast" element={<Broadcast />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/templates" element={<TemplateBuilder />} />
-            <Route path="/tracking" element={<PixelTracking />} />
             <Route path="/search" element={<SearchResults />} />
             <Route path="/users" element={<UsersManagement />} />
           </Route>

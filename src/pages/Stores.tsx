@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Store, Smartphone, Target, Plus, ShoppingBag, Loader2, Save, X, BrainCircuit, TrendingDown, AlertTriangle, FileText, RefreshCw, CheckCircle2 } from 'lucide-react';
+import { Store, Smartphone, Target, Plus, ShoppingBag, Loader2, Save, X, BrainCircuit, TrendingDown, AlertTriangle, FileText, RefreshCw, RefreshCcw, CheckCircle2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 
@@ -12,22 +12,15 @@ export function Stores() {
   
   // Modal/Form State
   const [isAdding, setIsAdding] = useState(false);
-  const [isAddingProduct, setIsAddingProduct] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [savingTracking, setSavingTracking] = useState(false);
   const [newStoreName, setNewStoreName] = useState('');
   const [newWaba, setNewWaba] = useState('');
   const [newPixel, setNewPixel] = useState('');
   const [syncingStores, setSyncingStores] = useState(false);
   const [importingCarts, setImportingCarts] = useState(false);
   
-  // Products State
-  const [products, setProducts] = useState<any[]>([]);
-  const [loadingProducts, setLoadingProducts] = useState(false);
-  const [savingProduct, setSavingProduct] = useState(false);
-  const [newProductName, setNewProductName] = useState('');
-  const [newProductPrice, setNewProductPrice] = useState('');
-  const [newProductPromptWA, setNewProductPromptWA] = useState('');
-  const [newProductPromptSocial, setNewProductPromptSocial] = useState('');
+
 
   // Templates State
   const [storeTemplates, setStoreTemplates] = useState<any[]>([]);
@@ -38,10 +31,8 @@ export function Stores() {
 
   useEffect(() => {
     if (selectedStore) {
-      loadProducts(selectedStore.id);
       loadTemplates(selectedStore.id);
     } else {
-      setProducts([]);
       setStoreTemplates([]);
     }
   }, [selectedStore]);
@@ -79,18 +70,7 @@ export function Stores() {
     }
   }
 
-  async function loadProducts(storeId: string) {
-    setLoadingProducts(true);
-    try {
-      const { data, error } = await supabase.from('products').select('*').eq('store_id', storeId).order('created_at', { ascending: false });
-      if (!error) {
-        setProducts(data || []);
-      }
-    } catch (error) {
-      console.error("Error loading products:", error);
-    }
-    setLoadingProducts(false);
-  }
+
 
   async function loadStores() {
     setLoading(true);
@@ -172,33 +152,7 @@ export function Stores() {
     setSaving(false);
   }
 
-  async function handleSaveProduct() {
-    if (!newProductName || !newProductPrice || !selectedStore) return;
-    setSavingProduct(true);
-    try {
-      const master_prompt = JSON.stringify({ whatsapp: newProductPromptWA, social: newProductPromptSocial });
-      const { data, error } = await supabase.from('products').insert({
-        store_id: selectedStore.id,
-        name: newProductName,
-        price: parseFloat(newProductPrice),
-        master_prompt
-      } as any).select().single();
 
-      if (data && !error) {
-        setProducts([data, ...products]);
-        setIsAddingProduct(false);
-        setNewProductName('');
-        setNewProductPrice('');
-        setNewProductPromptWA('');
-        setNewProductPromptSocial('');
-      } else {
-        console.error("Supabase insert error:", error);
-      }
-    } catch (error) {
-      console.error("Error saving product:", error);
-    }
-    setSavingProduct(false);
-  }
 
   async function handleSyncStores() {
     setSyncingStores(true);
@@ -319,6 +273,25 @@ export function Stores() {
       setImportingCarts(false);
     }
   }
+
+  const handleSaveTracking = async () => {
+    if (!selectedStore) return;
+    setSavingTracking(true);
+    try {
+      const { error } = await (supabase as any).from('stores').update({
+        meta_pixel_id: selectedStore.meta_pixel_id,
+        meta_capi_token: selectedStore.meta_capi_token,
+        tiktok_pixel_id: selectedStore.tiktok_pixel_id,
+        tiktok_access_token: selectedStore.tiktok_access_token,
+        google_conversion_id: selectedStore.google_conversion_id
+      }).eq('id', selectedStore.id);
+      if (error) throw error;
+      alert('Píxeles guardados exitosamente');
+    } catch(e) {
+      alert('Error al guardar los píxeles');
+    }
+    setSavingTracking(false);
+  };
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12 relative">
@@ -564,6 +537,105 @@ export function Stores() {
                 </div>
               </div>
 
+              {/* Tracking Avanzado (API) */}
+              <div className="mt-8 border-t border-gray-200 pt-8">
+                <div className="flex justify-between items-center mb-6">
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                      <Target className="w-5 h-5 text-indigo-600" /> Tracking Avanzado (API)
+                    </h3>
+                    <p className="text-sm text-gray-500 mt-1">Configura Facebook CAPI, TikTok Events API y Google Ads para esta tienda.</p>
+                  </div>
+                  <button 
+                    onClick={handleSaveTracking}
+                    disabled={savingTracking}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-colors disabled:opacity-70"
+                  >
+                    {savingTracking ? <RefreshCcw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                    Guardar Píxeles
+                  </button>
+                </div>
+
+                <div className="p-6 bg-white border border-gray-100 shadow-sm rounded-2xl grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {/* Facebook */}
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2 mb-4">
+                      <div className="w-8 h-8 rounded bg-blue-100 flex items-center justify-center text-blue-600 font-bold">f</div>
+                      <h4 className="font-bold text-slate-700">Facebook CAPI</h4>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 mb-1">Pixel ID</label>
+                      <input 
+                        type="text" 
+                        value={selectedStore.meta_pixel_id || ''}
+                        onChange={(e) => setSelectedStore({...selectedStore, meta_pixel_id: e.target.value})}
+                        className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-600" 
+                        placeholder="1234567890" 
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 mb-1">Access Token</label>
+                      <input 
+                        type="password" 
+                        value={selectedStore.meta_capi_token || ''}
+                        onChange={(e) => setSelectedStore({...selectedStore, meta_capi_token: e.target.value})}
+                        className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-600" 
+                        placeholder="EAA..." 
+                      />
+                    </div>
+                  </div>
+
+                  {/* TikTok */}
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2 mb-4">
+                      <div className="w-8 h-8 rounded bg-black flex items-center justify-center text-white font-bold">t</div>
+                      <h4 className="font-bold text-slate-700">TikTok Events API</h4>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 mb-1">Pixel ID / Code</label>
+                      <input 
+                        type="text" 
+                        value={selectedStore.tiktok_pixel_id || ''}
+                        onChange={(e) => setSelectedStore({...selectedStore, tiktok_pixel_id: e.target.value})}
+                        className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-black" 
+                        placeholder="CB..." 
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 mb-1">Access Token</label>
+                      <input 
+                        type="password" 
+                        value={selectedStore.tiktok_access_token || ''}
+                        onChange={(e) => setSelectedStore({...selectedStore, tiktok_access_token: e.target.value})}
+                        className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-black" 
+                        placeholder="Token..." 
+                      />
+                    </div>
+                  </div>
+
+                  {/* Google Ads */}
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2 mb-4">
+                      <div className="w-8 h-8 rounded bg-red-100 flex items-center justify-center text-red-600 font-bold">G</div>
+                      <h4 className="font-bold text-slate-700">Google Ads</h4>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 mb-1">Conversion ID</label>
+                      <input 
+                        type="text" 
+                        value={selectedStore.google_conversion_id || ''}
+                        onChange={(e) => setSelectedStore({...selectedStore, google_conversion_id: e.target.value})}
+                        className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-red-600" 
+                        placeholder="AW-..." 
+                      />
+                    </div>
+                    <div className="pt-2 text-xs text-slate-500 leading-relaxed">
+                      Para Google Ads, requerimos el ID para conversiones offline. Asegúrate de configurar la captura de `gclid` en tus links.
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               {/* AI Template Manager */}
               <div className="mt-8 border-t border-gray-200 pt-8">
                 <div className="flex justify-between items-center mb-6">
@@ -693,7 +765,6 @@ export function Stores() {
                       </div>
                     </div>
                   </div>
-                </div>
               </div>
           ) : (
             <div className="flex flex-col items-center justify-center h-64 border-2 border-dashed border-gray-200 rounded-2xl bg-gray-50">

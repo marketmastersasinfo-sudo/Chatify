@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, MessageSquare, MapPin, Settings, Truck, ThumbsUp, Database, Megaphone, RefreshCcw, ShoppingCart, Smartphone, Search, Users, Target, ShoppingBag } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, MapPin, Settings, Truck, ThumbsUp, Database, Megaphone, RefreshCcw, ShoppingCart, Search, Users, ShoppingBag } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { useAuth } from '../../lib/auth';
 
@@ -16,8 +16,6 @@ const navigation = [
   { name: 'Catálogo de Productos', href: '/products', icon: ShoppingBag },
   { name: 'Organización Multitienda', href: '/stores', icon: MapPin },
   { name: 'Gestor de Plantillas Meta', href: '/templates', icon: MessageSquare },
-  { name: 'Tracking & Píxeles (API)', href: '/tracking', icon: Target },
-  { name: 'Líneas y SIMs Virtuales', href: '/virtual-sims', icon: Smartphone },
   { name: 'Configuración Global', href: '/settings', icon: Settings },
 ];
 
