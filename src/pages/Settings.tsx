@@ -24,7 +24,11 @@ export function Settings() {
 
   async function loadSettings() {
     try {
-      const { data, error } = await (supabase as any).from('organizations').select('*').limit(1);
+      const { data, error } = await (supabase as any)
+        .from('organizations')
+        .select('*')
+        .order('created_at', { ascending: true })
+        .limit(1);
       if (error) console.error("Error loading org:", error);
       if (data && data.length > 0) {
         setOrgId(data[0].id);
