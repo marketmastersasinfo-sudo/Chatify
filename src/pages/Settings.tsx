@@ -16,6 +16,7 @@ export function Settings() {
   const [tiktokAccessToken, setTiktokAccessToken] = useState('');
   const [ga4MeasurementId, setGa4MeasurementId] = useState('');
   const [ga4ApiSecret, setGa4ApiSecret] = useState('');
+  const [showGa4Secret, setShowGa4Secret] = useState(false);
 
   useEffect(() => {
     loadSettings();
@@ -341,7 +342,34 @@ export function Settings() {
               </div>
               <div className="md:col-span-2">
                 <label className="block text-sm font-semibold text-gray-900 mb-1">API Secret (Measurement Protocol)</label>
-                <input type="password" value={ga4ApiSecret} onChange={(e) => setGa4ApiSecret(e.target.value)} placeholder="..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+                <div className="relative">
+                  <input 
+                    type={showGa4Secret ? "text" : "password"} 
+                    value={ga4ApiSecret} 
+                    onChange={(e) => setGa4ApiSecret(e.target.value)} 
+                    placeholder="..." 
+                    className="w-full pl-3 pr-10 py-2 border border-gray-200 rounded-lg text-sm" 
+                  />
+                  <button 
+                    type="button"
+                    onClick={() => setShowGa4Secret(!showGa4Secret)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    {showGa4Secret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+                
+                <div className="mt-3 flex items-center gap-2 text-xs font-bold px-2 py-1.5 rounded-md inline-flex border">
+                  {ga4MeasurementId && ga4ApiSecret.length > 5 ? (
+                    <div className="flex items-center gap-2 bg-green-50 text-green-700 px-1 border-transparent">
+                      <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div> ✅ Conectado de forma exitosa
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 text-gray-500 border-transparent">
+                      <div className="w-2 h-2 rounded-full bg-gray-300"></div> No Configurado
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
