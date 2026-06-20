@@ -557,11 +557,36 @@ async function handleSophia({ lead, productInfo, leadId, incomingText, storeTwil
       }
     }
 
-    await isTwilioClient.messages.create({
+    // ══════════════════════════════════════════════════════
+    // EXTRACCIÓN DE MULTIMEDIA (Imágenes / Audios)
+    // ══════════════════════════════════════════════════════
+    const mediaUrlsToSend: string[] = [];
+    const mediaRegex = /\[MEDIA_(\d+)\]/g;
+    let match;
+    while ((match = mediaRegex.exec(aiReply)) !== null) {
+      const mediaIndex = parseInt(match[1], 10) - 1; // [MEDIA_1] -> index 0
+      let assets = [];
+      try { if (productInfo?.media_assets) assets = JSON.parse(productInfo.media_assets); } catch {}
+      if (assets[mediaIndex]?.url) {
+        mediaUrlsToSend.push(assets[mediaIndex].url);
+      }
+    }
+    // Borrar los tags del mensaje de texto para que el cliente no los vea
+    aiReply = aiReply.replace(/\[MEDIA_(\d+)\]/g, '').trim();
+
+    const msgPayload: any = {
       from: `whatsapp:+${storeTwilioPhone.replace('+', '')}`,
-      to: `whatsapp:+${customerPhone}`,
-      body: aiReply
-    });
+      to: `whatsapp:+${customerPhone}`
+    };
+    if (aiReply) msgPayload.body = aiReply;
+    if (mediaUrlsToSend.length > 0) msgPayload.mediaUrl = mediaUrlsToSend;
+
+    // Twilio fallback if both are empty
+    if (!msgPayload.body && !msgPayload.mediaUrl) {
+      msgPayload.body = '👍';
+    }
+
+    await isTwilioClient.messages.create(msgPayload);
     await sb.from('messages').insert({ lead_id: leadId, sender_type: 'ai', content: aiReply });
   } catch (err: any) {
     console.error('Sophia AI Error:', err);

@@ -16,8 +16,8 @@ import { VirtualSims } from './pages/VirtualSims';
 import { TemplateBuilder } from './pages/TemplateBuilder';
 import { SearchResults } from './pages/SearchResults';
 import { Login } from './pages/Login';
-import { UsersManagement } from './pages/UsersManagement';
 import { PixelTracking } from './pages/PixelTracking';
+import { Products } from './pages/Products';
 import { AuthProvider, useAuth } from './lib/auth';
 import { Navigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
@@ -56,6 +56,7 @@ function App() {
             <Route path="/database" element={<DB />} />
             <Route path="/orders" element={<Orders />} />
             <Route path="/stores" element={<Stores />} />
+            <Route path="/products" element={<Products />} />
             <Route path="/virtual-sims" element={<VirtualSims />} />
             <Route path="/comments" element={<Comments />} />
             <Route path="/broadcast" element={<Broadcast />} />
