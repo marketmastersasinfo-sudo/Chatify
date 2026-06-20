@@ -356,7 +356,7 @@ export function Settings() {
                       })
                     }).then(r => r.json()).then(data => {
                       if (btn) btn.innerHTML = 'Enviar Venta de Prueba';
-                      alert('Respuesta de Meta:\\n\\n' + JSON.stringify(data.results?.facebook || data, null, 2));
+                      alert('Respuesta de Meta:\n\n' + JSON.stringify(data.results?.facebook || data, null, 2));
                     }).catch(e => alert('Error: ' + e.message));
                   }}
                   id="testBtnMeta"
@@ -409,7 +409,7 @@ export function Settings() {
                       })
                     }).then(r => r.json()).then(data => {
                       if (btn) btn.innerHTML = 'Enviar Venta de Prueba';
-                      alert('Respuesta de TikTok:\\n\\n' + JSON.stringify(data.results?.tiktok || data, null, 2));
+                      alert('Respuesta de TikTok:\n\n' + JSON.stringify(data.results?.tiktok || data, null, 2));
                     }).catch(e => alert('Error: ' + e.message));
                   }}
                   id="testBtnTiktok"
@@ -489,7 +489,7 @@ export function Settings() {
                       })
                     }).then(r => r.json()).then(data => {
                       if (btn) btn.innerHTML = 'Enviar Venta de Prueba';
-                      alert('Respuesta de GA4 (204 = Éxito):\\n\\n' + JSON.stringify(data.results?.google || data, null, 2));
+                      alert('Respuesta de GA4 (204 = Éxito):\n\n' + JSON.stringify(data.results?.google || data, null, 2));
                     }).catch(e => alert('Error: ' + e.message));
                   }}
                   id="testBtnGa4"
