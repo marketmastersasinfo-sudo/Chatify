@@ -83,6 +83,7 @@ export function Settings() {
           setSaving(false);
           return;
         }
+        alert("Debug: Supabase guardó el Píxel: " + data[0].meta_pixel_id + " en la Org ID: " + data[0].id);
       }
       
       setSaveSuccess(true);
@@ -99,7 +100,7 @@ export function Settings() {
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
       <div className="sm:flex sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-gray-900">Configuración Global</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-gray-900">Configuración Global (v2)</h1>
           <p className="mt-2 text-sm text-gray-500">
             Credenciales maestras, integraciones y motores de Inteligencia Artificial.
           </p>
