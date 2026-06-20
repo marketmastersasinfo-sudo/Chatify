@@ -353,7 +353,17 @@ export function Settings() {
                     fetch('/api/tracking/fire-event', {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ leadId: 'TEST', eventName: 'Purchase', value: 85000, currency: 'COP', testEventCode: code || undefined })
+                      body: JSON.stringify({ 
+                        leadId: 'TEST', 
+                        eventName: 'Purchase', 
+                        value: 85000, 
+                        currency: 'COP', 
+                        testEventCode: code || undefined,
+                        overrides: {
+                          metaPixelId: metaPixelId,
+                          metaCapiToken: metaCapiToken
+                        }
+                      })
                     })
                     .then(r => r.json())
                     .then(data => {

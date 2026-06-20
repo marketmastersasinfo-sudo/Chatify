@@ -8,7 +8,8 @@ export async function firePixelEvent(
   value?: number, 
   currency: string = "COP", 
   phoneFallback?: string,
-  testEventCode?: string
+  testEventCode?: string,
+  overrides?: any
 ) {
   try {
     let lead: any = null;
@@ -18,10 +19,12 @@ export async function firePixelEvent(
     if (leadId === 'TEST') {
       // Test mode bypasses DB
       org = { 
-        meta_pixel_id: process.env.TEST_META_PIXEL,
-        meta_capi_token: process.env.TEST_META_TOKEN,
-        ga4_measurement_id: process.env.TEST_GA4_ID,
-        ga4_api_secret: process.env.TEST_GA4_SECRET
+        meta_pixel_id: overrides?.metaPixelId,
+        meta_capi_token: overrides?.metaCapiToken,
+        tiktok_pixel_id: overrides?.tiktokPixelId,
+        tiktok_access_token: overrides?.tiktokAccessToken,
+        ga4_measurement_id: overrides?.ga4MeasurementId,
+        ga4_api_secret: overrides?.ga4ApiSecret
       };
       lead = { phone: '573000000000', total_price: 1000 };
     } else {

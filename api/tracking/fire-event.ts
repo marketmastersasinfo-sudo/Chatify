@@ -12,13 +12,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { leadId, eventName, value, currency, phone, testEventCode } = req.body;
+  const { leadId, eventName, value, currency, phone, testEventCode, overrides } = req.body;
 
   if (!leadId || !eventName) {
     return res.status(400).json({ error: 'Missing required parameters' });
   }
 
-  const result = await firePixelEvent(supabase, leadId, eventName, value, currency, phone, testEventCode);
+  const result = await firePixelEvent(supabase, leadId, eventName, value, currency, phone, testEventCode, overrides);
 
   if (result.success) {
     return res.status(200).json(result);
