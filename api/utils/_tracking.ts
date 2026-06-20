@@ -110,8 +110,8 @@ export async function firePixelEvent(
           custom_data: {
             value: value || lead?.total_price || 0,
             currency: finalCurrency,
-            content_name: lead?.product_name || undefined,
-            contents: lead?.product_name ? [{ id: 'ITEM_01', quantity: 1, item_price: value || lead?.total_price || 0 }] : []
+            content_name: lead?.product_name || 'Producto General',
+            contents: [{ id: lead?.product_name ? 'ITEM_01' : 'TEST_01', quantity: 1, item_price: value || lead?.total_price || 0 }]
           }
         }]
       };
@@ -145,7 +145,7 @@ export async function firePixelEvent(
           user: { phone_number: hashedPhone }
         },
         properties: {
-          contents: lead?.product_name ? [{ price: value || lead?.total_price || 0, quantity: 1, content_id: 'ITEM_01', content_name: lead.product_name }] : [],
+          contents: [{ price: value || lead?.total_price || 0, quantity: 1, content_id: lead?.product_name ? 'ITEM_01' : 'TEST_01', content_name: lead?.product_name || 'Producto General' }],
           value: value || lead?.total_price || 0,
           currency: finalCurrency
         }
