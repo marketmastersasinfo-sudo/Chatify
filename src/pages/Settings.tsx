@@ -24,19 +24,20 @@ export function Settings() {
 
   async function loadSettings() {
     try {
-      const { data } = await (supabase as any).from('organizations').select('*').limit(1).single();
-      if (data) {
-        setOrgId(data.id);
-        setGoogleMapsKey(data.google_maps_api_key || '');
-        setMetaPixelId(data.meta_pixel_id || '');
-        setMetaCapiToken(data.meta_capi_token || '');
-        setTiktokPixelId(data.tiktok_pixel_id || '');
-        setTiktokAccessToken(data.tiktok_access_token || '');
-        setGa4MeasurementId(data.ga4_measurement_id || '');
-        setGa4ApiSecret(data.ga4_api_secret || '');
+      const { data, error } = await (supabase as any).from('organizations').select('*').limit(1);
+      if (error) console.error("Error loading org:", error);
+      if (data && data.length > 0) {
+        setOrgId(data[0].id);
+        setGoogleMapsKey(data[0].google_maps_api_key || '');
+        setMetaPixelId(data[0].meta_pixel_id || '');
+        setMetaCapiToken(data[0].meta_capi_token || '');
+        setTiktokPixelId(data[0].tiktok_pixel_id || '');
+        setTiktokAccessToken(data[0].tiktok_access_token || '');
+        setGa4MeasurementId(data[0].ga4_measurement_id || '');
+        setGa4ApiSecret(data[0].ga4_api_secret || '');
       }
     } catch (e) {
-      console.error(e);
+      console.error("Catch error:", e);
     }
   }
 
@@ -55,19 +56,32 @@ export function Settings() {
       };
 
       if (!orgId) {
-        const { data } = await (supabase as any).from('organizations').insert(payload).select().single();
+        const { data, error } = await (supabase as any).from('organizations').insert(payload).select().single();
+        if (error) {
+          console.error("Insert error:", error);
+          alert('Error: ' + error.message);
+          setSaving(false);
+          return;
+        }
         if (data) setOrgId(data.id);
       } else {
-        await (supabase as any).from('organizations').update(payload).eq('id', orgId);
+        const { error } = await (supabase as any).from('organizations').update(payload).eq('id', orgId);
+        if (error) {
+          console.error("Update error:", error);
+          alert('Error: ' + error.message);
+          setSaving(false);
+          return;
+        }
       }
       
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      alert('Error guardando configuración');
+      alert('Error guardando configuración: ' + e.message);
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
   }
 
   return (
