@@ -181,13 +181,13 @@ export async function firePixelEvent(
       const ga4EventName = ga4EventNameMap[eventName] || eventName.toLowerCase();
 
       const ga4Payload = {
-        client_id: clientId,
+        client_id: leadId === 'TEST' ? 'chatify-test-device-001' : clientId,
         events: [{
           name: ga4EventName,
           params: {
             value: value || lead?.total_price || 0,
             currency: finalCurrency,
-            session_id: '123',
+            session_id: 9999999999,
             debug_mode: 1,
             transaction_id: ga4EventName === 'purchase' ? (lead?.id || leadId || crypto.randomUUID()) : undefined,
             engagement_time_msec: 1,
