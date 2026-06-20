@@ -234,6 +234,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         if (isConfirmation(incomingText)) {
           // ✅ All done — close conversation
           await supabase.from('leads').update({ status: 'confirmado' }).eq('id', leadId);
+          try {
+            const { firePixelEvent } = await import('./utils/_tracking.js');
+            await firePixelEvent(supabase as any, leadId, 'Purchase', lead?.total_price || 0, 'COP', customerPhone);
+          } catch (e) {
+            console.error('Tracking Error on Purchase (address_confirming)', e);
+          }
           const closeMsg = `¡Excelente, ${lead?.name?.split(' ')[0] || 'gracias'}! 🎉 Tu pedido está *confirmado* y pasó a despacho. En breve recibirás la información del envío. Si tienes dudas adicionales, ¡con gusto te ayudo!`;
           await isTwilioClient.messages.create({
             from: `whatsapp:+${storeTwilioPhone.replace('+', '')}`,
@@ -555,6 +561,12 @@ async function handleSophia({ lead, productInfo, leadId, incomingText, storeTwil
           await sb.from('leads').update({ status: 'recovered', recovery_confirmed_at: new Date().toISOString() }).eq('id', leadId);
         } else if (leadBoardType === 'logistics') {
           await sb.from('leads').update({ status: 'confirmado' }).eq('id', leadId);
+          try {
+            const { firePixelEvent } = await import('./utils/_tracking.js');
+            await firePixelEvent(sb as any, leadId, 'Purchase', lead?.total_price || 0, 'COP', customerPhone);
+          } catch (e) {
+            console.error('Tracking Error on Purchase (Sophia)', e);
+          }
         } else if (leadBoardType === 'sales_wa') {
           await sb.from('leads').update({ status: 'closed' }).eq('id', leadId);
         }

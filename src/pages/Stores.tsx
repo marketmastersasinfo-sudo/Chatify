@@ -283,7 +283,9 @@ export function Stores() {
         meta_capi_token: selectedStore.meta_capi_token,
         tiktok_pixel_id: selectedStore.tiktok_pixel_id,
         tiktok_access_token: selectedStore.tiktok_access_token,
-        google_conversion_id: selectedStore.google_conversion_id
+        google_conversion_id: selectedStore.google_conversion_id,
+        ga4_measurement_id: selectedStore.ga4_measurement_id,
+        ga4_api_secret: selectedStore.ga4_api_secret
       }).eq('id', selectedStore.id);
       if (error) throw error;
       alert('Píxeles guardados exitosamente');
@@ -610,6 +612,37 @@ export function Stores() {
                         className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-black" 
                         placeholder="Token..." 
                       />
+                    </div>
+                  </div>
+
+                  {/* Google Analytics 4 */}
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2 mb-4">
+                      <div className="w-8 h-8 rounded bg-orange-100 flex items-center justify-center text-orange-600 font-bold">G4</div>
+                      <h4 className="font-bold text-slate-700">Google Analytics 4</h4>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 mb-1">Measurement ID</label>
+                      <input 
+                        type="text" 
+                        value={selectedStore.ga4_measurement_id || ''}
+                        onChange={(e) => setSelectedStore({...selectedStore, ga4_measurement_id: e.target.value})}
+                        className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-orange-600" 
+                        placeholder="G-XXXXXXX" 
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 mb-1">API Secret</label>
+                      <input 
+                        type="password" 
+                        value={selectedStore.ga4_api_secret || ''}
+                        onChange={(e) => setSelectedStore({...selectedStore, ga4_api_secret: e.target.value})}
+                        className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-orange-600" 
+                        placeholder="Secret..." 
+                      />
+                    </div>
+                    <div className="pt-2 text-[10px] text-slate-500 leading-relaxed font-semibold">
+                      Server-Side Tracking. Genera el API Secret en GA4 {'>'} Admin {'>'} Data Streams {'>'} Measurement Protocol API Secrets.
                     </div>
                   </div>
 
