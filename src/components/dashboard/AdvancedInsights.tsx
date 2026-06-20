@@ -20,16 +20,29 @@ export function AdvancedInsights({ insightsData, leads }: AdvancedInsightsProps)
   const [nlpResults, setNlpResults] = useState<{word: string, count: number}[]>([]);
   const [selectedProductNlp, setSelectedProductNlp] = useState<string | null>(null);
 
+  // Helper para normalizar (igual que en dashboard-data.ts)
+  const normalizeProductName = (name: string) => {
+    if (!name) return 'Producto Desconocido';
+    let n = name.replace(/\([^)]+\)/g, '');
+    n = n.replace(/^(oferta|promo|promoción|descuento|combo|liquidación)\s*[:-]?\s*/i, '');
+    n = n.replace(/^[\.,'"]+/, '');
+    n = n.trim();
+    return n.charAt(0).toUpperCase() + n.slice(1).toLowerCase();
+  };
+
   const runNLPAnalysis = async (productName: string) => {
     setNlpLoading(true);
     setSelectedProductNlp(productName);
     setNlpResults([]);
     
     try {
-      // Find all leads for this product
-      const productLeadIds = leads.filter(l => l.product_name === productName).map(l => l.id);
+      // Find all leads for this product using normalized names
+      const productLeadIds = leads
+        .filter(l => normalizeProductName(l.product_name) === productName)
+        .map(l => l.id);
       
       if (productLeadIds.length === 0) {
+        setNlpResults([{ word: 'Sin datos suficientes', count: 1 }]);
         setNlpLoading(false);
         return;
       }
