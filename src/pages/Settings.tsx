@@ -12,6 +12,7 @@ export function Settings() {
   // Global Tracking Pixels
   const [metaPixelId, setMetaPixelId] = useState('');
   const [metaCapiToken, setMetaCapiToken] = useState('');
+  const [showMetaSecret, setShowMetaSecret] = useState(false);
   const [tiktokPixelId, setTiktokPixelId] = useState('');
   const [tiktokAccessToken, setTiktokAccessToken] = useState('');
   const [ga4MeasurementId, setGa4MeasurementId] = useState('');
@@ -302,7 +303,34 @@ export function Settings() {
               </div>
               <div className="md:col-span-2">
                 <label className="block text-sm font-semibold text-gray-900 mb-1">Token de Acceso (CAPI)</label>
-                <input type="password" value={metaCapiToken} onChange={(e) => setMetaCapiToken(e.target.value)} placeholder="EAA..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+                <div className="relative">
+                  <input 
+                    type={showMetaSecret ? "text" : "password"} 
+                    value={metaCapiToken} 
+                    onChange={(e) => setMetaCapiToken(e.target.value)} 
+                    placeholder="EAA..." 
+                    className="w-full pl-3 pr-10 py-2 border border-gray-200 rounded-lg text-sm" 
+                  />
+                  <button 
+                    type="button"
+                    onClick={() => setShowMetaSecret(!showMetaSecret)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    {showMetaSecret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+                
+                <div className="mt-3 flex items-center gap-2 text-xs font-bold px-2 py-1.5 rounded-md inline-flex border">
+                  {metaPixelId && metaCapiToken.length > 50 ? (
+                    <div className="flex items-center gap-2 bg-green-50 text-green-700 px-1 border-transparent">
+                      <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div> ✅ Conectado de forma exitosa
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 text-gray-500 border-transparent">
+                      <div className="w-2 h-2 rounded-full bg-gray-300"></div> No Configurado
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
