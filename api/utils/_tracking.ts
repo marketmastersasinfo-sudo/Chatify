@@ -51,8 +51,22 @@ export async function firePixelEvent(
 
     const eventTime = Math.floor(Date.now() / 1000);
     const userPhone = phoneFallback || lead?.phone || '573000000000';
-    // Hash phone for CAPI (SHA256)
+    
+    // Función de ayuda para hashear strings en SHA-256 (Requisito de Facebook)
+    const hashData = (str?: string) => str ? crypto.createHash('sha256').update(str.trim().toLowerCase()).digest('hex') : undefined;
+
     const hashedPhone = userPhone ? crypto.createHash('sha256').update(userPhone.replace(/\D/g, '')).digest('hex') : undefined;
+    
+    // Hashear parámetros adicionales para subir la calidad del evento (EMQ a 10/10)
+    let fn, ln;
+    if (lead?.name) {
+      const parts = lead.name.trim().split(' ');
+      fn = hashData(parts[0]);
+      if (parts.length > 1) ln = hashData(parts.slice(1).join(' '));
+    }
+    const ct = hashData(lead?.city);
+    const st = hashData(lead?.department);
+    const country = hashData(store?.country || lead?.stores?.country || 'CO');
 
     const results: any = { facebook: [], tiktok: [], google: [] };
 
@@ -68,15 +82,25 @@ export async function firePixelEvent(
     const fbTargets = getUniqueTargets(store?.meta_pixel_id, store?.meta_capi_token, org?.meta_pixel_id, org?.meta_capi_token);
     
     for (const target of fbTargets) {
+      
+      const userData: any = {
+        external_id: [hashData(lead?.id || leadId)],
+        ph: hashedPhone ? [hashedPhone] : [],
+        ctwa_clid: lead?.ctwa_clid || undefined
+      };
+      
+      if (fn) userData.fn = [fn];
+      if (ln) userData.ln = [ln];
+      if (ct) userData.ct = [ct];
+      if (st) userData.st = [st];
+      if (country) userData.country = [country];
+
       const fbPayload: any = {
         data: [{
           event_name: eventName,
           event_time: eventTime,
           action_source: "system_generated",
-          user_data: {
-            ph: hashedPhone ? [hashedPhone] : [],
-            ctwa_clid: lead?.ctwa_clid || undefined
-          },
+          user_data: userData,
           custom_data: {
             value: value || lead?.total_price || 0,
             currency: currency
