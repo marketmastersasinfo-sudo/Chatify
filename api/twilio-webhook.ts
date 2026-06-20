@@ -103,7 +103,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         store_id: store.id,
         name: ProfileName || 'Cliente WhatsApp',
         phone: customerPhone,
-        status: 'cold_lead',
+        status: 'new',
         board_type: 'sales_wa',
         traffic_source: 'whatsapp_direct',
         is_banned: false
@@ -488,6 +488,21 @@ async function handleSophia({ lead, productInfo, leadId, incomingText, storeTwil
     // ══════════════════════════════════════════════════════
     // MOVER LEAD AUTOMÁTICAMENTE o INTERCEPTAR STREET VIEW
     // ══════════════════════════════════════════════════════
+    const leadBoardType = lead?.board_type || '';
+
+    // Lógica de embudo de ventas (Inbound)
+    if (leadBoardType === 'sales_wa') {
+      if (parsed.intent === 'None' || parsed.intent === 'Support' || parsed.intent === 'General') {
+        if (lead?.status === 'new' || lead?.status === 'cold_lead') {
+          await sb.from('leads').update({ status: 'inquiry' }).eq('id', leadId);
+        }
+      } else if (parsed.intent === 'AddToCart' || parsed.intent === 'InitiateCheckout') {
+        if (lead?.status !== 'negotiating' && lead?.status !== 'verifying_address' && lead?.status !== 'closed') {
+          await sb.from('leads').update({ status: 'negotiating' }).eq('id', leadId);
+        }
+      }
+    }
+
     if (parsed.intent === 'Purchase' || parsed.intent === 'OrderConfirmed' || parsed.intent === 'InitiateCheckout') {
       
       // INTERCEPTAR PARA STREET VIEW
@@ -512,11 +527,12 @@ async function handleSophia({ lead, productInfo, leadId, incomingText, storeTwil
 
       // CIERRE NORMAL DE PEDIDO (Si ya se verificó la dirección)
       if (lead?.status === 'verifying_address' || (!newAddress && !newCity)) {
-        const leadBoard = lead?.board_type || '';
-        if (leadBoard.includes('remarketing')) {
+        if (leadBoardType.includes('remarketing')) {
           await sb.from('leads').update({ status: 'recovered', recovery_confirmed_at: new Date().toISOString() }).eq('id', leadId);
-        } else if (leadBoard === 'logistics') {
+        } else if (leadBoardType === 'logistics') {
           await sb.from('leads').update({ status: 'confirmado' }).eq('id', leadId);
+        } else if (leadBoardType === 'sales_wa') {
+          await sb.from('leads').update({ status: 'closed' }).eq('id', leadId);
         }
         const { firePixelEvent } = await import('./utils/_tracking.js');
         await firePixelEvent(sb, leadId, 'Purchase', lead?.total_price || 0, 'COP', customerPhone).catch(console.error);

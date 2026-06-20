@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { MessageSquare, AlertCircle, CheckCircle2, Plus, Loader2, X, Ban, Store } from 'lucide-react';
+import { MessageSquare, AlertCircle, CheckCircle2, Plus, Loader2, X, Ban, Store, Download } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import { supabase } from '../lib/supabase';
 import { LeadChatPanel } from '../components/LeadChatPanel';
 import { formatPhoneNumber } from '../utils/phoneFormatter';
@@ -176,6 +177,31 @@ export function CrmSales() {
     }
   }
 
+  function handleExportExcel() {
+    const closedLeads = leads.filter(l => l.status === 'closed');
+    if (closedLeads.length === 0) {
+      alert('No hay ventas cerradas para exportar.');
+      return;
+    }
+
+    const data = closedLeads.map(lead => ({
+      'NOMBRES': lead.name || '',
+      'APELLIDOS': '',
+      'TELEFONO': lead.phone || '',
+      'DIRECCION': lead.address || '',
+      'CIUDAD': lead.city || '',
+      'DEPARTAMENTO': '',
+      'CODIGO PRODUCTO': lead.product_name || '',
+      'CANTIDAD': 1,
+      'OBSERVACIONES': lead.notes || ''
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Ventas');
+    XLSX.writeFile(workbook, `Ventas_Dropi_${new Date().toISOString().split('T')[0]}.xlsx`);
+  }
+
   return (
     <div className="h-[calc(100vh-8rem)] flex flex-col relative">
       <div className="mb-6 flex justify-between items-end">
@@ -185,6 +211,12 @@ export function CrmSales() {
         </div>
         
         <div className="flex gap-4 items-center">
+          <button 
+            onClick={handleExportExcel}
+            className="flex items-center gap-2 px-4 py-2 bg-green-600 rounded-lg text-sm font-semibold text-white shadow-sm hover:bg-green-500"
+          >
+            <Download className="w-4 h-4" /> Exportar Dropi (Excel)
+          </button>
           <button 
             onClick={() => setIsAddingLead(true)}
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 rounded-lg text-sm font-semibold text-white shadow-sm hover:bg-blue-500"
