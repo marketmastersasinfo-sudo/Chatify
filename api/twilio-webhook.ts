@@ -108,7 +108,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         traffic_source: 'whatsapp_direct',
         is_banned: false
       }).select().single();
-      if (newLead) leadId = newLead.id;
+      if (newLead) {
+        leadId = newLead.id;
+        // 🎯 Disparar evento "Lead" cuando el prospecto inicia la conversación por primera vez
+        try {
+          const { firePixelEvent } = await import('./utils/_tracking.js');
+          await firePixelEvent(supabase, leadId, 'Lead', 0, 'COP', customerPhone);
+        } catch (e) {
+          console.error('Tracking Error on Lead creation', e);
+        }
+      }
     }
 
     if (!leadId) {
@@ -513,6 +522,10 @@ async function handleSophia({ lead, productInfo, leadId, incomingText, storeTwil
         const mapQuery = encodeURIComponent(`${newAddress}, ${newCity}`);
         const streetViewUrl = `https://maps.googleapis.com/maps/api/streetview?size=600x400&location=${mapQuery}&key=${apiKey}`;
         
+        // 🎯 Disparar evento "AddPaymentInfo" ya que el cliente dio sus datos de envío (Equivalente en Pago Contra Entrega)
+        const { firePixelEvent } = await import('./utils/_tracking.js');
+        await firePixelEvent(sb, leadId, 'AddPaymentInfo', lead?.total_price || 0, 'COP', customerPhone).catch(console.error);
+
         aiReply = `¡Excelente! 🎉 Tengo toda la información. Para asegurar que la entrega de tu pedido sea perfecta, ¿esta es la fachada correcta de tu dirección? 🏠📍`;
         
         await isTwilioClient.messages.create({
