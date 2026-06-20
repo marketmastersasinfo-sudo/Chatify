@@ -474,27 +474,6 @@ export function Settings() {
 
             <div className="mt-6 pt-4 border-t border-gray-200">
               <label className="block text-sm font-semibold text-gray-900 mb-2">Probar Conexión en Vivo (Opcional)</label>
-              <p className="text-xs text-gray-500 mb-3">Si quieres ver el evento en la pestaña de "Probar eventos" de Facebook, pega aquí el código de prueba que te da Facebook (ej. TEST12345) y haz clic en probar.</p>
-              <div className="flex gap-2 max-w-md">
-                <input type="text" placeholder="TEST..." className="w-48 px-3 py-2 border border-gray-200 rounded-lg text-sm" id="metaTestCode" />
-                <button 
-                  onClick={() => {
-                    const code = (document.getElementById('metaTestCode') as HTMLInputElement).value;
-                    const btn = document.getElementById('testBtnMeta');
-                    if (btn) btn.innerHTML = 'Enviando...';
-                    fetch('/api/tracking/fire-event', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ 
-                        leadId: 'TEST', eventName: 'Purchase', value: 85000, currency: 'COP', 
-                        testEventCode: code || undefined,
-                        overrides: { metaPixelId, metaCapiToken }
-                      })
-                    }).then(r => r.json()).then(data => {
-                      if (btn) btn.innerHTML = 'Enviar Venta de Prueba';
-                      alert('Respuesta de Meta:\\n\\n' + JSON.stringify(data.results?.facebook || data, null, 2));
-                    }).catch(e => alert('Error: ' + e.message));
-                  }}
               <p className="text-xs text-gray-500 mb-3">Haz clic para enviar una compra a GA4. Aparecerá en el <b>DebugView</b> de Google Analytics en tiempo real.</p>
               <div className="flex gap-2 max-w-md">
                 <button 
