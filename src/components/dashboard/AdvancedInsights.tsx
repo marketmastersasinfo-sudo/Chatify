@@ -191,11 +191,31 @@ export function AdvancedInsights({ insightsData, leads }: AdvancedInsightsProps)
               <p className="text-xs text-gray-500 font-medium mb-4">
                 Productos que generan interés pero la gente abandona el carrito o la conversación a último minuto. Selecciona uno para analizar objeciones.
               </p>
-              <div className="space-y-3">
+              
+              {/* Product Search Bar */}
+              <div className="relative mb-4">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input 
+                  type="text" 
+                  placeholder="Buscar producto por nombre..." 
+                  className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-red-500 outline-none transition-all"
+                  onChange={(e) => {
+                    const term = e.target.value.toLowerCase();
+                    const items = document.querySelectorAll('.product-friction-item');
+                    items.forEach((item: any) => {
+                      const name = item.getAttribute('data-name')?.toLowerCase() || '';
+                      if (name.includes(term)) item.style.display = 'block';
+                      else item.style.display = 'none';
+                    });
+                  }}
+                />
+              </div>
+
+              <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
                 {productFriction.map((p: any, idx: number) => (
-                  <div key={idx} className={`p-3 rounded-xl border transition-all cursor-pointer ${selectedProductNlp === p.name ? 'border-red-400 bg-red-50/30 shadow-sm' : 'border-gray-100 bg-gray-50 hover:bg-gray-100'}`} onClick={() => runNLPAnalysis(p.name)}>
+                  <div key={idx} data-name={p.name} className={`product-friction-item p-3 rounded-xl border transition-all cursor-pointer ${selectedProductNlp === p.name ? 'border-red-400 bg-red-50/30 shadow-sm' : 'border-gray-100 bg-gray-50 hover:bg-gray-100'}`} onClick={() => runNLPAnalysis(p.name)}>
                     <div className="flex justify-between items-center mb-2">
-                      <span className="text-sm font-bold text-gray-800 line-clamp-1 flex-1 pr-2">{p.name}</span>
+                      <span className="text-sm font-bold text-gray-800 line-clamp-1 flex-1 pr-2" title={p.name}>{p.name}</span>
                       <span className="text-xs font-black text-red-600 bg-red-100 px-2 py-0.5 rounded-md">{p.dropoffRate.toFixed(0)}% Abandono</span>
                     </div>
                     <div className="flex items-center gap-3 text-xs text-gray-500">

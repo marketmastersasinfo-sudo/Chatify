@@ -273,15 +273,28 @@ export function processAdvancedInsights(leads: any[]) {
   const totalUniqueCustomers = repeatCustomers + singleCustomers;
   const retentionRate = totalUniqueCustomers > 0 ? (repeatCustomers / totalUniqueCustomers) * 100 : 0;
 
+  // Helper para agrupar productos similares (Ignora variantes y prefijos)
+  const normalizeProductName = (name: string) => {
+    if (!name) return 'Producto Desconocido';
+    let n = name.replace(/\([^)]+\)/g, ''); // Remueve variantes entre paréntesis
+    n = n.replace(/^(oferta|promo|promoción|descuento|combo|liquidación)\s*[:-]?\s*/i, ''); // Remueve prefijos comunes
+    n = n.replace(/^[\.,'"]+/, ''); // Remueve puntuación basura al inicio (como ',' o '.')
+    n = n.trim();
+    // Capitalize first letter
+    return n.charAt(0).toUpperCase() + n.slice(1).toLowerCase();
+  };
+
   // 4. FRICCIÓN POR PRODUCTO
   const productMap = new Map<string, { total: number, abandoned: number }>();
   leads.forEach(l => {
     if (l.product_name) {
       const isLost = ['lost', 'cold_lead'].includes(l.status);
-      if (!productMap.has(l.product_name)) {
-        productMap.set(l.product_name, { total: 0, abandoned: 0 });
+      const normalizedName = normalizeProductName(l.product_name);
+      
+      if (!productMap.has(normalizedName)) {
+        productMap.set(normalizedName, { total: 0, abandoned: 0 });
       }
-      const data = productMap.get(l.product_name)!;
+      const data = productMap.get(normalizedName)!;
       data.total++;
       if (isLost) data.abandoned++;
     }
@@ -292,9 +305,8 @@ export function processAdvancedInsights(leads: any[]) {
       ...data,
       dropoffRate: data.total > 0 ? (data.abandoned / data.total) * 100 : 0
     }))
-    .filter(p => p.total > 1) // At least 2 leads to show up
-    .sort((a, b) => b.dropoffRate - a.dropoffRate)
-    .slice(0, 10);
+    .filter(p => p.name !== 'Producto desconocido' && p.name !== '' && p.total > 0)
+    .sort((a, b) => b.total - a.total); // Sort by volume initially
 
   // 6. GEOREFERENCIACIÓN (Demografía de Interés)
   const cityMap = new Map<string, { total: number, converted: number, revenue: number }>();
