@@ -184,17 +184,24 @@ export function CrmSales() {
       return;
     }
 
-    const data = closedLeads.map(lead => ({
-      'NOMBRES': lead.name || '',
-      'APELLIDOS': '',
-      'TELEFONO': lead.phone || '',
-      'DIRECCION': lead.address || '',
-      'CIUDAD': lead.city || '',
-      'DEPARTAMENTO': '',
-      'CODIGO PRODUCTO': lead.product_name || '',
-      'CANTIDAD': 1,
-      'OBSERVACIONES': lead.notes || ''
-    }));
+    const data = closedLeads.map(lead => {
+      let observaciones = lead.notes || '';
+      if (lead.sector) observaciones += ` | Barrio/Sector: ${lead.sector}`;
+      if (lead.postal_code) observaciones += ` | CP: ${lead.postal_code}`;
+      if (lead.email) observaciones += ` | Email: ${lead.email}`;
+
+      return {
+        'NOMBRES': lead.name || '',
+        'APELLIDOS': lead.last_name || '',
+        'TELEFONO': lead.phone || '',
+        'DIRECCION': lead.address || '',
+        'CIUDAD': lead.city || '',
+        'DEPARTAMENTO': lead.department || '',
+        'CODIGO PRODUCTO': lead.product_name || '',
+        'CANTIDAD': 1,
+        'OBSERVACIONES': observaciones.replace(/^ \| /, '') // Clean up leading separator
+      };
+    });
 
     const worksheet = XLSX.utils.json_to_sheet(data);
     const workbook = XLSX.utils.book_new();

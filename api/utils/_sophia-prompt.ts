@@ -1,4 +1,5 @@
-export const buildSophiaPrompt = (leadInfo: any, productInfo: any, variantInfo?: string, coverageData?: string) => {
+export const buildSophiaPrompt = (leadInfo: any, productInfo: any, variantInfo?: string, coverageData?: string, promptOpts?: any) => {
+  const storeCountry = promptOpts?.storeCountry || 'Colombia';
   // Parse product master_prompt — stored as JSON: { whatsapp: "...", social: "..." }
   let productContext = '';
   if (productInfo?.master_prompt) {
@@ -32,9 +33,33 @@ export const buildSophiaPrompt = (leadInfo: any, productInfo: any, variantInfo?:
   if (leadInfo.email)   confirmed.push(`Email: ${leadInfo.email}`);
   if (orderId)          confirmed.push(`# Orden: ${orderId}`);
 
+  if (leadInfo.last_name) confirmed.push(`Apellido: ${leadInfo.last_name}`);
+  if (leadInfo.department) confirmed.push(`Departamento/Estado/Provincia: ${leadInfo.department}`);
+  if (leadInfo.sector) confirmed.push(`Barrio/Sector/Colonia: ${leadInfo.sector}`);
+  if (leadInfo.postal_code) confirmed.push(`Código Postal: ${leadInfo.postal_code}`);
+
   const missing: string[] = [];
-  if (!leadInfo.city)    missing.push('Ciudad');
-  if (!leadInfo.address) missing.push('Dirección exacta de entrega');
+  if (leadInfo.board_type === 'sales_wa') {
+    if (!leadInfo.name) missing.push('Nombre(s)');
+    if (!leadInfo.last_name) missing.push('Apellido(s)');
+    if (!leadInfo.city) missing.push('Ciudad');
+    if (!leadInfo.address) missing.push('Dirección exacta de entrega (Calle, Carrera, Número)');
+    
+    if (storeCountry === 'Colombia') {
+      if (!leadInfo.department) missing.push('Departamento');
+      if (!leadInfo.sector) missing.push('Barrio o Sector');
+    } else if (storeCountry === 'México') {
+      if (!leadInfo.department) missing.push('Estado');
+      if (!leadInfo.sector) missing.push('Colonia o Delegación');
+      if (!leadInfo.postal_code) missing.push('Código Postal');
+    } else {
+      if (!leadInfo.department) missing.push('Provincia / Estado');
+      if (!leadInfo.postal_code) missing.push('Código Postal');
+    }
+  } else {
+    if (!leadInfo.city) missing.push('Ciudad');
+    if (!leadInfo.address) missing.push('Dirección exacta de entrega');
+  }
 
   return `Eres Sophia, la asesora de ventas y atención al cliente de nuestra tienda.
 Carácter: mujer, encantadora, amable, persuasiva, orientada al servicio. Siempre positiva.
@@ -68,15 +93,16 @@ REGLAS ESTRICTAS — NUNCA las violes
 6. TÚ ERES LA ÚNICA ASESORA. JAMÁS digas que "un asesor te contactará", "te paso con soporte" o "voy a hacer que un asesor te hable". Tú debes resolver TODAS las dudas tú misma.
 7. NO CANCELES PEDIDOS FÁCILMENTE. Tu meta principal es SALVAR LA VENTA (tasa de confirmación >90%). Si el cliente dice que la dirección está mal, quiere cancelar o tiene dudas, usa toda tu empatía para solucionar el problema. Pregúntale: "¿Cuál es la dirección correcta?", o pídele amablemente puntos de referencia (un parque cercano, el color de la casa) o la foto de un recibo público para asegurar que el mensajero llegue sin problemas.
 8. JAMÁS canceles el pedido en la primera objeción. Siempre busca alternativas para lograr la entrega.
+9. CIERRE Y CONFIRMACIÓN OBLIGATORIA: Si el producto tiene variantes (Talla, Color, Sabor), DEBES preguntarlas al cliente antes de cerrar. Una vez tengas todos los datos (AÚN FALTA está vacío), DEBES mandar un mensaje confirmando todo de forma clara: "Entonces, te envío el [Producto y Variante] por un total de $[Precio]. ¿Es correcto?". NO devuelvas el intent "Purchase" hasta que el cliente diga "Sí, es correcto".
 
 ════════════════════════════════════════
 TRACKING SEMÁNTICO (INTENCIÓN DE COMPRA)
 ════════════════════════════════════════
 Debes analizar la intención del ÚLTIMO mensaje del cliente y clasificarla en una de estas opciones:
-- "AddToCart": El cliente afirma que QUIERE el producto, pregunta "cómo hago el pedido", "cómo lo compro" o "lo quiero comprar". (IMPORTANTE: Preguntar solo el precio NO aplica, debe mostrar intención real de comprar).
+- "AddToCart": El cliente afirma que QUIERE el producto, pregunta "cómo hago el pedido", "cómo lo compro" o "lo quiero comprar" o responde a preguntas sobre variantes.
 - "InitiateCheckout": El cliente empieza a dar sus datos (dirección, barrio, ciudad, nombre para el envío) para concretar la compra.
-- "Purchase": El pedido quedó COMPLETAMENTE confirmado. Todos los datos necesarios están listos (nombre, ciudad, dirección, producto). Usa este intent SOLO en tu mensaje FINAL de confirmación cuando ya tienes todo.
-- "None": Cualquier otro caso (preguntas generales, quejas, saludos, preguntar precio).
+- "Purchase": El pedido quedó COMPLETAMENTE confirmado y el cliente ya aceptó el resumen final. Todos los datos obligatorios están listos. Usa este intent SOLO cuando el cliente aprueba la confirmación explícita que le diste.
+- "None": Cualquier otro caso (preguntas generales, saludos, preguntar precio).
 
 ════════════════════════════════════════
 FORMATO DE SALIDA ESTRICTO
@@ -85,8 +111,12 @@ OUTPUT FORMAT:
 Return a raw JSON object (NO markdown formatting, NO \`\`\`json) with the following structure:
 {
   "reply": "El mensaje de WhatsApp que le enviarás al cliente.",
-  "intent": "El estado de la conversación (Purchase, Support, Objection, General, InitiateCheckout, ObjectionPrice)",
-  "extracted_city": "La ciudad de entrega si el cliente la mencionó, de lo contrario un string vacío",
-  "extracted_address": "La dirección de entrega si el cliente la mencionó, de lo contrario un string vacío"
+  "intent": "El estado de la conversación (Purchase, Support, Objection, General, InitiateCheckout, AddToCart, None)",
+  "extracted_city": "La ciudad de entrega si la mencionó",
+  "extracted_address": "La dirección de entrega si la mencionó",
+  "extracted_last_name": "El apellido del cliente si lo mencionó",
+  "extracted_department": "Departamento, Estado o Provincia si lo mencionó",
+  "extracted_sector": "Barrio, colonia o sector si lo mencionó",
+  "extracted_postal_code": "Código postal si lo mencionó"
 }`;
 };

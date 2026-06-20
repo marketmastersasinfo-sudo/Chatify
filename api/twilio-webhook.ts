@@ -74,7 +74,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const storeTwilioPhoneWithPlus = storeTwilioPhone.startsWith('+') ? storeTwilioPhone : `+${storeTwilioPhone}`;
 
     // ── Find Store ──────────────────────────────────
-    const { data: stores } = await supabase.from('stores').select('id, twilio_phone_number, organization_id');
+    const { data: stores } = await supabase.from('stores').select('id, twilio_phone_number, organization_id, country');
     const store = stores?.find(s => {
       if (!s.twilio_phone_number) return false;
       const dbNum = s.twilio_phone_number.trim().replace('whatsapp:', '');
@@ -88,7 +88,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // ── Find Lead ───────────────────────────────────
     const { data: lead } = await supabase
       .from('leads')
-      .select('id, status, board_type, address, city, name, product_name, total_price, notes, document_id, email, recovery_touch')
+      .select('id, status, board_type, address, city, name, product_name, total_price, notes, document_id, email, recovery_touch, last_name, department, sector, postal_code')
       .eq('phone', customerPhone)
       .eq('store_id', store.id)
       .order('created_at', { ascending: false })
@@ -439,7 +439,8 @@ async function handleSophia({ lead, productInfo, leadId, incomingText, storeTwil
   const variantInfo = await getTemplateMessageContext(leadId);
 
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-  const aiMessages: any[] = [{ role: 'system', content: buildSophiaPrompt(lead || {}, productInfo, variantInfo, cachedCoverage || undefined) }];
+  const promptOpts = { storeCountry: store?.country || 'Colombia' };
+  const aiMessages: any[] = [{ role: 'system', content: buildSophiaPrompt(lead || {}, productInfo, variantInfo, cachedCoverage || undefined, promptOpts) }];
 
   for (const msg of recentMessages) {
     if (msg.content.startsWith('[')) continue; // skip system/debug messages
@@ -459,7 +460,7 @@ async function handleSophia({ lead, productInfo, leadId, incomingText, storeTwil
     });
 
     const aiOutput = response.choices[0]?.message?.content?.trim() || '{}';
-    let parsed: { reply: string, intent: string, extracted_city?: string, extracted_address?: string } = { reply: '', intent: 'None' };
+    let parsed: { reply: string, intent: string, extracted_city?: string, extracted_address?: string, extracted_last_name?: string, extracted_department?: string, extracted_sector?: string, extracted_postal_code?: string } = { reply: '', intent: 'None' };
     
     try {
       parsed = JSON.parse(aiOutput);
@@ -482,10 +483,14 @@ async function handleSophia({ lead, productInfo, leadId, incomingText, storeTwil
     let newCity = lead?.city || '';
     let addressUpdated = false;
 
-    if (parsed.extracted_address || parsed.extracted_city) {
+    if (parsed.extracted_address || parsed.extracted_city || parsed.extracted_last_name || parsed.extracted_department || parsed.extracted_sector || parsed.extracted_postal_code) {
       const updateData: any = {};
       if (parsed.extracted_address && !lead?.address) { updateData.address = parsed.extracted_address; newAddress = parsed.extracted_address; addressUpdated = true; }
       if (parsed.extracted_city && !lead?.city) { updateData.city = parsed.extracted_city; newCity = parsed.extracted_city; addressUpdated = true; }
+      if (parsed.extracted_last_name && !lead?.last_name) { updateData.last_name = parsed.extracted_last_name; addressUpdated = true; }
+      if (parsed.extracted_department && !lead?.department) { updateData.department = parsed.extracted_department; addressUpdated = true; }
+      if (parsed.extracted_sector && !lead?.sector) { updateData.sector = parsed.extracted_sector; addressUpdated = true; }
+      if (parsed.extracted_postal_code && !lead?.postal_code) { updateData.postal_code = parsed.extracted_postal_code; addressUpdated = true; }
       
       if (addressUpdated) {
         await sb.from('leads').update(updateData).eq('id', leadId);
