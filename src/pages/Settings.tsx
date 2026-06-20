@@ -361,14 +361,18 @@ export function Settings() {
                         testEventCode: code || undefined,
                         overrides: {
                           metaPixelId: metaPixelId,
-                          metaCapiToken: metaCapiToken
+                          metaCapiToken: metaCapiToken,
+                          tiktokPixelId: tiktokPixelId,
+                          tiktokAccessToken: tiktokAccessToken,
+                          ga4MeasurementId: ga4MeasurementId,
+                          ga4ApiSecret: ga4ApiSecret
                         }
                       })
                     })
                     .then(r => r.json())
                     .then(data => {
                       if (btn) btn.innerHTML = 'Venta de Prueba Enviada';
-                      alert('Respuesta del Servidor de Facebook:\\n\\n' + JSON.stringify(data.results?.facebook || data, null, 2));
+                      alert('Respuesta de los Servidores (Meta, TikTok, GA4):\\n\\n' + JSON.stringify(data.results || data, null, 2));
                     })
                     .catch(e => alert('Error: ' + e.message));
                   }}
