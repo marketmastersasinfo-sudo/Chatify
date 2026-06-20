@@ -190,12 +190,13 @@ export async function firePixelEvent(
             session_id: '123',
             debug_mode: 1,
             transaction_id: ga4EventName === 'purchase' ? (lead?.id || leadId || crypto.randomUUID()) : undefined,
-            items: lead?.product_name ? [{
-              item_id: 'ITEM_01',
-              item_name: lead.product_name,
+            engagement_time_msec: 1,
+            items: [{
+              item_id: lead?.product_name ? 'ITEM_01' : 'TEST_01',
+              item_name: lead?.product_name || 'Producto General',
               price: value || lead?.total_price || 0,
               quantity: 1
-            }] : undefined
+            }]
           }
         }]
       };
