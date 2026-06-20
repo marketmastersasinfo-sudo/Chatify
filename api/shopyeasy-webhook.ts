@@ -7,9 +7,21 @@ import { firePixelEvent } from './utils/_tracking.js';
 function formatPhone(phone: string, defaultCountryCode: string = '57'): string {
   if (!phone) return '';
   let cleaned = phone.replace(/[^\d+]/g, '');
-  if (cleaned.startsWith('+')) return cleaned.substring(1);
-  if (cleaned.length === 10) return `${defaultCountryCode}${cleaned}`;
-  if (cleaned.length > 10 && cleaned.startsWith(defaultCountryCode)) return cleaned;
+  
+  if (cleaned.startsWith('+')) {
+    cleaned = cleaned.substring(1);
+  }
+  
+  // Eliminar el 0 inicial si está presente (muy común en Venezuela, Ecuador, Perú, Colombia)
+  if (cleaned.startsWith('0')) {
+    cleaned = cleaned.substring(1);
+  }
+
+  // Si después de limpiar, el número no empieza con el indicativo del país, se lo agregamos
+  if (!cleaned.startsWith(defaultCountryCode)) {
+    return `${defaultCountryCode}${cleaned}`;
+  }
+  
   return cleaned;
 }
 
@@ -75,13 +87,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     };
     const country = countryMap[rawCountry] || rawCountry;
     
+    // Mapa de indicativos por país
+    const countryCallingCodes: Record<string, string> = {
+      'Colombia': '57',
+      'Perú': '51',
+      'Ecuador': '593',
+      'Venezuela': '58',
+      'Costa Rica': '506',
+      'Guatemala': '502'
+    };
+    const defaultCallingCode = countryCallingCodes[country] || '57';
+    
     const { data: store } = await supabase.from('stores').select('id').eq('name', storeName).eq('country', country).single();
     if (!store) {
       return res.status(404).json({ error: `Tienda no encontrada: ${storeName} en ${country}` });
     }
 
     // 2. Formatear el teléfono
-    const formattedPhone = formatPhone(customerPhone);
+    const formattedPhone = formatPhone(customerPhone, defaultCallingCode);
 
     // 3. Determinar el tablero y estado correcto
     let targetBoard = 'logistics';
