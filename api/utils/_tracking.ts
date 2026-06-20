@@ -124,7 +124,8 @@ export async function firePixelEvent(
           params: {
             value: value || lead.total_price || 0,
             currency: currency,
-            session_id: '123'
+            session_id: '123',
+            debug_mode: 1
           }
         }]
       };
