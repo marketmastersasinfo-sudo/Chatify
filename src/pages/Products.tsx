@@ -137,46 +137,52 @@ export function Products() {
   }
 
   async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
 
     setUploadingMedia(true);
     try {
-      let finalFile: File | Blob = file;
-      const isImage = file.type.startsWith('image/');
-      
-      // Compress image
-      if (isImage) {
-        const options = {
-          maxSizeMB: 0.5, // 500KB max for WhatsApp
-          maxWidthOrHeight: 1280,
-          useWebWorker: true
-        };
-        finalFile = await imageCompression(file, options);
+      const newAssets: { tag: string, url: string, type: string }[] = [];
+      let currentIndex = mediaAssets.length;
+
+      for (const file of files) {
+        let finalFile: File | Blob = file;
+        const isImage = file.type.startsWith('image/');
+        
+        // Compress image
+        if (isImage) {
+          const options = {
+            maxSizeMB: 0.5, // 500KB max for WhatsApp
+            maxWidthOrHeight: 1280,
+            useWebWorker: true
+          };
+          finalFile = await imageCompression(file, options);
+        }
+
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+
+        const { data, error } = await supabase.storage
+          .from('chatify_media')
+          .upload(fileName, finalFile, { cacheControl: '3600', upsert: false });
+
+        if (error) throw error;
+
+        const { data: { publicUrl } } = supabase.storage.from('chatify_media').getPublicUrl(data.path);
+        
+        currentIndex++;
+        const newTag = `[MEDIA_${currentIndex}]`;
+        newAssets.push({
+          tag: newTag,
+          url: publicUrl,
+          type: isImage ? 'image' : 'audio'
+        });
       }
 
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-
-      const { data, error } = await supabase.storage
-        .from('chatify_media')
-        .upload(fileName, finalFile, { cacheControl: '3600', upsert: false });
-
-      if (error) throw error;
-
-      const { data: { publicUrl } } = supabase.storage.from('chatify_media').getPublicUrl(data.path);
-      
-      const newTag = `[MEDIA_${mediaAssets.length + 1}]`;
-      const newAsset = {
-        tag: newTag,
-        url: publicUrl,
-        type: isImage ? 'image' : 'audio'
-      };
-
-      setMediaAssets([...mediaAssets, newAsset]);
+      setMediaAssets(prev => [...prev, ...newAssets]);
     } catch (err) {
       console.error('Error uploading:', err);
-      alert('Error subiendo el archivo. Asegúrate de haber creado el bucket "chatify_media".');
+      alert('Error subiendo uno o más archivos. Asegúrate de haber creado el bucket "chatify_media".');
     }
     setUploadingMedia(false);
     if (fileInputRef.current) fileInputRef.current.value = '';
@@ -305,7 +311,7 @@ export function Products() {
                 <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-4">Librería Multimedia (Imágenes y Notas de Voz)</h4>
                 <p className="text-xs text-gray-500 mb-4">Sube archivos y pega sus Tags en el Prompt Maestro para que la IA los envíe cuando tú decidas.</p>
                 
-                <input type="file" ref={fileInputRef} className="hidden" accept="image/*, audio/mp3, audio/ogg, audio/mpeg" onChange={handleFileUpload} />
+                <input type="file" ref={fileInputRef} className="hidden" accept="image/*, audio/mp3, audio/ogg, audio/mpeg" multiple onChange={handleFileUpload} />
                 
                 <button 
                   onClick={() => fileInputRef.current?.click()}
