@@ -175,6 +175,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).send('<?xml version="1.0" encoding="UTF-8"?><Response></Response>');
     }
 
+    // ── DEBUG COMMAND: CHECK_DB ────────────────────────
+    if (incomingText.trim().toUpperCase() === 'CHECK_DB') {
+      const searchTerm = lead?.product_name ? lead.product_name.substring(0, 15) : '';
+      const { data: prods } = await supabase.from('products').select('id, name, price, offers, media_assets, master_prompt').ilike('name', `%${searchTerm}%`);
+      const debugMsg = `Encontré ${prods?.length || 0} productos para "${searchTerm}":\n\n` + JSON.stringify(prods, null, 2).substring(0, 1500);
+      await isTwilioClient.messages.create({
+        from: `whatsapp:+${storeTwilioPhone.replace('+', '')}`,
+        to: `whatsapp:+${customerPhone}`,
+        body: debugMsg
+      });
+      return res.status(200).send('<?xml version="1.0" encoding="UTF-8"?><Response></Response>');
+    }
+
     // ─────────────────────────────────────────────────
     // STATE MACHINE — 3 states for logistics leads
     // ─────────────────────────────────────────────────
@@ -419,6 +432,7 @@ async function fetchProductInfo(lead: any, storeId: string): Promise<any> {
     .select('name, price, offers, media_assets, master_prompt, flow_template_id')
     .eq('store_id', storeId)
     .ilike('name', `%${searchTerm}%`)
+    .order('created_at', { ascending: false })
     .limit(1).maybeSingle();
     
   if (product && product.flow_template_id) {
