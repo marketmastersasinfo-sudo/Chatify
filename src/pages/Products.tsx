@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Image as ImageIcon, Music, Loader2, Save, Trash2, Copy, Store, Plus, ArrowUp, ArrowDown, Gift, BrainCircuit } from 'lucide-react';
+import { Image as ImageIcon, Music, Loader2, Save, Trash2, Copy, Store, Plus, ArrowUp, ArrowDown, Gift, BrainCircuit, ChevronLeft } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import imageCompression from 'browser-image-compression';
 
@@ -91,7 +91,6 @@ export function Products() {
       if (parsed.builderData) {
         setOffers(parsed.builderData.offers || []);
         
-        // Convert old phases to single prompt if upgrading
         if (parsed.builderData.customPrompt !== undefined) {
           setCustomPrompt(parsed.builderData.customPrompt);
         } else if (parsed.builderData.phases) {
@@ -203,7 +202,6 @@ export function Products() {
         let finalFile: File | Blob = file;
         const isImage = file.type.startsWith('image/');
         
-        // Compress image
         if (isImage) {
           const options = {
             maxSizeMB: 0.5,
@@ -256,10 +254,8 @@ export function Products() {
     const newAssets = [...mediaAssets];
     const swapIndex = direction === 'up' ? index - 1 : index + 1;
     
-    // Swap
     [newAssets[index], newAssets[swapIndex]] = [newAssets[swapIndex], newAssets[index]];
     
-    // Retag
     const retagged = newAssets.map((a, i) => ({ ...a, tag: `[MEDIA_${i + 1}]` }));
     setMediaAssets(retagged);
   }
@@ -269,12 +265,12 @@ export function Products() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-7xl mx-auto space-y-8 p-4 sm:p-6">
       <div className="sm:flex sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">Embudos de Productos</h1>
-          <p className="mt-2 text-sm text-gray-700 dark:text-gray-300">
-            Diseña la estrategia de ventas perfecta para la Inteligencia Artificial.
+          <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">Catálogo de Productos</h1>
+          <p className="mt-2 text-sm text-slate-500">
+            Diseña la estrategia de ventas perfecta para que la Inteligencia Artificial convierta más.
           </p>
         </div>
         
@@ -282,7 +278,7 @@ export function Products() {
           <div className="mt-4 flex items-center gap-4 sm:ml-16 sm:mt-0">
             <div className="relative">
               <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                <Store className="h-4 w-4 text-gray-400" />
+                <Store className="h-4 w-4 text-slate-400" />
               </div>
               <select
                 value={selectedStore?.id || ''}
@@ -290,7 +286,7 @@ export function Products() {
                   const s = stores.find(x => x.id === e.target.value);
                   if (s) setSelectedStore(s);
                 }}
-                className="block w-full rounded-md border-0 py-1.5 pl-10 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-blue-600 sm:text-sm sm:leading-6 dark:bg-gray-800 dark:ring-gray-700 dark:text-white"
+                className="block w-full rounded-xl border-0 py-2.5 pl-10 pr-10 text-slate-900 ring-1 ring-inset ring-slate-200 focus:ring-2 focus:ring-indigo-600 sm:text-sm sm:leading-6 bg-white shadow-sm font-medium cursor-pointer"
               >
                 {stores.map(s => (
                   <option key={s.id} value={s.id}>{s.name} ({s.country})</option>
@@ -301,7 +297,7 @@ export function Products() {
             <button
               onClick={handleAddClick}
               disabled={!selectedStore}
-              className="flex items-center gap-2 rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 disabled:opacity-50"
+              className="flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 disabled:opacity-50 transition-all duration-200"
             >
               <Plus className="h-4 w-4" />
               Nuevo Producto
@@ -311,38 +307,38 @@ export function Products() {
       </div>
 
       {!isAdding ? (
-        <div className="bg-white dark:bg-gray-900 shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-300 dark:divide-gray-700">
-            <thead className="bg-gray-50 dark:bg-gray-800">
+        <div className="bg-white shadow-sm ring-1 ring-slate-200 sm:rounded-2xl overflow-hidden">
+          <table className="min-w-full divide-y divide-slate-200">
+            <thead className="bg-slate-50/50">
               <tr>
-                <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 dark:text-white sm:pl-6">Nombre del Producto</th>
-                <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white">Precio Base</th>
-                <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white">Multimedia</th>
-                <th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-6"><span className="sr-only">Editar</span></th>
+                <th scope="col" className="py-4 pl-6 pr-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Nombre del Producto</th>
+                <th scope="col" className="px-3 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Precio Base</th>
+                <th scope="col" className="px-3 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Multimedia</th>
+                <th scope="col" className="relative py-4 pl-3 pr-6"><span className="sr-only">Editar</span></th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+            <tbody className="divide-y divide-slate-100 bg-white">
               {loading ? (
-                <tr><td colSpan={4} className="py-8 text-center text-gray-500"><Loader2 className="w-6 h-6 animate-spin mx-auto" /></td></tr>
+                <tr><td colSpan={4} className="py-12 text-center text-slate-400"><Loader2 className="w-8 h-8 animate-spin mx-auto text-indigo-500" /></td></tr>
               ) : products.length === 0 ? (
-                <tr><td colSpan={4} className="py-8 text-center text-gray-500">No hay embudos construidos en esta tienda.</td></tr>
+                <tr><td colSpan={4} className="py-12 text-center text-slate-500 bg-slate-50/50 font-medium">No hay productos construidos en esta tienda.</td></tr>
               ) : (
                 products.map((p) => {
                   let assets = [];
                   try { if (p.media_assets) assets = JSON.parse(p.media_assets); } catch {}
                   return (
-                    <tr key={p.id}>
-                      <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 dark:text-white sm:pl-6">{p.name}</td>
-                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">${p.price}</td>
-                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                    <tr key={p.id} className="hover:bg-slate-50/50 transition-colors">
+                      <td className="whitespace-nowrap py-4 pl-6 pr-3 text-sm font-semibold text-slate-900">{p.name}</td>
+                      <td className="whitespace-nowrap px-3 py-4 text-sm font-medium text-slate-600">${p.price}</td>
+                      <td className="whitespace-nowrap px-3 py-4 text-sm">
                         {assets.length > 0 ? (
-                          <span className="inline-flex items-center gap-1 text-xs text-blue-600 bg-blue-50 dark:bg-blue-900/30 dark:text-blue-400 px-2 py-1 rounded-full">
-                            <ImageIcon className="w-3 h-3" /> {assets.length} archivos
+                          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-full border border-indigo-100">
+                            <ImageIcon className="w-3.5 h-3.5" /> {assets.length} archivos
                           </span>
-                        ) : 'Sin archivos'}
+                        ) : <span className="text-slate-400 italic text-xs">Sin archivos</span>}
                       </td>
-                      <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
-                        <button onClick={() => handleEditClick(p)} className="text-blue-600 hover:text-blue-900 dark:hover:text-blue-400">Constructor Visual</button>
+                      <td className="relative whitespace-nowrap py-4 pl-3 pr-6 text-right text-sm font-medium">
+                        <button onClick={() => handleEditClick(p)} className="text-indigo-600 hover:text-indigo-900 font-semibold transition-colors">Configurar Embudo &rarr;</button>
                       </td>
                     </tr>
                   )
@@ -352,58 +348,67 @@ export function Products() {
           </table>
         </div>
       ) : (
-        <div className="bg-white dark:bg-gray-900 shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl overflow-hidden">
-          <div className="border-b border-gray-200 dark:border-gray-800 px-4 py-5 sm:px-6 flex justify-between items-center bg-gray-50 dark:bg-gray-800/50">
-            <h3 className="text-base font-semibold leading-6 text-gray-900 dark:text-white">
-              {editingProduct ? 'Constructor de Embudo' : 'Nuevo Embudo'}
-            </h3>
-            <div className="flex gap-3">
-              <button onClick={() => setIsAdding(false)} className="rounded-md bg-white px-3 py-1.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-white dark:ring-gray-700">
-                Cancelar
+        <div className="bg-white shadow-xl shadow-slate-200/50 ring-1 ring-slate-200 sm:rounded-3xl overflow-hidden">
+          {/* Cabecera del Editor */}
+          <div className="border-b border-slate-100 px-6 py-5 flex justify-between items-center bg-white sticky top-0 z-10">
+            <div className="flex items-center gap-4">
+              <button onClick={() => setIsAdding(false)} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors">
+                <ChevronLeft className="w-5 h-5" />
               </button>
+              <h3 className="text-lg font-bold text-slate-900">
+                {editingProduct ? 'Configuración Premium del Producto' : 'Crear Nuevo Producto'}
+              </h3>
+            </div>
+            <div className="flex gap-3">
               <button 
                 onClick={handleSave} 
                 disabled={saving}
-                className="flex items-center gap-2 rounded-md bg-blue-600 px-4 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 disabled:opacity-50"
+                className="flex items-center gap-2 rounded-xl bg-indigo-600 px-6 py-2.5 text-sm font-bold text-white shadow-md shadow-indigo-200 hover:bg-indigo-500 hover:shadow-lg disabled:opacity-50 transition-all duration-200"
               >
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                Guardar Embudo
+                Guardar Cambios
               </button>
             </div>
           </div>
           
-          <div className="p-6 grid grid-cols-1 xl:grid-cols-3 gap-8">
+          <div className="p-8 grid grid-cols-1 xl:grid-cols-12 gap-8 bg-slate-50/50">
             
             {/* Columna Izquierda: Detalles y Ofertas */}
-            <div className="xl:col-span-1 space-y-8">
+            <div className="xl:col-span-4 space-y-6">
+              
               {/* Bloque 1: Info Base */}
-              <div className="bg-gray-50 dark:bg-gray-800/50 p-5 rounded-xl border border-gray-200 dark:border-gray-700">
-                <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                  <Store className="w-4 h-4 text-blue-500" />
+              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                <h4 className="text-sm font-bold text-slate-900 mb-5 flex items-center gap-2 uppercase tracking-wider">
+                  <Store className="w-4 h-4 text-indigo-500" />
                   Información Base
                 </h4>
-                <div className="space-y-4">
+                <div className="space-y-5">
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Palabra Clave (Producto)</label>
-                    <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Ej: Jogger Hombre Variable" className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 dark:bg-gray-900 dark:ring-gray-700 dark:text-white" />
+                    <label className="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Palabra Clave (Producto)</label>
+                    <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Ej: Jogger Hombre Variable" className="block w-full rounded-xl border-slate-200 py-2.5 text-slate-900 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm font-medium transition-colors" />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Precio Referencia</label>
-                    <input type="number" value={price} onChange={e => setPrice(e.target.value)} placeholder="99000" className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 dark:bg-gray-900 dark:ring-gray-700 dark:text-white" />
+                    <label className="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Precio Base Referencia</label>
+                    <div className="relative">
+                      <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                        <span className="text-slate-400 font-medium">$</span>
+                      </div>
+                      <input type="number" value={price} onChange={e => setPrice(e.target.value)} placeholder="99000" className="block w-full rounded-xl border-slate-200 py-2.5 pl-8 text-slate-900 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm font-medium transition-colors" />
+                    </div>
                   </div>
                 </div>
               </div>
 
               {/* Bloque 2: Ofertas Dinámicas */}
-              <div className="bg-gray-50 dark:bg-gray-800/50 p-5 rounded-xl border border-gray-200 dark:border-gray-700">
-                <div className="flex justify-between items-center mb-4">
-                  <h4 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                    <Gift className="w-4 h-4 text-green-500" />
+              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                <div className="flex justify-between items-center mb-5">
+                  <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2 uppercase tracking-wider">
+                    <Gift className="w-4 h-4 text-emerald-500" />
                     Combos y Upsells
                   </h4>
                   <button 
                     onClick={() => setOffers([...offers, { id: Math.random().toString(), title: '', price: '', gift: '', isUpsell: false }])}
-                    className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                    className="text-xs text-indigo-600 hover:text-indigo-800 font-bold bg-indigo-50 px-3 py-1.5 rounded-lg transition-colors"
                   >
                     + Agregar
                   </button>
@@ -411,23 +416,32 @@ export function Products() {
                 
                 <div className="space-y-4">
                   {offers.length === 0 && (
-                    <p className="text-xs text-gray-500 text-center py-2">No has agregado combos. Se usará el precio de referencia.</p>
+                    <div className="bg-slate-50 border border-dashed border-slate-200 rounded-xl p-4 text-center">
+                      <p className="text-xs text-slate-500 font-medium">No has agregado combos. La IA usará el precio base.</p>
+                    </div>
                   )}
                   {offers.map((offer, idx) => (
-                    <div key={offer.id} className={`p-3 rounded-lg border ${offer.isUpsell ? 'border-purple-200 bg-purple-50 dark:bg-purple-900/20 dark:border-purple-800' : 'border-gray-200 bg-white dark:bg-gray-900 dark:border-gray-700'}`}>
-                      <div className="flex justify-between items-start mb-2">
-                        <span className="text-xs font-bold text-gray-700 dark:text-gray-300">Oferta #{idx + 1}</span>
-                        <button onClick={() => setOffers(offers.filter(o => o.id !== offer.id))} className="text-red-500 hover:text-red-700"><Trash2 className="w-3 h-3" /></button>
+                    <div key={offer.id} className={`p-4 rounded-xl border-2 transition-all ${offer.isUpsell ? 'border-purple-100 bg-purple-50/50' : 'border-slate-100 bg-white hover:border-slate-200'}`}>
+                      <div className="flex justify-between items-start mb-3">
+                        <span className={`text-xs font-extrabold uppercase tracking-wider ${offer.isUpsell ? 'text-purple-600' : 'text-slate-500'}`}>
+                          {offer.isUpsell ? '⭐ Upsell' : `Oferta #${idx + 1}`}
+                        </span>
+                        <button onClick={() => setOffers(offers.filter(o => o.id !== offer.id))} className="text-slate-400 hover:text-red-500 transition-colors"><Trash2 className="w-4 h-4" /></button>
                       </div>
-                      <div className="space-y-2">
-                        <div className="grid grid-cols-2 gap-2">
-                          <input type="text" value={offer.title} onChange={e => { const no = [...offers]; no[idx].title = e.target.value; setOffers(no); }} placeholder="Título (Ej. 3x Joggers)" className="block w-full rounded-md border-0 py-1 px-2 text-xs text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 dark:bg-gray-800 dark:ring-gray-700 dark:text-white" />
-                          <input type="text" value={offer.price} onChange={e => { const no = [...offers]; no[idx].price = e.target.value; setOffers(no); }} placeholder="Precio (Ej. 99000)" className="block w-full rounded-md border-0 py-1 px-2 text-xs text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 dark:bg-gray-800 dark:ring-gray-700 dark:text-white" />
+                      <div className="space-y-3">
+                        <div className="grid grid-cols-2 gap-3">
+                          <input type="text" value={offer.title} onChange={e => { const no = [...offers]; no[idx].title = e.target.value; setOffers(no); }} placeholder="Título (Ej. 3x Joggers)" className="block w-full rounded-lg border-slate-200 py-2 px-3 text-sm text-slate-900 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 font-medium" />
+                          <div className="relative">
+                            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2.5">
+                              <span className="text-slate-400 text-sm font-medium">$</span>
+                            </div>
+                            <input type="number" value={offer.price} onChange={e => { const no = [...offers]; no[idx].price = e.target.value; setOffers(no); }} placeholder="99000" className="block w-full rounded-lg border-slate-200 py-2 pl-6 pr-3 text-sm text-slate-900 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 font-medium" />
+                          </div>
                         </div>
-                        <input type="text" value={offer.gift} onChange={e => { const no = [...offers]; no[idx].gift = e.target.value; setOffers(no); }} placeholder="Regalo/Bono (Opcional)" className="block w-full rounded-md border-0 py-1 px-2 text-xs text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 dark:bg-gray-800 dark:ring-gray-700 dark:text-white" />
-                        <label className="flex items-center gap-2 mt-2 cursor-pointer">
-                          <input type="checkbox" checked={offer.isUpsell} onChange={e => { const no = [...offers]; no[idx].isUpsell = e.target.checked; setOffers(no); }} className="rounded border-gray-300 text-purple-600 focus:ring-purple-600" />
-                          <span className="text-xs text-gray-600 dark:text-gray-400">Es un Upsell secreto (Se ofrece al cierre)</span>
+                        <input type="text" value={offer.gift} onChange={e => { const no = [...offers]; no[idx].gift = e.target.value; setOffers(no); }} placeholder="🎁 Bono/Regalo (Opcional)" className="block w-full rounded-lg border-slate-200 py-2 px-3 text-sm text-slate-900 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 bg-slate-50 font-medium" />
+                        <label className="flex items-center gap-2.5 pt-1 cursor-pointer group">
+                          <input type="checkbox" checked={offer.isUpsell} onChange={e => { const no = [...offers]; no[idx].isUpsell = e.target.checked; setOffers(no); }} className="w-4 h-4 rounded text-purple-600 focus:ring-purple-600 border-slate-300 cursor-pointer" />
+                          <span className="text-xs font-semibold text-slate-600 group-hover:text-purple-700 transition-colors">Marcar como Upsell (ofrecer al final)</span>
                         </label>
                       </div>
                     </div>
@@ -435,82 +449,86 @@ export function Products() {
                 </div>
               </div>
 
-              {/* Bloque 3: Multimedia (Con miniaturas y reordenamiento) */}
-              <div className="bg-gray-50 dark:bg-gray-800/50 p-5 rounded-xl border border-gray-200 dark:border-gray-700">
-                <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                  <ImageIcon className="w-4 h-4 text-orange-500" />
-                  Archivos Multimedia
-                </h4>
-                
-                <input type="file" ref={fileInputRef} className="hidden" accept="image/*, audio/mp3, audio/ogg, audio/mpeg" multiple onChange={handleFileUpload} />
-                
-                <button 
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={uploadingMedia}
-                  className="w-full py-2 mb-4 border border-dashed border-gray-300 dark:border-gray-600 rounded-lg text-xs font-medium text-gray-600 hover:border-blue-500 hover:text-blue-600 transition-colors flex justify-center items-center gap-2 dark:text-gray-400"
-                >
-                  {uploadingMedia ? <><Loader2 className="w-4 h-4 animate-spin" /> Subiendo...</> : <><Plus className="w-4 h-4" /> Seleccionar Fotos/Audios</>}
-                </button>
-
-                <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
-                  {mediaAssets.map((asset, idx) => (
-                    <div key={idx} className="flex items-center gap-3 p-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg group hover:border-blue-300 transition-colors">
-                      {/* Thumbnail */}
-                      <div className="w-12 h-12 flex-shrink-0 bg-gray-100 dark:bg-gray-800 rounded-md overflow-hidden flex items-center justify-center border border-gray-200 dark:border-gray-700">
-                        {asset.type === 'image' ? (
-                          <img src={asset.url} alt="thumbnail" className="w-full h-full object-cover" />
-                        ) : (
-                          <Music className="w-5 h-5 text-purple-500" />
-                        )}
-                      </div>
-                      
-                      {/* Info & Tag */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-gray-900 dark:text-white font-mono bg-gray-100 dark:bg-gray-800 px-1 rounded">
-                            {asset.tag}
-                          </span>
-                          <button onClick={() => copyToClipboard(asset.tag)} className="text-gray-400 hover:text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity" title="Copiar Tag"><Copy className="w-3 h-3" /></button>
-                        </div>
-                      </div>
-
-                      {/* Controls */}
-                      <div className="flex flex-col gap-1 items-center">
-                        <div className="flex gap-1">
-                          <button onClick={() => moveMedia(idx, 'up')} disabled={idx === 0} className="p-1 text-gray-400 hover:text-gray-700 dark:hover:text-white disabled:opacity-30"><ArrowUp className="w-3 h-3" /></button>
-                          <button onClick={() => moveMedia(idx, 'down')} disabled={idx === mediaAssets.length - 1} className="p-1 text-gray-400 hover:text-gray-700 dark:hover:text-white disabled:opacity-30"><ArrowDown className="w-3 h-3" /></button>
-                        </div>
-                        <button onClick={() => removeMedia(idx)} className="p-1 text-red-500 hover:text-red-700"><Trash2 className="w-3 h-3" /></button>
-                      </div>
-                    </div>
-                  ))}
-                  {mediaAssets.length === 0 && <p className="text-xs text-center text-gray-500">No hay multimedia.</p>}
-                </div>
-              </div>
             </div>
 
-            {/* Columna Derecha: Prompt Personalizado del Usuario */}
-            <div className="xl:col-span-2 flex flex-col">
-              <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 flex-1 flex flex-col shadow-sm">
-                <div className="border-b border-gray-200 dark:border-gray-800 px-5 py-4 bg-gray-50 dark:bg-gray-800/30">
-                  <h4 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                    <BrainCircuit className="w-4 h-4 text-blue-500" />
+            {/* Columna Derecha: Prompt y Multimedia */}
+            <div className="xl:col-span-8 flex flex-col gap-6">
+              
+              {/* Bloque: Prompt Maestro */}
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col overflow-hidden h-[500px]">
+                <div className="border-b border-slate-100 px-6 py-4 bg-slate-50/50">
+                  <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2 uppercase tracking-wider">
+                    <BrainCircuit className="w-4 h-4 text-indigo-500" />
                     Tu Prompt Maestro Personalizado
                   </h4>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Pega aquí tus instrucciones para la IA. <strong>No necesitas incluir las ofertas aquí</strong>, el sistema se las inyectará automáticamente a la IA en una capa superior para que tenga ese contexto.
+                  <p className="text-xs text-slate-500 mt-1.5 leading-relaxed font-medium">
+                    Escribe aquí tus instrucciones exactas para la IA. <strong>No necesitas incluir las ofertas aquí</strong>, el sistema se las inyectará automáticamente en una capa superior para que tenga ese contexto comercial perfecto.
                   </p>
                 </div>
 
-                <div className="p-5 flex-1 flex flex-col">
+                <div className="p-0 flex-1">
                   <textarea 
                     value={customPrompt}
                     onChange={e => setCustomPrompt(e.target.value)}
-                    className="block w-full h-full min-h-[500px] rounded-md border-0 py-3 px-4 text-sm text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-blue-600 dark:bg-gray-800 dark:ring-gray-700 dark:text-white font-mono leading-relaxed"
+                    className="block w-full h-full border-0 py-6 px-6 text-sm text-slate-700 focus:ring-0 resize-none font-mono leading-relaxed bg-white"
                     placeholder="Escribe o pega aquí tu propio prompt personalizado..."
                   />
                 </div>
               </div>
+
+              {/* Bloque: Multimedia Horizontal */}
+              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                <div className="flex justify-between items-center mb-5">
+                  <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2 uppercase tracking-wider">
+                    <ImageIcon className="w-4 h-4 text-orange-500" />
+                    Archivos Multimedia
+                  </h4>
+                  <button 
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploadingMedia}
+                    className="text-xs text-indigo-600 hover:text-indigo-800 font-bold bg-indigo-50 px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+                  >
+                    {uploadingMedia ? <><Loader2 className="w-3 h-3 animate-spin" /> Subiendo...</> : <><Plus className="w-3 h-3" /> Subir Fotos/Audios</>}
+                  </button>
+                  <input type="file" ref={fileInputRef} className="hidden" accept="image/*, audio/mp3, audio/ogg, audio/mpeg" multiple onChange={handleFileUpload} />
+                </div>
+                
+                <div className="flex overflow-x-auto gap-4 pb-2 snap-x">
+                  {mediaAssets.map((asset, idx) => (
+                    <div key={idx} className="flex-shrink-0 w-48 bg-white border border-slate-200 rounded-xl overflow-hidden group hover:border-indigo-300 hover:shadow-md transition-all snap-start">
+                      {/* Thumbnail Area */}
+                      <div className="h-32 bg-slate-100 flex items-center justify-center relative group-hover:opacity-90 transition-opacity">
+                        {asset.type === 'image' ? (
+                          <img src={asset.url} alt="thumbnail" className="w-full h-full object-cover" />
+                        ) : (
+                          <Music className="w-8 h-8 text-indigo-400" />
+                        )}
+                        {/* Overlay Controls */}
+                        <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 backdrop-blur-sm">
+                          <button onClick={() => moveMedia(idx, 'up')} disabled={idx === 0} className="p-2 bg-white/90 rounded-full hover:bg-white text-slate-700 disabled:opacity-50 transition-colors shadow-sm"><ArrowUp className="w-4 h-4" /></button>
+                          <button onClick={() => removeMedia(idx)} className="p-2 bg-red-500/90 rounded-full hover:bg-red-500 text-white transition-colors shadow-sm"><Trash2 className="w-4 h-4" /></button>
+                          <button onClick={() => moveMedia(idx, 'down')} disabled={idx === mediaAssets.length - 1} className="p-2 bg-white/90 rounded-full hover:bg-white text-slate-700 disabled:opacity-50 transition-colors shadow-sm"><ArrowDown className="w-4 h-4" /></button>
+                        </div>
+                      </div>
+                      
+                      {/* Info Area */}
+                      <div className="p-3 bg-white border-t border-slate-100 flex items-center justify-between">
+                        <span className="text-xs font-bold text-slate-700 font-mono bg-slate-100 px-2 py-1 rounded">
+                          {asset.tag}
+                        </span>
+                        <button onClick={() => copyToClipboard(asset.tag)} className="text-slate-400 hover:text-indigo-600 transition-colors" title="Copiar Tag"><Copy className="w-4 h-4" /></button>
+                      </div>
+                    </div>
+                  ))}
+                  {mediaAssets.length === 0 && (
+                    <div className="w-full h-32 rounded-xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-400 bg-slate-50">
+                      <ImageIcon className="w-6 h-6 mb-2 opacity-50" />
+                      <span className="text-xs font-medium">Sube fotos o audios para generar las etiquetas [MEDIA_X]</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
             </div>
 
           </div>
