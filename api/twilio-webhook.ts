@@ -564,7 +564,7 @@ async function handleSophia({ lead, productInfo, leadId, incomingText, storeTwil
       }
     }
 
-    if (parsed.intent === 'Purchase' || parsed.intent === 'OrderConfirmed' || parsed.intent === 'InitiateCheckout') {
+    if (parsed.intent === 'Purchase' || parsed.intent === 'OrderConfirmed') {
       
       // INTERCEPTAR PARA STREET VIEW
       if (lead?.status !== 'verifying_address' && newAddress && newCity) {
