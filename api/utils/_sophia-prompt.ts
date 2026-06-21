@@ -88,6 +88,7 @@ ${variantInfo}` : ''}
 CONTEXTO ADICIONAL DEL PRODUCTO (Reglas Base)
 ════════════════════════════════════════
 ${productContext || `El producto es: ${productNameRaw || 'un artículo de nuestra tienda'}.`}
+${productInfo?.offers ? `\nOFERTAS DISPONIBLES:\n${productInfo.offers}` : ''}
 ${funnelContext}
 ════════════════════════════════════════
 REGLAS ESTRICTAS — NUNCA las violes

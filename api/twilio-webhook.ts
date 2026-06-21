@@ -134,6 +134,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         is_banned: false
       }).select().single();
       if (newLead) {
+        lead = newLead;
         leadId = newLead.id;
         // 🎯 Disparar evento "Lead" cuando el prospecto inicia la conversación por primera vez
         try {
@@ -414,7 +415,7 @@ async function fetchProductInfo(lead: any, storeId: string): Promise<any> {
   if (!lead?.product_name) return null;
   const searchTerm = lead.product_name.substring(0, 15);
   const { data: product } = await supabase.from('products')
-    .select('name, price, master_prompt, flow_template_id')
+    .select('name, price, offers, media_assets, master_prompt, flow_template_id')
     .eq('store_id', storeId)
     .ilike('name', `%${searchTerm}%`)
     .limit(1).maybeSingle();
