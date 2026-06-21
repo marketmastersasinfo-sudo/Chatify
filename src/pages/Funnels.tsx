@@ -78,6 +78,35 @@ export function Funnels() {
     }
   };
 
+  const handleCreateNew = async () => {
+    try {
+      setSaving(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data: orgData } = await (supabase as any).from('organization_users').select('organization_id').eq('user_id', user.id).single();
+      
+      const newTemplate = {
+        organization_id: orgData?.organization_id,
+        name: `Nueva Plantilla`,
+        is_base: false,
+        interactions: [
+          { id: `paso-1`, title: 'Paso 1', instruction: 'Escribe tu instrucción aquí...' }
+        ]
+      };
+
+      const { data, error } = await (supabase as any).from('flow_templates').insert(newTemplate).select().single();
+      if (error) throw error;
+
+      setTemplates([...templates, data]);
+      setSelectedTemplate(data);
+    } catch (err) {
+      console.error('Error creando nueva plantilla:', err);
+      alert('Error creando plantilla');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleSave = async () => {
     if (!selectedTemplate) return;
     try {
@@ -160,6 +189,15 @@ export function Funnels() {
                 </button>
               ))}
             </div>
+            
+            <button 
+              onClick={handleCreateNew}
+              disabled={saving}
+              className="mt-6 w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-indigo-200 text-indigo-600 rounded-xl hover:bg-indigo-50 hover:border-indigo-400 transition-colors font-medium text-sm"
+            >
+              <Plus className="w-4 h-4" />
+              Crear Plantilla Nueva
+            </button>
           </div>
         </div>
 
