@@ -172,9 +172,13 @@ export function TemplateBuilder() {
         start = d.toISOString();
       } else if (timeframe === 'month') {
         start = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-      } else if (timeframe === 'custom' && customDates.start && customDates.end) {
-        start = new Date(customDates.start).toISOString();
-        end = new Date(customDates.end + 'T23:59:59.999Z').toISOString();
+      } else if (timeframe === 'custom') {
+        if (customDates.start) {
+          start = new Date(customDates.start + 'T00:00:00').toISOString();
+        }
+        if (customDates.end) {
+          end = new Date(customDates.end + 'T23:59:59').toISOString();
+        }
       }
 
       if (start) url += `&startDate=${encodeURIComponent(start)}`;
