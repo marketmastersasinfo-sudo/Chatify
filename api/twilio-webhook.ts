@@ -161,14 +161,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // ── DEBUG COMMAND: RESET ────────────────────────
     if (incomingText.trim().toUpperCase() === 'RESET') {
       await supabase.from('leads').update({ status: 'nuevo' }).eq('id', leadId);
-      // Remove old street view messages so the flow can restart cleanly
-      await supabase.from('messages').delete()
-        .eq('lead_id', leadId)
-        .ilike('content', '%Automated Street View Image Sent%');
-      await supabase.from('messages').insert({
-        lead_id: leadId,
-        sender_type: 'ai',
-        content: '[SISTEMA] Estado reseteado a "nuevo". Street View eliminado. Listo para nueva prueba.'
+      // Remove all old messages so the flow can restart cleanly
+      await supabase.from('messages').delete().eq('lead_id', leadId);
+      
+      const resetMsg = '[SISTEMA] Memoria borrada. Empieza de cero mandando de nuevo tu primer mensaje.';
+      await isTwilioClient.messages.create({
+        from: `whatsapp:+${storeTwilioPhone.replace('+', '')}`,
+        to: `whatsapp:+${customerPhone}`,
+        body: resetMsg
       });
       return res.status(200).send('<?xml version="1.0" encoding="UTF-8"?><Response></Response>');
     }
@@ -624,7 +624,13 @@ async function handleSophia({ lead, productInfo, leadId, incomingText, storeTwil
     while ((match = mediaRegex.exec(aiReply)) !== null) {
       const mediaIndex = parseInt(match[1], 10) - 1; // [MEDIA_1] -> index 0
       let assets = [];
-      try { if (productInfo?.media_assets) assets = JSON.parse(productInfo.media_assets); } catch {}
+      try { 
+        if (productInfo?.media_assets) {
+          assets = typeof productInfo.media_assets === 'string' 
+            ? JSON.parse(productInfo.media_assets) 
+            : productInfo.media_assets;
+        }
+      } catch {}
       if (assets[mediaIndex]?.url) {
         mediaUrlsToSend.push(assets[mediaIndex].url);
       }
