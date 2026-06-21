@@ -413,12 +413,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 async function fetchProductInfo(lead: any, storeId: string): Promise<any> {
   if (!lead?.product_name) return null;
   const searchTerm = lead.product_name.substring(0, 15);
-  const { data } = await supabase.from('products')
-    .select('name, price, master_prompt')
+  const { data: product } = await supabase.from('products')
+    .select('name, price, master_prompt, flow_template_id')
     .eq('store_id', storeId)
     .ilike('name', `%${searchTerm}%`)
     .limit(1).maybeSingle();
-  return data;
+    
+  if (product && product.flow_template_id) {
+    const { data: template } = await supabase.from('flow_templates')
+      .select('interactions')
+      .eq('id', product.flow_template_id)
+      .single();
+    if (template) {
+      product.flow_template = template.interactions;
+    }
+  }
+  return product;
 }
 
 // Cache global para cobertura

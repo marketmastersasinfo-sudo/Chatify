@@ -1,6 +1,5 @@
 export const buildSophiaPrompt = (leadInfo: any, productInfo: any, variantInfo?: string, coverageData?: string, promptOpts?: any) => {
   const storeCountry = promptOpts?.storeCountry || 'Colombia';
-  // Parse product master_prompt — stored as JSON: { whatsapp: "...", social: "..." }
   let productContext = '';
   if (productInfo?.master_prompt) {
     try {
@@ -9,6 +8,14 @@ export const buildSophiaPrompt = (leadInfo: any, productInfo: any, variantInfo?:
     } catch {
       productContext = productInfo.master_prompt;
     }
+  }
+
+  let funnelContext = '';
+  if (productInfo?.flow_template && Array.isArray(productInfo.flow_template)) {
+    funnelContext = `\n════════════════════════════════════════\nSECUENCIA ESTRICTA DE VENTAS (EMBUDO)\n════════════════════════════════════════\nDebes seguir ESTRICTAMENTE esta secuencia paso a paso. No te saltes pasos. Evalúa la conversación con el cliente para saber en qué paso estás, y ejecuta ÚNICAMENTE la instrucción del paso actual o del siguiente paso si el cliente ya respondió lo necesario.\n\n`;
+    productInfo.flow_template.forEach((step: any, index: number) => {
+      funnelContext += `PASO ${index + 1} - ${step.title}:\n${step.instruction}\n\n`;
+    });
   }
 
   // The product_name field from ShopyEasy already contains variants inline
@@ -78,10 +85,10 @@ RESUMEN COMPLETO DEL PEDIDO (mensaje original de confirmación — úsalo para r
 ${variantInfo}` : ''}
 
 ════════════════════════════════════════
-CONTEXTO ADICIONAL DEL PRODUCTO
+CONTEXTO ADICIONAL DEL PRODUCTO (Reglas Base)
 ════════════════════════════════════════
 ${productContext || `El producto es: ${productNameRaw || 'un artículo de nuestra tienda'}.`}
-
+${funnelContext}
 ════════════════════════════════════════
 REGLAS ESTRICTAS — NUNCA las violes
 ════════════════════════════════════════

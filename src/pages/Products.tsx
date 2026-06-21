@@ -23,6 +23,10 @@ export function Products() {
   
   // Single Custom Prompt
   const [customPrompt, setCustomPrompt] = useState('');
+  
+  // Flow Templates
+  const [flowTemplates, setFlowTemplates] = useState<any[]>([]);
+  const [selectedFlowTemplateId, setSelectedFlowTemplateId] = useState<string>('');
 
   const [mediaAssets, setMediaAssets] = useState<{ tag: string, url: string, type: string }[]>([]);
   const [uploadingMedia, setUploadingMedia] = useState(false);
@@ -45,16 +49,24 @@ export function Products() {
     try {
       let { data: orgs } = await supabase.from('organizations').select('id').limit(1);
       if (orgs && orgs.length > 0) {
+        const orgId = (orgs as any[])[0].id;
         const { data: allStores } = await supabase
           .from('stores')
           .select('*')
-          .eq('organization_id', (orgs as any[])[0].id)
+          .eq('organization_id', orgId)
           .order('name');
         
         if (allStores && allStores.length > 0) {
           setStores(allStores);
           setSelectedStore(allStores[0]);
         }
+
+        const { data: templates } = await supabase
+          .from('flow_templates')
+          .select('id, name')
+          .eq('organization_id', orgId)
+          .order('name');
+        if (templates) setFlowTemplates(templates);
       }
     } catch (e) {
       console.error(e);
@@ -77,6 +89,7 @@ export function Products() {
     setPrice('');
     setOffers([]);
     setCustomPrompt('');
+    setSelectedFlowTemplateId('');
     setMediaAssets([]);
     setIsAdding(true);
   }
@@ -85,6 +98,7 @@ export function Products() {
     setEditingProduct(prod);
     setName(prod.name);
     setPrice(prod.price.toString());
+    setSelectedFlowTemplateId(prod.flow_template_id || '');
     
     try {
       const parsed = JSON.parse(prod.master_prompt);
@@ -162,7 +176,8 @@ export function Products() {
           name,
           price: parseFloat(price),
           master_prompt,
-          media_assets: mediaAssetsStr
+          media_assets: mediaAssetsStr,
+          flow_template_id: selectedFlowTemplateId || null
         }).eq('id', editingProduct.id).select().single();
         
         if (data && !error) {
@@ -175,7 +190,8 @@ export function Products() {
           name,
           price: parseFloat(price),
           master_prompt,
-          media_assets: mediaAssetsStr
+          media_assets: mediaAssetsStr,
+          flow_template_id: selectedFlowTemplateId || null
         }).select().single();
         
         if (data && !error) {
@@ -459,11 +475,25 @@ export function Products() {
                 <div className="border-b border-slate-100 px-6 py-4 bg-slate-50/50">
                   <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2 uppercase tracking-wider">
                     <BrainCircuit className="w-4 h-4 text-indigo-500" />
-                    Tu Prompt Maestro Personalizado
+                    Reglas Base y Flujo
                   </h4>
                   <p className="text-xs text-slate-500 mt-1.5 leading-relaxed font-medium">
-                    Escribe aquí tus instrucciones exactas para la IA. <strong>No necesitas incluir las ofertas aquí</strong>, el sistema se las inyectará automáticamente en una capa superior para que tenga ese contexto comercial perfecto.
+                    Escribe aquí la personalidad del bot o selecciona un <strong>Embudo Global</strong> para que aplique la secuencia de ventas automáticamente.
                   </p>
+                </div>
+
+                <div className="p-4 border-b border-slate-100 bg-slate-50/30">
+                  <label className="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Plantilla de Embudo (Opcional)</label>
+                  <select
+                    value={selectedFlowTemplateId}
+                    onChange={(e) => setSelectedFlowTemplateId(e.target.value)}
+                    className="block w-full rounded-xl border-slate-200 py-2.5 text-slate-900 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm font-medium transition-colors cursor-pointer bg-white"
+                  >
+                    <option value="">-- Sin Embudo (Solo usar Reglas Base) --</option>
+                    {flowTemplates.map(tpl => (
+                      <option key={tpl.id} value={tpl.id}>{tpl.name}</option>
+                    ))}
+                  </select>
                 </div>
 
                 <div className="p-0 flex-1">
@@ -471,7 +501,7 @@ export function Products() {
                     value={customPrompt}
                     onChange={e => setCustomPrompt(e.target.value)}
                     className="block w-full h-full border-0 py-6 px-6 text-sm text-slate-700 focus:ring-0 resize-none font-mono leading-relaxed bg-white"
-                    placeholder="Escribe o pega aquí tu propio prompt personalizado..."
+                    placeholder="Reglas base, personalidad o preguntas frecuentes (FAQ)..."
                   />
                 </div>
               </div>
