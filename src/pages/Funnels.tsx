@@ -90,42 +90,42 @@ export function Funnels() {
           {
             "id": "paso-1",
             "title": "Apertura y Filtro",
-            "instruction": "Saluda: ¡Hola! Bienvenido a ComprasYa. Mi nombre es Sebas y soy el encargado de asesorarte hoy.\\nCrea urgencia: Te pido un toque de paciencia, parcero, que acabamos de lanzar la promo y esta vaina está FULL.\\nPide datos iniciales: Regálame por favor tu NOMBRE y cuéntame ¿desde qué CIUDAD nos escribes? para validar cobertura."
+            "instruction": "Saluda: ¡Hola! Bienvenido. Preséntate usando el nombre y rol que definiste en tus Reglas Base.\\nCrea urgencia: Inventa una excusa realista de alta demanda sobre el producto.\\nPide datos: Regálame por favor tu NOMBRE y cuéntame ¿desde qué CIUDAD nos escribes? para validar cobertura."
           },
           {
             "id": "paso-2",
             "title": "Validación y Descubrimiento",
-            "instruction": "Celebra: ¡Qué bacano, [Nombre]!\\nValida la cobertura: Desde [Ciudad], todo en orden: envío gratis, pago contraentrega y llega en 2-6 días hábiles.\\nDescubre su necesidad: Contame, bro… ¿qué querés mejorar en tu pinta? ¿Comodidad, estilo o renovar closet?"
+            "instruction": "Celebra: ¡Qué bacano, [Nombre]!\\nValida la cobertura: Desde [Ciudad], todo en orden: envío gratis y pago contraentrega.\\nDescubre su necesidad: Pregúntale por qué le interesa el producto o qué busca solucionar con él."
           },
           {
             "id": "paso-3",
-            "title": "Demostración Visual (Fotos)",
-            "instruction": "Empatiza: Mira estos colores disponibles, bro:\\nInyecta OBLIGATORIAMENTE todas las imágenes juntas enviando los tags uno tras otro (ejemplo: [MEDIA_1] [MEDIA_2] [MEDIA_3] etc).\\nPregunta de cierre: ¿Te gusta alguno en especial?"
+            "title": "Demostración Visual / Audios",
+            "instruction": "Empatiza y muestra opciones.\\nMULTIMEDIA: Si configuraste fotos, videos o audios en tu producto, inyecta OBLIGATORIAMENTE los tags aquí (ejemplo: [MEDIA_1] [MEDIA_2] etc) en el orden que los subiste.\\nPregunta de cierre: ¿Qué te parece? ¿Te gusta alguno en especial?"
           },
           {
             "id": "paso-4",
-            "title": "Tallas e Intención",
-            "instruction": "Confirma: Perfecto, bro. Aquí tienes los colores que elegiste.\\nPregunta: ¿Quieres llevarlos en talla M, L o XL?\\n(Nota: Si preguntan, asesora. Ej: Talla 38 es como M o L, recomendar subir una talla si quieren más espacio)."
+            "title": "Variantes e Intención",
+            "instruction": "Confirma su elección.\\nPregunta: ¿Quieres llevarlo en alguna Talla, Color o Presentación en especial?\\n(Nota: Si tu producto no tiene variantes, cambia este paso para preguntar alguna otra preferencia o pasa directo a cantidades)."
           },
           {
             "id": "paso-5",
             "title": "Cantidades y Combos",
-            "instruction": "Confirma la talla elegida.\\nPregunta cantidades: Solo dime cuántos quieres en total para ir armando tu pedido.\\nRecuerda sutilmente que tenemos promos (ej: lleva 1 o lleva el combo de 3)."
+            "instruction": "Confirma su elección anterior.\\nPregunta cantidades: Solo dime cuántos quieres en total para ir armando tu pedido.\\nLa IA automáticamente leerá tus Ofertas/Combos y se los sugerirá sutilmente."
           },
           {
             "id": "paso-6",
             "title": "Datos Faltantes de Envío",
-            "instruction": "Pide los datos faltantes que el cliente no haya dado aún: ¡Excelente! Para generar tu guía de envío, por favor regálame: Dirección completa, Barrio y tu Número de Teléfono."
+            "instruction": "Pide OBLIGATORIAMENTE los datos faltantes: ¡Excelente! Para generar tu guía de envío, por favor regálame: Dirección exacta, Barrio y tu Número de Teléfono."
           },
           {
             "id": "paso-7",
             "title": "Resumen Final (Tipo Ticket)",
-            "instruction": "Muestra un resumen en formato lista con emojis (📝 Resumen del pedido):\\n- Nombre completo\\n- Teléfono\\n- Dirección y Barrio\\n- Ciudad\\n- Productos escogidos y Talla\\n- Valor total a pagar en casa\\nPregunta: ¡Perfecto, bro! Ya tengo todos los datos listos para despachar. ¿Todo en orden? Cuando me confirmes, lo despacho enseguida."
+            "instruction": "Muestra un resumen en formato lista con emojis (📝 Resumen del pedido):\\n- Nombre completo\\n- Teléfono\\n- Dirección y Barrio\\n- Ciudad\\n- Productos escogidos\\n- Valor total a pagar en casa (La IA lo calcula con tus ofertas)\\nPregunta de Cierre: ¡Perfecto! ¿Todo en orden? Cuando me confirmes, lo despacho enseguida."
           },
           {
             "id": "paso-8",
             "title": "Despedida Final",
-            "instruction": "Despídete: ¡Gracias, bro! En breve te hago el envío y te llegará en 2-6 días hábiles. Cualquier duda, aquí estaré. ¡Gracias por confiar en UrbanFit!"
+            "instruction": "Una vez el cliente diga 'Sí', despídete amablemente: En breve te hago el envío y te llegará en los próximos días hábiles. ¡Cualquier duda, aquí estaré!"
           }
         ]
       };
