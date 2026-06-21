@@ -150,8 +150,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).send('<?xml version="1.0" encoding="UTF-8"?><Response></Response>');
     }
 
-    // ── Save incoming message ───────────────────────
     const incomingText = ButtonText || ButtonPayload || Body || '';
+
+    // ── Update Product Name if Ad Click ─────────────
+    if (incomingText.includes('información sobre:')) {
+      const parts = incomingText.split('información sobre:');
+      if (parts.length > 1 && leadId) {
+        const detectedProduct = parts[1].trim().replace(/[\.,!¡¿\?]+$/, '');
+        await supabase.from('leads').update({ product_name: detectedProduct }).eq('id', leadId);
+        if (lead) lead.product_name = detectedProduct;
+      }
+    }
+
+    // ── Save incoming message ───────────────────────
     await supabase.from('messages').insert({
       lead_id: leadId,
       sender_type: 'client',
