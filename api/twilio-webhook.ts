@@ -201,8 +201,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // ── DEBUG COMMAND: CHECK_SCHEMA ────────────────────────
     if (incomingText.trim().toUpperCase() === 'CHECK_SCHEMA') {
-      const { data, error } = await supabase.from('products').select('*').limit(1);
-      const debugMsg = `SCHEMA ERROR: ${error?.message || 'Ninguno'}\nFILA 1: ${JSON.stringify(data, null, 2)}`;
+      const searchTerm = lead?.product_name ? lead.product_name.substring(0, 15) : '';
+      const { data, error } = await supabase.from('products').select('id, name, offers, media_assets').ilike('name', `%${searchTerm}%`).order('created_at', { ascending: false }).limit(1);
+      const debugMsg = `SCHEMA ERROR: ${error?.message || 'Ninguno'}\nDATA: ${JSON.stringify(data, null, 2)}`;
       await isTwilioClient.messages.create({
         from: `whatsapp:+${storeTwilioPhone.replace('+', '')}`,
         to: `whatsapp:+${customerPhone}`,

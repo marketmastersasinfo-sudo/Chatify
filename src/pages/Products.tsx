@@ -169,16 +169,18 @@ export function Products() {
           customPrompt
         }
       });
-      const mediaAssetsStr = JSON.stringify(mediaAssets);
+      
+      const updateData: any = {
+        name,
+        price: parseFloat(price) || 0,
+        offers: JSON.stringify(offers),
+        master_prompt: master_prompt,
+        flow_template_id: selectedFlowTemplateId || null,
+        media_assets: JSON.stringify(mediaAssets)
+      };
       
       if (editingProduct) {
-        const { data, error } = await (supabase as any).from('products').update({
-          name,
-          price: parseFloat(price),
-          master_prompt,
-          media_assets: mediaAssetsStr,
-          flow_template_id: selectedFlowTemplateId || null
-        }).eq('id', editingProduct.id).select().single();
+        const { data, error } = await (supabase as any).from('products').update(updateData).eq('id', editingProduct.id).select().single();
         
         if (data && !error) {
           setProducts(products.map(p => p.id === data.id ? data : p));
@@ -187,11 +189,7 @@ export function Products() {
       } else {
         const { data, error } = await (supabase as any).from('products').insert({
           store_id: selectedStore.id,
-          name,
-          price: parseFloat(price),
-          master_prompt,
-          media_assets: mediaAssetsStr,
-          flow_template_id: selectedFlowTemplateId || null
+          ...updateData
         }).select().single();
         
         if (data && !error) {
