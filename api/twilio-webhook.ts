@@ -158,6 +158,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       content: incomingText
     });
 
+    const isTwilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+
     // ── DEBUG COMMAND: RESET ────────────────────────
     if (incomingText.trim().toUpperCase() === 'RESET') {
       await supabase.from('leads').update({ status: 'nuevo' }).eq('id', leadId);
@@ -178,7 +180,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // ─────────────────────────────────────────────────
     const leadStatus = lead?.status || 'cold_lead';
     const leadBoard = lead?.board_type || 'sales_wa';
-    const isTwilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 
     if (leadBoard === 'logistics') {
 
