@@ -551,6 +551,14 @@ async function handleSophia({ lead, productInfo, leadId, incomingText, storeTwil
     // ══════════════════════════════════════════════════════
     const leadBoardType = lead?.board_type || '';
 
+    // SEGURIDAD ANTI-ALUCINACIONES DE LA IA:
+    // Si la IA dice que es "Purchase" pero faltan datos obligatorios, degradamos la intención.
+    const hasMandatoryData = !!(newAddress && newCity);
+    if ((parsed.intent === 'Purchase' || parsed.intent === 'OrderConfirmed') && !hasMandatoryData) {
+      parsed.intent = 'InitiateCheckout';
+      console.log('Downgraded Purchase to InitiateCheckout because mandatory data is missing');
+    }
+
     // Lógica de embudo de ventas (Inbound)
     if (leadBoardType === 'sales_wa') {
       if (parsed.intent === 'None' || parsed.intent === 'Support' || parsed.intent === 'General') {
@@ -566,7 +574,7 @@ async function handleSophia({ lead, productInfo, leadId, incomingText, storeTwil
 
     if (parsed.intent === 'Purchase' || parsed.intent === 'OrderConfirmed') {
       
-      // INTERCEPTAR PARA STREET VIEW
+      // INTERCEPTAR PARA STREET VIEW (Solo si tenemos dirección y ciudad y no estamos verificando ya)
       if (lead?.status !== 'verifying_address' && newAddress && newCity) {
         await sb.from('leads').update({ status: 'verifying_address' }).eq('id', leadId);
         const { data: orgData } = await sb.from('organizations').select('google_maps_api_key').eq('id', store.organization_id);
@@ -574,9 +582,6 @@ async function handleSophia({ lead, productInfo, leadId, incomingText, storeTwil
         const mapQuery = encodeURIComponent(`${newAddress}, ${newCity}`);
         const streetViewUrl = `https://maps.googleapis.com/maps/api/streetview?size=600x400&location=${mapQuery}&key=${apiKey}`;
         
-        // 🎯 Disparar evento "AddPaymentInfo" ya que el cliente dio sus datos de envío (Equivalente en Pago Contra Entrega)
-        // Eliminado a petición del usuario para el flujo COD.
-
         aiReply = `¡Excelente! 🎉 Tengo toda la información. Para asegurar que la entrega de tu pedido sea perfecta, ¿esta es la fachada correcta de tu dirección? 🏠📍`;
         
         await isTwilioClient.messages.create({
@@ -590,7 +595,7 @@ async function handleSophia({ lead, productInfo, leadId, incomingText, storeTwil
       }
 
       // CIERRE NORMAL DE PEDIDO (Si ya se verificó la dirección)
-      if (lead?.status === 'verifying_address' || (!newAddress && !newCity)) {
+      if (lead?.status === 'verifying_address') {
         if (leadBoardType.includes('remarketing')) {
           await sb.from('leads').update({ status: 'recovered', recovery_confirmed_at: new Date().toISOString() }).eq('id', leadId);
         } else if (leadBoardType === 'logistics') {
