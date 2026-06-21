@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Image as ImageIcon, Music, Loader2, Save, Trash2, Copy, Store, Plus, ArrowUp, ArrowDown, Gift, TrendingUp } from 'lucide-react';
+import { Image as ImageIcon, Music, Loader2, Save, Trash2, Copy, Store, Plus, ArrowUp, ArrowDown, Gift, BrainCircuit } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import imageCompression from 'browser-image-compression';
 
@@ -16,18 +16,13 @@ export function Products() {
   
   // Form Fields
   const [name, setName] = useState('');
-  const [price, setPrice] = useState(''); // Legacy base price, still good to have
+  const [price, setPrice] = useState(''); 
   
-  // New State: Offers
+  // Offers
   const [offers, setOffers] = useState<{ id: string, title: string, price: string, gift: string, isUpsell: boolean }[]>([]);
   
-  // New State: Phases
-  const [phases, setPhases] = useState({
-    greeting: '',
-    pitch: '',
-    objections: '',
-    closing: ''
-  });
+  // Single Custom Prompt
+  const [customPrompt, setCustomPrompt] = useState('');
 
   const [mediaAssets, setMediaAssets] = useState<{ tag: string, url: string, type: string }[]>([]);
   const [uploadingMedia, setUploadingMedia] = useState(false);
@@ -81,7 +76,7 @@ export function Products() {
     setName('');
     setPrice('');
     setOffers([]);
-    setPhases({ greeting: '', pitch: '', objections: '', closing: '' });
+    setCustomPrompt('');
     setMediaAssets([]);
     setIsAdding(true);
   }
@@ -95,14 +90,21 @@ export function Products() {
       const parsed = JSON.parse(prod.master_prompt);
       if (parsed.builderData) {
         setOffers(parsed.builderData.offers || []);
-        setPhases(parsed.builderData.phases || { greeting: '', pitch: '', objections: '', closing: '' });
+        
+        // Convert old phases to single prompt if upgrading
+        if (parsed.builderData.customPrompt !== undefined) {
+          setCustomPrompt(parsed.builderData.customPrompt);
+        } else if (parsed.builderData.phases) {
+          const { greeting, pitch, objections, closing } = parsed.builderData.phases;
+          const combined = [greeting, pitch, objections, closing].filter(Boolean).join('\n\n');
+          setCustomPrompt(combined);
+        }
       } else {
-        // Legacy raw prompt -> put in greeting
-        setPhases({ greeting: parsed.whatsapp || prod.master_prompt || '', pitch: '', objections: '', closing: '' });
+        setCustomPrompt(parsed.whatsapp || prod.master_prompt || '');
         setOffers([]);
       }
     } catch {
-      setPhases({ greeting: prod.master_prompt || '', pitch: '', objections: '', closing: '' });
+      setCustomPrompt(prod.master_prompt || '');
       setOffers([]);
     }
 
@@ -116,28 +118,27 @@ export function Products() {
   }
 
   function compilePromptWa() {
-    let prompt = `ERES UN VENDEDOR ESTRELLA.\nOBJETIVO: Vender el producto ${name}.\nTONO: Amable, cercano y persuasivo, usando emojis.\n\n`;
+    let prompt = '';
     
     if (offers.length > 0) {
-      prompt += `== OFERTAS DISPONIBLES ==\n`;
+      prompt += `== CONTEXTO DEL SISTEMA: OFERTAS DISPONIBLES ==\n`;
+      prompt += `Usa obligatoriamente los siguientes precios y ofertas para este producto:\n`;
       offers.filter(o => !o.isUpsell).forEach(o => {
-        prompt += `- ${o.title}: $${o.price} ${o.gift ? '(Incluye: ' + o.gift + ')' : ''}\n`;
+        prompt += `- ${o.title}: $${o.price} ${o.gift ? '(Bono/Regalo: ' + o.gift + ')' : ''}\n`;
       });
       const upsells = offers.filter(o => o.isUpsell);
       if (upsells.length > 0) {
-        prompt += `\n== UPSELLS (Ofrecer SOLO DESPUÉS de que el cliente acepte comprar o esté muy interesado) ==\n`;
+        prompt += `\n== UPSELLS SECRETOS ==\n`;
+        prompt += `(Ofrecer SOLO DESPUÉS de que el cliente haya aceptado comprar la oferta principal)\n`;
         upsells.forEach(o => {
-          prompt += `- ${o.title}: $${o.price} ${o.gift ? '(Incluye: ' + o.gift + ')' : ''}\n`;
+          prompt += `- ${o.title}: $${o.price} ${o.gift ? '(Bono/Regalo: ' + o.gift + ')' : ''}\n`;
         });
       }
-      prompt += `\n`;
+      prompt += `\n==============================================\n\n`;
     }
 
-    prompt += `== FASES DEL EMBUDO (Sigue este orden en la conversación) ==\n`;
-    if (phases.greeting) prompt += `1. APERTURA:\n${phases.greeting}\n\n`;
-    if (phases.pitch) prompt += `2. PRESENTACIÓN DE OFERTA:\n${phases.pitch}\n\n`;
-    if (phases.objections) prompt += `3. MANEJO DE OBJECIONES:\n${phases.objections}\n\n`;
-    if (phases.closing) prompt += `4. CIERRE Y DATOS:\n${phases.closing}\n\n`;
+    prompt += `== INSTRUCCIONES DEL VENDEDOR (TU COMPORTAMIENTO) ==\n`;
+    prompt += customPrompt;
 
     return prompt;
   }
@@ -152,7 +153,7 @@ export function Products() {
         social: '',
         builderData: {
           offers,
-          phases
+          customPrompt
         }
       });
       const mediaAssetsStr = JSON.stringify(mediaAssets);
@@ -488,71 +489,26 @@ export function Products() {
               </div>
             </div>
 
-            {/* Columna Derecha: Constructor de Fases (Embudo) */}
-            <div className="xl:col-span-2">
-              <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden shadow-sm">
+            {/* Columna Derecha: Prompt Personalizado del Usuario */}
+            <div className="xl:col-span-2 flex flex-col">
+              <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 flex-1 flex flex-col shadow-sm">
                 <div className="border-b border-gray-200 dark:border-gray-800 px-5 py-4 bg-gray-50 dark:bg-gray-800/30">
                   <h4 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                    <TrendingUp className="w-4 h-4 text-blue-500" />
-                    Fases de Conversión (Embudo)
+                    <BrainCircuit className="w-4 h-4 text-blue-500" />
+                    Tu Prompt Maestro Personalizado
                   </h4>
                   <p className="text-xs text-gray-500 mt-1">
-                    Escribe qué debe decir la IA en cada etapa. Pega las etiquetas <code>[MEDIA_X]</code> donde quieras enviar fotos.
+                    Pega aquí tus instrucciones para la IA. <strong>No necesitas incluir las ofertas aquí</strong>, el sistema se las inyectará automáticamente a la IA en una capa superior para que tenga ese contexto.
                   </p>
                 </div>
 
-                <div className="p-5 space-y-6">
-                  {/* Fase 1: Apertura */}
-                  <div className="relative pl-6 border-l-2 border-blue-500 pb-2">
-                    <div className="absolute -left-2 top-0 w-4 h-4 rounded-full bg-blue-500 ring-4 ring-white dark:ring-gray-900"></div>
-                    <label className="block text-sm font-bold text-gray-900 dark:text-white mb-2">1. Saludo y Enganche</label>
-                    <textarea 
-                      rows={3}
-                      value={phases.greeting}
-                      onChange={e => setPhases({...phases, greeting: e.target.value})}
-                      className="block w-full rounded-md border-0 py-2 px-3 text-sm text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-blue-600 dark:bg-gray-800 dark:ring-gray-700 dark:text-white"
-                      placeholder="Ej: ¡Hola bro! Qué excelente gusto, los Joggers están increíbles. Mira esta foto: [MEDIA_1]"
-                    />
-                  </div>
-
-                  {/* Fase 2: Pitch */}
-                  <div className="relative pl-6 border-l-2 border-green-500 pb-2">
-                    <div className="absolute -left-2 top-0 w-4 h-4 rounded-full bg-green-500 ring-4 ring-white dark:ring-gray-900"></div>
-                    <label className="block text-sm font-bold text-gray-900 dark:text-white mb-2">2. Pitch de Ventas (Ofertas y Beneficios)</label>
-                    <textarea 
-                      rows={4}
-                      value={phases.pitch}
-                      onChange={e => setPhases({...phases, pitch: e.target.value})}
-                      className="block w-full rounded-md border-0 py-2 px-3 text-sm text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-blue-600 dark:bg-gray-800 dark:ring-gray-700 dark:text-white"
-                      placeholder="Ej: Te cuento que la tela es stretch. Hoy tenemos promoción con envío gratis, puedes llevar 1 o 3 unidades. ¿Cuál te gusta más?"
-                    />
-                  </div>
-
-                  {/* Fase 3: Objeciones */}
-                  <div className="relative pl-6 border-l-2 border-orange-500 pb-2">
-                    <div className="absolute -left-2 top-0 w-4 h-4 rounded-full bg-orange-500 ring-4 ring-white dark:ring-gray-900"></div>
-                    <label className="block text-sm font-bold text-gray-900 dark:text-white mb-2">3. Manejo de Objeciones</label>
-                    <textarea 
-                      rows={3}
-                      value={phases.objections}
-                      onChange={e => setPhases({...phases, objections: e.target.value})}
-                      className="block w-full rounded-md border-0 py-2 px-3 text-sm text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-blue-600 dark:bg-gray-800 dark:ring-gray-700 dark:text-white"
-                      placeholder="Ej: Si te dicen que está caro, envíales este audio explicándoles la garantía: [MEDIA_2]. Si desconfían, diles que es pago contraentrega."
-                    />
-                  </div>
-
-                  {/* Fase 4: Cierre */}
-                  <div className="relative pl-6 border-l-2 border-transparent">
-                    <div className="absolute -left-2 top-0 w-4 h-4 rounded-full bg-purple-500 ring-4 ring-white dark:ring-gray-900"></div>
-                    <label className="block text-sm font-bold text-gray-900 dark:text-white mb-2">4. Cierre y Recolección de Datos</label>
-                    <textarea 
-                      rows={3}
-                      value={phases.closing}
-                      onChange={e => setPhases({...phases, closing: e.target.value})}
-                      className="block w-full rounded-md border-0 py-2 px-3 text-sm text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-blue-600 dark:bg-gray-800 dark:ring-gray-700 dark:text-white"
-                      placeholder="Ej: Perfecto, para generar tu guía de envío gratis necesito tu ciudad y dirección. ¡Apenas me los des, lanzas el Upsell secreto si configuré alguno!"
-                    />
-                  </div>
+                <div className="p-5 flex-1 flex flex-col">
+                  <textarea 
+                    value={customPrompt}
+                    onChange={e => setCustomPrompt(e.target.value)}
+                    className="block w-full h-full min-h-[500px] rounded-md border-0 py-3 px-4 text-sm text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-blue-600 dark:bg-gray-800 dark:ring-gray-700 dark:text-white font-mono leading-relaxed"
+                    placeholder="Escribe o pega aquí tu propio prompt personalizado..."
+                  />
                 </div>
               </div>
             </div>
