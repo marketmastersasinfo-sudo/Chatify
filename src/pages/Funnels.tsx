@@ -166,6 +166,29 @@ export function Funnels() {
     }
   };
 
+  const handleDeleteTemplate = async () => {
+    if (!selectedTemplate || selectedTemplate.is_base) return;
+    if (!confirm('¿Estás seguro de eliminar esta plantilla? Esta acción no se puede deshacer.')) return;
+    
+    try {
+      setSaving(true);
+      const { error } = await (supabase as any)
+        .from('flow_templates')
+        .delete()
+        .eq('id', selectedTemplate.id);
+
+      if (error) throw error;
+      
+      setSelectedTemplate(null);
+      await fetchTemplates();
+    } catch (err: any) {
+      console.error('Error eliminando:', err);
+      alert('Error eliminando plantilla: ' + (err.message || JSON.stringify(err)));
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const updateInteraction = (index: number, field: keyof Interaction, value: string) => {
     if (!selectedTemplate) return;
     const newInteractions = [...selectedTemplate.interactions];
@@ -262,6 +285,17 @@ export function Funnels() {
                 </div>
                 
                 <div className="flex items-center gap-3">
+                  {!selectedTemplate.is_base && (
+                    <button 
+                      onClick={handleDeleteTemplate}
+                      disabled={saving}
+                      className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors"
+                      title="Eliminar plantilla"
+                    >
+                      <Trash2 className="w-5 h-5" />
+                    </button>
+                  )}
+                  
                   <button 
                     onClick={() => handleDuplicate(selectedTemplate)}
                     disabled={saving}
