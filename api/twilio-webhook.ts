@@ -189,12 +189,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // ── DEBUG COMMAND: CHECK_DB ────────────────────────
     if (incomingText.trim().toUpperCase() === 'CHECK_DB') {
       const searchTerm = lead?.product_name ? lead.product_name.substring(0, 15) : '';
-      const { data: prods } = await supabase.from('products').select('id, name, price, offers, media_assets, master_prompt').ilike('name', `%${searchTerm}%`);
-      const debugMsg = `Encontré ${prods?.length || 0} productos para "${searchTerm}":\n\n` + JSON.stringify(prods, null, 2).substring(0, 1500);
+      const { data: prods, error } = await supabase.from('products').select('id, name, price, offers, media_assets, master_prompt').ilike('name', `%${searchTerm}%`);
+      const debugMsg = `Buscando "${searchTerm}":\nERROR: ${error?.message || 'Ninguno'}\nDATA: ${JSON.stringify(prods, null, 2)}`;
       await isTwilioClient.messages.create({
         from: `whatsapp:+${storeTwilioPhone.replace('+', '')}`,
         to: `whatsapp:+${customerPhone}`,
-        body: debugMsg
+        body: debugMsg.substring(0, 1500)
+      });
+      return res.status(200).send('<?xml version="1.0" encoding="UTF-8"?><Response></Response>');
+    }
+
+    // ── DEBUG COMMAND: CHECK_SCHEMA ────────────────────────
+    if (incomingText.trim().toUpperCase() === 'CHECK_SCHEMA') {
+      const { data, error } = await supabase.from('products').select('*').limit(1);
+      const debugMsg = `SCHEMA ERROR: ${error?.message || 'Ninguno'}\nFILA 1: ${JSON.stringify(data, null, 2)}`;
+      await isTwilioClient.messages.create({
+        from: `whatsapp:+${storeTwilioPhone.replace('+', '')}`,
+        to: `whatsapp:+${customerPhone}`,
+        body: debugMsg.substring(0, 1500)
       });
       return res.status(200).send('<?xml version="1.0" encoding="UTF-8"?><Response></Response>');
     }
