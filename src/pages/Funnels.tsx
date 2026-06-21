@@ -135,9 +135,9 @@ export function Funnels() {
 
       setTemplates([...templates, data]);
       setSelectedTemplate(data);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error creando nueva plantilla:', err);
-      alert('Error creando plantilla');
+      alert('Error creando plantilla: ' + (err.message || JSON.stringify(err)));
     } finally {
       setSaving(false);
     }
@@ -158,9 +158,9 @@ export function Funnels() {
       if (error) throw error;
       await fetchTemplates();
       alert('Plantilla guardada con éxito');
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error guardando:', err);
-      alert('Error al guardar la plantilla');
+      alert('Error al guardar la plantilla: ' + (err.message || JSON.stringify(err)));
     } finally {
       setSaving(false);
     }
