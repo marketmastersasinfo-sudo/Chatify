@@ -27,10 +27,12 @@ export async function fetchDashboardData(filters: DashboardFilters, allowedStore
   }
 
   if (filters.startDate) {
-    query = query.gte('created_at', `${filters.startDate}T00:00:00.000Z`);
+    const start = new Date(`${filters.startDate}T00:00:00`);
+    query = query.gte('created_at', start.toISOString());
   }
   if (filters.endDate) {
-    query = query.lte('created_at', `${filters.endDate}T23:59:59.999Z`);
+    const end = new Date(`${filters.endDate}T23:59:59`);
+    query = query.lte('created_at', end.toISOString());
   }
 
   const { data, error } = await query;
