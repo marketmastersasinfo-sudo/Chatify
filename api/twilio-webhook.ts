@@ -62,7 +62,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       bodyObj = Object.fromEntries(new URLSearchParams(req.body).entries());
     }
 
-    const { From, To, Body, ProfileName, ButtonPayload, ButtonText, MediaUrl0, Latitude } = bodyObj || {};
+    const { From, To, Body, ProfileName, ButtonPayload, ButtonText, MediaUrl0, Latitude, ReferralHeadline, ReferralBody } = bodyObj || {};
 
     if (!From || !To) {
       return res.status(200).send('<?xml version="1.0" encoding="UTF-8"?><Response></Response>');
@@ -75,9 +75,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     let incomingBody = ButtonText || ButtonPayload || Body || '';
     if (!incomingBody) {
-      if (MediaUrl0) incomingBody = '[El cliente envió una foto, video o audio]';
+      if (ReferralHeadline || ReferralBody) incomingBody = `[El cliente contactó desde un anuncio: ${ReferralHeadline || ''} ${ReferralBody || ''}]`.trim();
+      else if (MediaUrl0) incomingBody = '[El cliente envió una foto, video o audio]';
       else if (Latitude) incomingBody = '[El cliente envió una ubicación]';
-      else incomingBody = '[El cliente envió un sticker o formato no soportado]';
+      else incomingBody = '[El cliente interactuó con el anuncio o envió un formato no soportado]';
     }
 
     // ── Find Store ──────────────────────────────────
