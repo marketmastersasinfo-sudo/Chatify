@@ -585,9 +585,15 @@ async function handleSophia({ lead, productInfo, leadId, incomingText, storeTwil
 
     if (parsed.extracted_address || parsed.extracted_city || parsed.extracted_last_name || parsed.extracted_department || parsed.extracted_sector || parsed.extracted_postal_code) {
       const updateData: any = {};
-      // PERMITIR ACTUALIZAR DIRECCIÓN/CIUDAD AUNQUE YA EXISTAN
-      if (parsed.extracted_address && parsed.extracted_address !== lead?.address) { updateData.address = parsed.extracted_address; newAddress = parsed.extracted_address; addressUpdated = true; }
-      if (parsed.extracted_city && parsed.extracted_city !== lead?.city) { updateData.city = parsed.extracted_city; newCity = parsed.extracted_city; addressUpdated = true; }
+      // PERMITIR ACTUALIZAR DIRECCIÓN/CIUDAD AUNQUE YA EXISTAN, PERO IGNORAR CAMBIOS MINÚSCULOS DE FORMATO O MAYÚSCULAS
+      const cleanOldAddr = (lead?.address || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+      const cleanNewAddr = (parsed.extracted_address || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+      if (parsed.extracted_address && cleanOldAddr !== cleanNewAddr) { updateData.address = parsed.extracted_address; newAddress = parsed.extracted_address; addressUpdated = true; }
+      
+      const cleanOldCity = (lead?.city || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+      const cleanNewCity = (parsed.extracted_city || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+      if (parsed.extracted_city && cleanOldCity !== cleanNewCity) { updateData.city = parsed.extracted_city; newCity = parsed.extracted_city; addressUpdated = true; }
+      
       if (parsed.extracted_last_name && !lead?.last_name) { updateData.last_name = parsed.extracted_last_name; addressUpdated = true; }
       if (parsed.extracted_department && !lead?.department) { updateData.department = parsed.extracted_department; addressUpdated = true; }
       if (parsed.extracted_sector && !lead?.sector) { updateData.sector = parsed.extracted_sector; addressUpdated = true; }
