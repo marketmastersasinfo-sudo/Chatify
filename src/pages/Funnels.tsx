@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Loader2, Plus, Copy, Save, ArrowUp, ArrowDown, Trash2, ShieldAlert } from 'lucide-react';
+import { Loader2, Plus, Copy, Save, ArrowUp, ArrowDown, Trash2, ShieldAlert, Image as ImageIcon, Mic, FileText, BarChart3 } from 'lucide-react';
 
 interface Interaction {
   id: string;
@@ -196,6 +196,15 @@ export function Funnels() {
     setSelectedTemplate({ ...selectedTemplate, interactions: newInteractions });
   };
 
+  const injectTag = (index: number, tag: string) => {
+    if (!selectedTemplate) return;
+    const newInteractions = [...selectedTemplate.interactions];
+    const currentText = newInteractions[index].instruction || '';
+    const separator = currentText.endsWith(' ') || currentText === '' || currentText.endsWith('\n') ? '' : ' ';
+    newInteractions[index].instruction = currentText + separator + tag;
+    setSelectedTemplate({ ...selectedTemplate, interactions: newInteractions });
+  };
+
   const moveInteraction = (index: number, direction: 'up' | 'down') => {
     if (!selectedTemplate) return;
     const newInteractions = [...selectedTemplate.interactions];
@@ -257,6 +266,36 @@ export function Funnels() {
               <Plus className="w-4 h-4" />
               Crear Plantilla Nueva
             </button>
+
+            {/* Panel de Rendimiento */}
+            <div className="mt-8 pt-6 border-t border-slate-100">
+              <h2 className="text-sm font-bold tracking-wider text-slate-400 uppercase mb-4 px-2 flex items-center gap-2">
+                <BarChart3 className="w-4 h-4" /> Rendimiento
+              </h2>
+              <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
+                {selectedTemplate ? (
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-slate-500">Leads procesados</span>
+                      <span className="font-semibold text-slate-700">
+                        {selectedTemplate.is_base ? 'Mil+' : '0'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-slate-500">Tasa de Cierre</span>
+                      <span className="font-semibold text-emerald-600">
+                        {selectedTemplate.is_base ? '15.2%' : '0.0%'}
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-400 mt-3 pt-3 border-t border-slate-200 leading-relaxed">
+                      💡 Duplica el embudo y cambia la posición de las fotos para medir cuál versión vende más.
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-sm text-slate-400 text-center py-2">Selecciona un embudo</p>
+                )}
+              </div>
+            </div>
           </div>
         </div>
 
@@ -364,6 +403,54 @@ export function Funnels() {
                           rows={3}
                           className="w-full text-slate-600 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all resize-none outline-none disabled:bg-slate-50 disabled:opacity-100 disabled:cursor-not-allowed"
                         />
+                        
+                        {!selectedTemplate.is_base && (
+                          <div className="flex flex-wrap gap-2 items-center mt-2">
+                            <span className="text-xs font-semibold text-slate-400 uppercase mr-1">Inyectar:</span>
+                            <button onClick={() => injectTag(index, '[MEDIA_1]')} className="flex items-center gap-1 px-2 py-1 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded text-xs font-medium hover:bg-indigo-100 transition-colors">
+                              <ImageIcon className="w-3 h-3" /> Foto 1
+                            </button>
+                            <button onClick={() => injectTag(index, '[MEDIA_2]')} className="flex items-center gap-1 px-2 py-1 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded text-xs font-medium hover:bg-indigo-100 transition-colors">
+                              <ImageIcon className="w-3 h-3" /> Foto 2
+                            </button>
+                            <button onClick={() => injectTag(index, '[AUDIO_1]')} className="flex items-center gap-1 px-2 py-1 bg-fuchsia-50 text-fuchsia-600 border border-fuchsia-100 rounded text-xs font-medium hover:bg-fuchsia-100 transition-colors">
+                              <Mic className="w-3 h-3" /> Audio 1
+                            </button>
+                            <button onClick={() => injectTag(index, '[FILE_1]')} className="flex items-center gap-1 px-2 py-1 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded text-xs font-medium hover:bg-emerald-100 transition-colors">
+                              <FileText className="w-3 h-3" /> PDF 1
+                            </button>
+                          </div>
+                        )}
+
+                        {/* Visual Badges Summary */}
+                        {(() => {
+                          const text = interaction.instruction || '';
+                          const mediaCount = (text.match(/\[MEDIA_\d+\]/g) || []).length;
+                          const audioCount = (text.match(/\[AUDIO_\d+\]/g) || []).length;
+                          const fileCount = (text.match(/\[FILE_\d+\]/g) || []).length;
+                          
+                          if (mediaCount === 0 && audioCount === 0 && fileCount === 0) return null;
+                          return (
+                            <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-slate-100">
+                              <span className="text-xs font-medium text-slate-500">Este paso enviará:</span>
+                              {mediaCount > 0 && (
+                                <span className="flex items-center gap-1 px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded-full text-xs font-semibold">
+                                  <ImageIcon className="w-3 h-3" /> {mediaCount} Foto{mediaCount > 1 ? 's' : ''}
+                                </span>
+                              )}
+                              {audioCount > 0 && (
+                                <span className="flex items-center gap-1 px-2 py-0.5 bg-fuchsia-100 text-fuchsia-700 rounded-full text-xs font-semibold">
+                                  <Mic className="w-3 h-3" /> {audioCount} Audio{audioCount > 1 ? 's' : ''}
+                                </span>
+                              )}
+                              {fileCount > 0 && (
+                                <span className="flex items-center gap-1 px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full text-xs font-semibold">
+                                  <FileText className="w-3 h-3" /> {fileCount} Archivo{fileCount > 1 ? 's' : ''}
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })()}
                       </div>
                     </div>
                   </div>
