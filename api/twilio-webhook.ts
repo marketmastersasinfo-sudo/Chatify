@@ -539,9 +539,14 @@ async function handleSophia({ lead, productInfo, leadId, incomingText, storeTwil
 
   for (const msg of recentMessages) {
     if (msg.content.startsWith('[')) continue; // skip system/debug messages
+    
+    // Ocultar los links internos de la DB para que la IA no intente imitarlos y romper el JSON
+    const cleanContent = msg.content.replace(/\[(IMG|VID|SND|DOC|GIF):.*?\]/g, '').trim();
+    if (!cleanContent) continue;
+
     aiMessages.push({
       role: msg.sender_type === 'client' ? 'user' : 'assistant',
-      content: msg.content
+      content: cleanContent
     });
   }
 
