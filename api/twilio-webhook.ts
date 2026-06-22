@@ -62,7 +62,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       bodyObj = Object.fromEntries(new URLSearchParams(req.body).entries());
     }
 
-    const { From, To, Body, ProfileName, ButtonPayload, ButtonText } = bodyObj || {};
+    const { From, To, Body, ProfileName, ButtonPayload, ButtonText, MediaUrl0, Latitude } = bodyObj || {};
 
     if (!From || !To) {
       return res.status(200).send('<?xml version="1.0" encoding="UTF-8"?><Response></Response>');
@@ -72,6 +72,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     let storeTwilioPhone = To.replace('whatsapp:', '').trim();
     const storeTwilioPhoneNoPlus = storeTwilioPhone.replace('+', '');
     const storeTwilioPhoneWithPlus = storeTwilioPhone.startsWith('+') ? storeTwilioPhone : `+${storeTwilioPhone}`;
+
+    let incomingBody = ButtonText || ButtonPayload || Body || '';
+    if (!incomingBody) {
+      if (MediaUrl0) incomingBody = '[El cliente envió una foto, video o audio]';
+      else if (Latitude) incomingBody = '[El cliente envió una ubicación]';
+      else incomingBody = '[El cliente envió un sticker o formato no soportado]';
+    }
 
     // ── Find Store ──────────────────────────────────
     const { data: stores } = await supabase.from('stores').select('id, twilio_phone_number, organization_id, country');
@@ -150,7 +157,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).send('<?xml version="1.0" encoding="UTF-8"?><Response></Response>');
     }
 
-    const incomingText = ButtonText || ButtonPayload || Body || '';
+    const incomingText = incomingBody;
 
     // ── Update Product Name if Ad Click ─────────────
     if (incomingText.includes('información sobre:')) {

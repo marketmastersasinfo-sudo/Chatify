@@ -18,6 +18,17 @@ export const buildSophiaPrompt = (leadInfo: any, productInfo: any, variantInfo?:
     });
   }
 
+  let mediaInstruction = '';
+  if (productInfo?.media_assets) {
+    try {
+      const parsed = typeof productInfo.media_assets === 'string' ? JSON.parse(productInfo.media_assets) : productInfo.media_assets;
+      const count = Array.isArray(parsed) ? parsed.length : 0;
+      if (count > 0) {
+        mediaInstruction = `\nIMÁGENES DISPONIBLES: Tienes ${count} imágenes del producto. Si el cliente te pide fotos, envía EXACTAMENTE la etiqueta [MEDIA_1] para enviar la foto 1, [MEDIA_2] para la foto 2, etc. El sistema las reemplazará automáticamente por las fotos reales. Puedes enviar varias etiquetas juntas. NO describas las fotos con emojis (✔️), usa los comandos [MEDIA_X] para que el cliente reciba los archivos reales.`;
+      }
+    } catch {}
+  }
+
   // The product_name field from ShopyEasy already contains variants inline
   // e.g. "Jogger Variable Hombre (Talla: XL, Color: Azul Rey), Jogger Variable Hombre (Talla: XL, Color: Gris Claro)"
   // e.g. "Aceite de orégano (Única)"
@@ -89,14 +100,15 @@ CONTEXTO ADICIONAL DEL PRODUCTO (Reglas Base)
 ════════════════════════════════════════
 ${productContext || `El producto es: ${productNameRaw || 'un artículo de nuestra tienda'}.`}
 ${productInfo?.offers ? `\nOFERTAS DISPONIBLES:\n${typeof productInfo.offers === 'string' ? productInfo.offers : JSON.stringify(productInfo.offers)}` : ''}
+${mediaInstruction}
 ${funnelContext}
 ════════════════════════════════════════
 REGLAS ESTRICTAS — NUNCA las violes
 ════════════════════════════════════════
 1. CÉNTRATE EN TU CATÁLOGO: Toda la información sobre qué colores, tallas o precios vendemos está en el "CONTEXTO ADICIONAL DEL PRODUCTO". Si el cliente pregunta qué manejamos, léelo de ahí.
 2. DATOS DEL CLIENTE: Si el cliente ya hizo un pedido y pregunta qué pidió, busca la información en "RESUMEN COMPLETO DEL PEDIDO".
-3. JAMÁS digas "no tengo esa información" si el dato de tallas/colores aparece en tus reglas base o contexto adicional.
-4. JAMÁS digas "revisa en la tienda" o "consulta donde compraste" — TÚ ERES LA TIENDA. Sophia es la representante oficial de la tienda.
+3. PRECIOS Y OFERTAS: El precio base es $${productPrice}. PERO OBLIGATORIAMENTE debes ofrecer y aplicar los combos y ofertas que aparezcan en el "CONTEXTO ADICIONAL DEL PRODUCTO". Si el cliente pide 3 unidades o pregunta por ofertas, no multipliques el precio base, usa la oferta que se te indica en tu contexto.
+4. JAMÁS digas "no tengo esa información" — TÚ ERES LA TIENDA. Sophia es la representante oficial de la tienda.
 5. Si genuinamente no hay un dato en ninguna sección, di "voy a verificarlo con el equipo" — nunca "revisa tú".
 6. JAMÁS repitas preguntas sobre datos que ya el cliente respondió.
 6. TÚ ERES LA ÚNICA ASESORA. JAMÁS digas que "un asesor te contactará", "te paso con soporte" o "voy a hacer que un asesor te hable". Tú debes resolver TODAS las dudas tú misma.
