@@ -104,6 +104,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .maybeSingle();
 
     let leadId = lead?.id;
+    let isNewLead = false;
 
     if (!lead) {
       // Walink Smart Parser (Anti-Friction)
@@ -144,13 +145,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (newLead) {
         lead = newLead;
         leadId = newLead.id;
-        // 🎯 Disparar evento "Lead" cuando el prospecto inicia la conversación por primera vez
-        try {
-          const { firePixelEvent } = await import('./utils/_tracking.js');
-          await firePixelEvent(supabase, leadId, 'Lead', 0, 'COP', customerPhone);
-        } catch (e) {
-          console.error('Tracking Error on Lead creation', e);
-        }
+        isNewLead = true;
       }
     }
 
@@ -176,6 +171,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       sender_type: 'client',
       content: incomingText
     });
+
+    if (isNewLead) {
+      // 🎯 Disparar evento "Lead" de forma ASÍNCRONA (NO BLOQUEANTE)
+      // Esto evita que Vercel cancele la ejecución si el Fetch a FB/TikTok demora más de 10s.
+      import('./utils/_tracking.js').then(({ firePixelEvent }) => {
+        firePixelEvent(supabase, leadId!, 'Lead', 0, 'COP', customerPhone)
+          .catch(e => console.error('Tracking Error async:', e));
+      }).catch(e => console.error('Tracking Import Error:', e));
+    }
 
     const isTwilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 

@@ -1,29 +1,15 @@
 import { createClient } from '@supabase/supabase-js';
-import fs from 'fs';
-import path from 'path';
 
-const envContent = fs.readFileSync(path.resolve('.env'), 'utf-8');
-const env = {};
-envContent.split('\n').forEach(line => {
-  const parts = line.split('=');
-  if (parts.length >= 2) {
-    const key = parts[0].trim();
-    const val = parts.slice(1).join('=').trim().replace(/^['"]|['"]$/g, '');
-    env[key] = val;
-  }
-});
-
-const supabase = createClient(env.VITE_SUPABASE_URL, env.VITE_SUPABASE_ANON_KEY);
+const supabase = createClient(
+  'https://gygrudkogjqymmcubnon.supabase.co',
+  'sb_publishable_-y9QYLdGwIlOS50sTsiCeQ_-PdD_-7w'
+);
 
 async function check() {
-  const { data: leads } = await supabase.from('leads').select('id, name, phone, traffic_source, status').order('created_at', { ascending: false }).limit(8);
-  console.log("LAST 8 LEADS:");
-  console.log(leads);
-
-  for (const lead of leads || []) {
-    const { data: messages } = await supabase.from('messages').select('content, sender_type, created_at').eq('lead_id', lead.id).order('created_at', { ascending: true });
-    console.log(`\nMESSAGES FOR LEAD ${lead.name} (${lead.phone}) [Source: ${lead.traffic_source}]:`);
-    messages.forEach(m => console.log(`[${m.sender_type}] ${JSON.stringify(m.content)}`));
+  const { data: store } = await supabase.from('stores').select('organization_id').eq('id', 'c6f3f1b1-42b6-4147-82c7-4bf440f8b38d').single();
+  if (store) {
+    const { data: org } = await supabase.from('organizations').select('*').eq('id', store.organization_id).single();
+    console.log("ORG:", org);
   }
 }
 check();
