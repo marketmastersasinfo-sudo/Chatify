@@ -39,7 +39,13 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   
   return <>{children}</>;
 }
+import { useEffect } from 'react';
+
 function App() {
+  useEffect(() => {
+    fetch('/api/rescue').catch(e => console.error(e));
+  }, []);
+
   return (
     <AuthProvider>
       <Router>
