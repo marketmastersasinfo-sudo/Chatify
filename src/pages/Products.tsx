@@ -576,71 +576,89 @@ export function Products() {
                   <input type="file" ref={fileInputRef} className="hidden" accept="image/*, audio/*, video/*, application/pdf" multiple onChange={handleFileUpload} />
                 </div>
                 
-                <div className="flex overflow-x-auto gap-4 pb-2 snap-x">
-                  {mediaAssets.map((asset, idx) => (
-                    <div key={idx} className="flex-shrink-0 w-48 bg-white border border-slate-200 rounded-xl overflow-hidden group hover:border-indigo-300 hover:shadow-md transition-all snap-start">
-                      {/* Thumbnail Area */}
-                      <div className="h-32 bg-slate-100 flex items-center justify-center relative group-hover:opacity-90 transition-opacity">
-                        {asset.type === 'image' || asset.type === 'gif' ? (
-                          <div className="relative w-full h-full">
-                            <img src={asset.url} alt="thumbnail" className="w-full h-full object-cover" />
-                            {asset.type === 'gif' && <span className="absolute bottom-1 right-1 bg-black/70 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">GIF</span>}
-                          </div>
-                        ) : asset.type === 'video' ? (
-                          <div className="relative w-full h-full bg-slate-900 flex items-center justify-center">
-                            <video src={asset.url} className="w-full h-full object-cover opacity-60" />
-                            <PlayCircle className="absolute w-8 h-8 text-white/80" />
-                          </div>
-                        ) : asset.type === 'audio' ? (
-                          <div className="w-full h-full bg-gradient-to-br from-fuchsia-100 to-indigo-100 flex flex-col items-center justify-center">
-                            <Music className="w-8 h-8 text-fuchsia-500 mb-1" />
-                            <span className="text-[10px] font-bold text-fuchsia-700 uppercase">Audio</span>
-                          </div>
-                        ) : asset.type === 'pdf' || asset.type === 'file' ? (
-                          <div className="w-full h-full bg-gradient-to-br from-rose-50 to-red-100 flex flex-col items-center justify-center p-2 text-center">
-                            <FileText className="w-8 h-8 text-red-500 mb-1" />
-                            <span className="text-[9px] font-bold text-red-700 truncate w-full">{asset.name || 'Documento PDF'}</span>
-                          </div>
-                        ) : null}
-                        
-                        {/* Overlay Controls */}
-                        <div className="absolute inset-0 bg-slate-900/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 backdrop-blur-sm">
-                          <button onClick={() => moveMedia(idx, 'up')} disabled={idx === 0} className="p-2 bg-white/90 rounded-full hover:bg-white text-slate-700 disabled:opacity-50 transition-colors shadow-sm"><ArrowUp className="w-4 h-4" /></button>
-                          <button onClick={() => removeMedia(idx)} className="p-2 bg-red-500/90 rounded-full hover:bg-red-500 text-white transition-colors shadow-sm"><Trash2 className="w-4 h-4" /></button>
-                          <button onClick={() => moveMedia(idx, 'down')} disabled={idx === mediaAssets.length - 1} className="p-2 bg-white/90 rounded-full hover:bg-white text-slate-700 disabled:opacity-50 transition-colors shadow-sm"><ArrowDown className="w-4 h-4" /></button>
-                        </div>
-                      </div>
-                      
-                      {/* Info Area */}
-                      <div className="p-3 bg-white border-t border-slate-100 flex flex-col gap-2">
-                        <div className="flex items-center justify-between">
-                          <span className={`text-xs font-bold font-mono px-2 py-1 rounded ${
-                            asset.type === 'video' ? 'bg-orange-100 text-orange-700' : 
-                            asset.type === 'audio' ? 'bg-fuchsia-100 text-fuchsia-700' : 
-                            asset.type === 'pdf' || asset.type === 'file' ? 'bg-red-100 text-red-700' : 
-                            'bg-indigo-100 text-indigo-700'
-                          }`}>
-                            {asset.tag}
-                          </span>
-                          <button onClick={() => copyToClipboard(asset.tag)} className="text-slate-400 hover:text-indigo-600 transition-colors" title="Copiar Tag"><Copy className="w-4 h-4" /></button>
-                        </div>
-                        <input
-                          type="text"
-                          value={asset.rule || ''}
-                          onChange={(e) => updateMediaRule(idx, e.target.value)}
-                          placeholder="Condición (ej: Si pide tallas)"
-                          className="w-full text-xs p-1.5 border border-slate-200 rounded text-slate-700 placeholder-slate-400 focus:outline-none focus:border-indigo-400"
-                          title="¿Cuándo enviar este archivo? Deja en blanco para usar solo su etiqueta"
-                        />
-                      </div>
-                    </div>
-                  ))}
+                <div className="flex flex-col gap-8">
                   {mediaAssets.length === 0 && (
                     <div className="w-full h-32 rounded-xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-400 bg-slate-50">
                       <ImageIcon className="w-6 h-6 mb-2 opacity-50" />
                       <span className="text-xs font-medium">Sube fotos, videos, audios o PDFs</span>
                     </div>
                   )}
+
+                  {(() => {
+                    const assetsWithIdx = mediaAssets.map((asset, idx) => ({ asset, idx }));
+                    const groups = [
+                      { title: 'Fotos y GIFs', icon: <ImageIcon className="w-4 h-4 text-indigo-500" />, items: assetsWithIdx.filter(a => a.asset.type === 'image' || a.asset.type === 'gif') },
+                      { title: 'Videos', icon: <PlayCircle className="w-4 h-4 text-orange-500" />, items: assetsWithIdx.filter(a => a.asset.type === 'video') },
+                      { title: 'Audios', icon: <Music className="w-4 h-4 text-fuchsia-500" />, items: assetsWithIdx.filter(a => a.asset.type === 'audio') },
+                      { title: 'Documentos PDF', icon: <FileText className="w-4 h-4 text-red-500" />, items: assetsWithIdx.filter(a => a.asset.type === 'pdf' || a.asset.type === 'file') }
+                    ];
+
+                    return groups.filter(g => g.items.length > 0).map((group, groupIdx) => (
+                      <div key={groupIdx} className="flex flex-col gap-3">
+                        <h5 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">{group.icon} {group.title}</h5>
+                        <div className="flex overflow-x-auto gap-4 pb-2 snap-x">
+                          {group.items.map(({ asset, idx }) => (
+                            <div key={idx} className="flex-shrink-0 w-48 bg-white border border-slate-200 rounded-xl overflow-hidden group hover:border-indigo-300 hover:shadow-md transition-all snap-start">
+                              {/* Thumbnail Area */}
+                              <div className="h-32 bg-slate-100 flex items-center justify-center relative group-hover:opacity-90 transition-opacity">
+                                {asset.type === 'image' || asset.type === 'gif' ? (
+                                  <div className="relative w-full h-full">
+                                    <img src={asset.url} alt="thumbnail" className="w-full h-full object-cover" />
+                                    {asset.type === 'gif' && <span className="absolute bottom-1 right-1 bg-black/70 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">GIF</span>}
+                                  </div>
+                                ) : asset.type === 'video' ? (
+                                  <div className="relative w-full h-full bg-slate-900 flex items-center justify-center">
+                                    <video src={asset.url} className="w-full h-full object-cover opacity-60" />
+                                    <PlayCircle className="absolute w-8 h-8 text-white/80" />
+                                  </div>
+                                ) : asset.type === 'audio' ? (
+                                  <div className="w-full h-full bg-gradient-to-br from-fuchsia-100 to-indigo-100 flex flex-col items-center justify-center">
+                                    <Music className="w-8 h-8 text-fuchsia-500 mb-1" />
+                                    <span className="text-[10px] font-bold text-fuchsia-700 uppercase">Audio</span>
+                                  </div>
+                                ) : asset.type === 'pdf' || asset.type === 'file' ? (
+                                  <div className="w-full h-full bg-gradient-to-br from-rose-50 to-red-100 flex flex-col items-center justify-center p-2 text-center">
+                                    <FileText className="w-8 h-8 text-red-500 mb-1" />
+                                    <span className="text-[9px] font-bold text-red-700 truncate w-full">{asset.name || 'Documento PDF'}</span>
+                                  </div>
+                                ) : null}
+                                
+                                {/* Overlay Controls */}
+                                <div className="absolute inset-0 bg-slate-900/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 backdrop-blur-sm">
+                                  <button onClick={() => moveMedia(idx, 'up')} disabled={idx === 0} className="p-2 bg-white/90 rounded-full hover:bg-white text-slate-700 disabled:opacity-50 transition-colors shadow-sm"><ArrowUp className="w-4 h-4" /></button>
+                                  <button onClick={() => removeMedia(idx)} className="p-2 bg-red-500/90 rounded-full hover:bg-red-500 text-white transition-colors shadow-sm"><Trash2 className="w-4 h-4" /></button>
+                                  <button onClick={() => moveMedia(idx, 'down')} disabled={idx === mediaAssets.length - 1} className="p-2 bg-white/90 rounded-full hover:bg-white text-slate-700 disabled:opacity-50 transition-colors shadow-sm"><ArrowDown className="w-4 h-4" /></button>
+                                </div>
+                              </div>
+                              
+                              {/* Info Area */}
+                              <div className="p-3 bg-white border-t border-slate-100 flex flex-col gap-2">
+                                <div className="flex items-center justify-between">
+                                  <span className={`text-xs font-bold font-mono px-2 py-1 rounded ${
+                                    asset.type === 'video' ? 'bg-orange-100 text-orange-700' : 
+                                    asset.type === 'audio' ? 'bg-fuchsia-100 text-fuchsia-700' : 
+                                    asset.type === 'pdf' || asset.type === 'file' ? 'bg-red-100 text-red-700' : 
+                                    'bg-indigo-100 text-indigo-700'
+                                  }`}>
+                                    {asset.tag}
+                                  </span>
+                                  <button onClick={() => copyToClipboard(asset.tag)} className="text-slate-400 hover:text-indigo-600 transition-colors" title="Copiar Tag"><Copy className="w-4 h-4" /></button>
+                                </div>
+                                <input
+                                  type="text"
+                                  value={asset.rule || ''}
+                                  onChange={(e) => updateMediaRule(idx, e.target.value)}
+                                  placeholder="Condición (ej: Si pide tallas)"
+                                  className="w-full text-xs p-1.5 border border-slate-200 rounded text-slate-700 placeholder-slate-400 focus:outline-none focus:border-indigo-400"
+                                  title="¿Cuándo enviar este archivo? Deja en blanco para usar solo su etiqueta"
+                                />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ));
+                  })()}
                 </div>
               </div>
 
