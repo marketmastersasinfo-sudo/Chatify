@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Image as ImageIcon, Music, Loader2, Save, Trash2, Copy, Store, Plus, ArrowUp, ArrowDown, Gift, BrainCircuit, ChevronLeft, Video, FileText, PlayCircle } from 'lucide-react';
+import { Image as ImageIcon, Music, Loader2, Save, Trash2, Copy, Store, Plus, ArrowUp, ArrowDown, Gift, BrainCircuit, ChevronLeft, FileText, PlayCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import imageCompression from 'browser-image-compression';
 
@@ -29,7 +29,7 @@ export function Products() {
   const [flowTemplates, setFlowTemplates] = useState<any[]>([]);
   const [selectedFlowTemplateId, setSelectedFlowTemplateId] = useState<string>('');
 
-  const [mediaAssets, setMediaAssets] = useState<{ tag: string, url: string, type: string, rule?: string }[]>([]);
+  const [mediaAssets, setMediaAssets] = useState<{ tag: string, url: string, type: string, rule?: string, name?: string }[]>([]);
   const [uploadingMedia, setUploadingMedia] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
