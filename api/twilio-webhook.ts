@@ -187,7 +187,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // ── DEBUG COMMAND: RESET ────────────────────────
     if (incomingText.trim().toUpperCase() === 'RESET') {
-      await supabase.from('leads').update({ status: 'nuevo' }).eq('id', leadId);
+      await supabase.from('leads').update({ status: 'new' }).eq('id', leadId);
       // Remove all old messages so the flow can restart cleanly
       await supabase.from('messages').delete().eq('lead_id', leadId);
       
@@ -657,7 +657,11 @@ async function handleSophia({ lead, productInfo, leadId, incomingText, storeTwil
         await isTwilioClient.messages.create({
           from: `whatsapp:+${storeTwilioPhone.replace('+', '')}`,
           to: `whatsapp:+${customerPhone}`,
-          body: aiReply,
+          body: aiReply
+        });
+        await isTwilioClient.messages.create({
+          from: `whatsapp:+${storeTwilioPhone.replace('+', '')}`,
+          to: `whatsapp:+${customerPhone}`,
           mediaUrl: [streetViewUrl]
         });
         await sb.from('messages').insert({ lead_id: leadId, sender_type: 'ai', content: `[Automated Street View] ${aiReply}\nImage: ${streetViewUrl}` });
@@ -723,19 +727,32 @@ async function handleSophia({ lead, productInfo, leadId, incomingText, storeTwil
     textForTwilio = textForTwilio.replace(/\[(MEDIA|AUDIO|VIDEO|FILE|GIF)_\d+\]/g, '').trim();
     textForDB = textForDB.trim();
 
-    const msgPayload: any = {
-      from: `whatsapp:+${storeTwilioPhone.replace('+', '')}`,
-      to: `whatsapp:+${customerPhone}`
-    };
-    if (textForTwilio) msgPayload.body = textForTwilio;
-    if (mediaUrlsToSend.length > 0) msgPayload.mediaUrl = [mediaUrlsToSend[0]]; // WhatsApp only supports 1 media per message
-
-    // Twilio fallback if both are empty
-    if (!msgPayload.body && !msgPayload.mediaUrl) {
-      msgPayload.body = '👍';
+    // Enviar el texto principal primero (si no está vacío)
+    if (textForTwilio) {
+      await isTwilioClient.messages.create({
+        from: `whatsapp:+${storeTwilioPhone.replace('+', '')}`,
+        to: `whatsapp:+${customerPhone}`,
+        body: textForTwilio
+      });
     }
 
-    await isTwilioClient.messages.create(msgPayload);
+    // Enviar la primera imagen (si existe)
+    if (mediaUrlsToSend.length > 0) {
+      await isTwilioClient.messages.create({
+        from: `whatsapp:+${storeTwilioPhone.replace('+', '')}`,
+        to: `whatsapp:+${customerPhone}`,
+        mediaUrl: [mediaUrlsToSend[0]]
+      });
+    }
+
+    // Twilio fallback if both are empty
+    if (!textForTwilio && mediaUrlsToSend.length === 0) {
+      await isTwilioClient.messages.create({
+        from: `whatsapp:+${storeTwilioPhone.replace('+', '')}`,
+        to: `whatsapp:+${customerPhone}`,
+        body: '👍'
+      });
+    }
 
     // Enviar el resto de archivos multimedia como mensajes separados (Limitación estricta de la API de WhatsApp de Twilio)
     for (let i = 1; i < mediaUrlsToSend.length; i++) {

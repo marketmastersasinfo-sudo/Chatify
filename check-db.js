@@ -1,14 +1,18 @@
 import { createClient } from '@supabase/supabase-js';
+import fs from 'fs';
 
-const supabaseUrl = process.env.VITE_SUPABASE_URL;
-const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY;
-const supabase = createClient(supabaseUrl!, supabaseKey!);
+const envFile = fs.readFileSync('.env', 'utf8');
+const envVars = Object.fromEntries(envFile.split('\n').map(line => line.split('=')));
+
+const supabase = createClient(envVars['VITE_SUPABASE_URL'].trim(), envVars['VITE_SUPABASE_SERVICE_ROLE_KEY']?.trim() || envVars['VITE_SUPABASE_ANON_KEY']?.trim());
 
 async function check() {
-  const { data, error } = await supabase.from('messages').select('*').order('created_at', { ascending: false }).limit(5);
-  console.log("Messages:", data);
+  const { data: leads } = await supabase.from('leads').select('id, phone, status, store_id').order('created_at', { ascending: false }).limit(2);
+  console.log('RECENT LEADS:', leads);
   
-  const { data: lead } = await supabase.from('leads').select('id, name, status, board_type, address, city').order('created_at', { ascending: false }).limit(2);
-  console.log("Leads:", lead);
+  if (leads && leads.length > 0) {
+    const { data: msgs } = await supabase.from('messages').select('content, sender_type, created_at').eq('lead_id', leads[0].id).order('created_at', { ascending: false }).limit(3);
+    console.log('MESSAGES FOR LAST LEAD:', msgs);
+  }
 }
 check();
