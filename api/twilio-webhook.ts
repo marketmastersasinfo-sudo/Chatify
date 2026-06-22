@@ -674,6 +674,9 @@ async function handleSophia({ lead, productInfo, leadId, incomingText, storeTwil
     const mediaUrlsToSend: string[] = [];
     const mediaRegex = /\[MEDIA_(\d+)\]/g;
     let match;
+    let textForDB = aiReply;
+    let textForTwilio = aiReply;
+
     while ((match = mediaRegex.exec(aiReply)) !== null) {
       const mediaIndex = parseInt(match[1], 10) - 1; // [MEDIA_1] -> index 0
       let assets = [];
@@ -686,16 +689,18 @@ async function handleSophia({ lead, productInfo, leadId, incomingText, storeTwil
       } catch {}
       if (assets[mediaIndex]?.url) {
         mediaUrlsToSend.push(assets[mediaIndex].url);
+        textForDB = textForDB.replace(match[0], `[IMG:${assets[mediaIndex].url}]`);
       }
     }
-    // Borrar los tags del mensaje de texto para que el cliente no los vea
-    aiReply = aiReply.replace(/\[MEDIA_(\d+)\]/g, '').trim();
+    // Borrar los tags restantes del mensaje de texto
+    textForTwilio = textForTwilio.replace(/\[MEDIA_(\d+)\]/g, '').trim();
+    textForDB = textForDB.replace(/\[MEDIA_(\d+)\]/g, '').trim();
 
     const msgPayload: any = {
       from: `whatsapp:+${storeTwilioPhone.replace('+', '')}`,
       to: `whatsapp:+${customerPhone}`
     };
-    if (aiReply) msgPayload.body = aiReply;
+    if (textForTwilio) msgPayload.body = textForTwilio;
     if (mediaUrlsToSend.length > 0) msgPayload.mediaUrl = mediaUrlsToSend;
 
     // Twilio fallback if both are empty
@@ -704,7 +709,7 @@ async function handleSophia({ lead, productInfo, leadId, incomingText, storeTwil
     }
 
     await isTwilioClient.messages.create(msgPayload);
-    await sb.from('messages').insert({ lead_id: leadId, sender_type: 'ai', content: aiReply });
+    await sb.from('messages').insert({ lead_id: leadId, sender_type: 'ai', content: textForDB });
   } catch (err: any) {
     console.error('Sophia AI Error:', err);
     await sb.from('messages').insert({ lead_id: leadId, sender_type: 'ai', content: `[BOT CRASH] OpenAI Error: ${err.message}` });

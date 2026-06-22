@@ -307,13 +307,24 @@ export function LeadChatPanel({
                   const cleanContent = bodyLines.join('\n').trim();
                   const isSystemMsg = msg.content.startsWith('[SISTEMA]') || msg.content.startsWith('[Bot Carrito') || msg.content.startsWith('[ERROR') || msg.content.startsWith('[BOT');
                   
-                  if (isSystemMsg && !cleanContent.includes('\u00a1') && !cleanContent.includes('Hola')) {
+                  if (isSystemMsg && !cleanContent.includes('¡') && !cleanContent.includes('Hola')) {
                     return (
                       <div key={msg.id} className="flex justify-center">
                         <span className="bg-amber-50 text-amber-700 text-[11px] font-semibold px-3 py-1 rounded-full border border-amber-200">{cleanContent}</span>
                       </div>
                     );
                   }
+
+                  // Extraer imágenes incrustadas [IMG:url]
+                  let finalContent = cleanContent;
+                  const embeddedImages: string[] = [];
+                  const imgRegex = /\[IMG:(.+?)\]/g;
+                  let m;
+                  while ((m = imgRegex.exec(cleanContent)) !== null) {
+                    embeddedImages.push(m[1]);
+                    finalContent = finalContent.replace(m[0], '');
+                  }
+                  finalContent = finalContent.trim();
 
                   return (
                   <div key={msg.id} className={`flex flex-col ${msg.sender_type === 'human' || msg.sender_type === 'ai' ? 'items-end' : 'items-start'}`}>
@@ -327,7 +338,10 @@ export function LeadChatPanel({
                        {msg.metadata?.image_url && (
                          <img src={msg.metadata.image_url} alt="Media" className="w-full h-auto rounded-xl mb-2 object-cover" />
                        )}
-                       <p className="text-[15px] leading-relaxed" style={{ wordBreak: 'break-word' }}>{cleanContent}</p>
+                       {embeddedImages.map((imgUrl, idx) => (
+                         <img key={idx} src={imgUrl} alt="Enviado por IA" className="w-full h-auto rounded-xl mb-2 object-cover" />
+                       ))}
+                       {finalContent && <p className="text-[15px] leading-relaxed" style={{ wordBreak: 'break-word' }}>{finalContent}</p>}
                        <span className="absolute bottom-1 right-3 text-[10px] opacity-70 whitespace-nowrap">
                          {msg.created_at ? new Date(msg.created_at).toLocaleDateString('es-ES', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}
                        </span>
