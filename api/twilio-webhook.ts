@@ -712,7 +712,7 @@ async function handleSophia({ lead, productInfo, leadId, incomingText, storeTwil
       to: `whatsapp:+${customerPhone}`
     };
     if (textForTwilio) msgPayload.body = textForTwilio;
-    if (mediaUrlsToSend.length > 0) msgPayload.mediaUrl = mediaUrlsToSend;
+    if (mediaUrlsToSend.length > 0) msgPayload.mediaUrl = [mediaUrlsToSend[0]]; // WhatsApp only supports 1 media per message
 
     // Twilio fallback if both are empty
     if (!msgPayload.body && !msgPayload.mediaUrl) {
@@ -720,6 +720,16 @@ async function handleSophia({ lead, productInfo, leadId, incomingText, storeTwil
     }
 
     await isTwilioClient.messages.create(msgPayload);
+
+    // Enviar el resto de archivos multimedia como mensajes separados (Limitación estricta de la API de WhatsApp de Twilio)
+    for (let i = 1; i < mediaUrlsToSend.length; i++) {
+      await isTwilioClient.messages.create({
+        from: `whatsapp:+${storeTwilioPhone.replace('+', '')}`,
+        to: `whatsapp:+${customerPhone}`,
+        mediaUrl: [mediaUrlsToSend[i]]
+      });
+    }
+
     await sb.from('messages').insert({ lead_id: leadId, sender_type: 'ai', content: textForDB });
   } catch (err: any) {
     console.error('Sophia AI Error:', err);
