@@ -413,7 +413,22 @@ export function Funnels() {
                             <button onClick={() => injectTag(index, '[MEDIA_2]')} className="flex items-center gap-1 px-2 py-1 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded text-xs font-medium hover:bg-indigo-100 transition-colors">
                               <ImageIcon className="w-3 h-3" /> Foto 2
                             </button>
-                            <button onClick={() => injectTag(index, '[AUDIO_1]')} className="flex items-center gap-1 px-2 py-1 bg-fuchsia-50 text-fuchsia-600 border border-fuchsia-100 rounded text-xs font-medium hover:bg-fuchsia-100 transition-colors">
+                            <select 
+                              onChange={(e) => {
+                                if (e.target.value) {
+                                  injectTag(index, `[MEDIA_${e.target.value}]`);
+                                  e.target.value = '';
+                                }
+                              }}
+                              className="px-2 py-1 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded text-xs font-medium hover:bg-indigo-100 transition-colors outline-none cursor-pointer appearance-none text-center"
+                              title="Inyectar más fotos"
+                            >
+                              <option value="">+ Más Fotos ▼</option>
+                              {[3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20].map(n => (
+                                <option key={n} value={n}>Foto {n}</option>
+                              ))}
+                            </select>
+                            <button onClick={() => injectTag(index, '[AUDIO_1]')} className="flex items-center gap-1 px-2 py-1 bg-fuchsia-50 text-fuchsia-600 border border-fuchsia-100 rounded text-xs font-medium hover:bg-fuchsia-100 transition-colors ml-2">
                               <Mic className="w-3 h-3" /> Audio 1
                             </button>
                             <button onClick={() => injectTag(index, '[FILE_1]')} className="flex items-center gap-1 px-2 py-1 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded text-xs font-medium hover:bg-emerald-100 transition-colors">
