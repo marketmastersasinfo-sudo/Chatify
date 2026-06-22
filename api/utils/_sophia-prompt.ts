@@ -12,7 +12,7 @@ export const buildSophiaPrompt = (leadInfo: any, productInfo: any, variantInfo?:
 
   let funnelContext = '';
   if (productInfo?.flow_template && Array.isArray(productInfo.flow_template)) {
-    funnelContext = `\n════════════════════════════════════════\nSECUENCIA ESTRICTA DE VENTAS (EMBUDO)\n════════════════════════════════════════\nDebes seguir ESTRICTAMENTE esta secuencia paso a paso. No te saltes pasos. Evalúa la conversación con el cliente para saber en qué paso estás, y ejecuta ÚNICAMENTE la instrucción del paso actual o del siguiente paso si el cliente ya respondió lo necesario.\n¡IMPORTANTE!: Si la instrucción del paso contiene etiquetas entre corchetes como [MEDIA_X], [VIDEO_X], [AUDIO_X], [GIF_X] o [FILE_X], DEBES COPIARLAS Y PEGARLAS EXACTAMENTE IGUAL en tu respuesta. Estos son comandos de sistema que inyectan los archivos al cliente. ¡No los omitas!\n\n`;
+    funnelContext = `\n════════════════════════════════════════\nSECUENCIA ESTRICTA DE VENTAS (EMBUDO)\n════════════════════════════════════════\nDebes seguir ESTRICTAMENTE esta secuencia paso a paso. No te saltes pasos. Evalúa la conversación con el cliente para saber en qué paso estás, y ejecuta ÚNICAMENTE la instrucción del paso actual o del siguiente paso si el cliente ya respondió lo necesario.\n\n⚠️ ALERTA CRÍTICA MULTIMEDIA ⚠️\nSi la instrucción del paso que estás ejecutando contiene etiquetas entre corchetes (ejemplo: [MEDIA_1], [VIDEO_3], [AUDIO_2], etc.), ESTÁS OBLIGADA A COPIARLAS Y PEGARLAS EXACTAMENTE IGUAL AL FINAL DE TU RESPUESTA ("reply"). \nSi las omites, el sistema fallará gravemente. ¡ES OBLIGATORIO INCLUIRLAS!\n\n`;
     productInfo.flow_template.forEach((step: any, index: number) => {
       funnelContext += `PASO ${index + 1} - ${step.title}:\n${step.instruction}\n\n`;
     });
@@ -140,7 +140,7 @@ FORMATO DE SALIDA ESTRICTO
 OUTPUT FORMAT:
 Return a raw JSON object (NO markdown formatting, NO \`\`\`json) with the following structure:
 {
-  "reply": "El mensaje de WhatsApp que le enviarás al cliente.",
+  "reply": "El mensaje de WhatsApp que le enviarás al cliente. ¡DEBES PEGAR AL FINAL DE ESTE MENSAJE LAS ETIQUETAS MULTIMEDIA (ej: [MEDIA_1]) SI LA INSTRUCCIÓN DEL PASO LAS TENÍA!",
   "intent": "El estado de la conversación (Purchase, Support, Objection, General, InitiateCheckout, AddToCart, None)",
   "extracted_city": "La ciudad de entrega si la mencionó",
   "extracted_address": "La dirección de entrega si la mencionó",
