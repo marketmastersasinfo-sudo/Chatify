@@ -23,6 +23,7 @@ export function Products() {
   
   // Single Custom Prompt
   const [customPrompt, setCustomPrompt] = useState('');
+  const [description, setDescription] = useState('');
   
   // Flow Templates
   const [flowTemplates, setFlowTemplates] = useState<any[]>([]);
@@ -89,6 +90,7 @@ export function Products() {
     setPrice('');
     setOffers([]);
     setCustomPrompt('');
+    setDescription('');
     setSelectedFlowTemplateId('');
     setMediaAssets([]);
     setIsAdding(true);
@@ -112,12 +114,19 @@ export function Products() {
           const combined = [greeting, pitch, objections, closing].filter(Boolean).join('\n\n');
           setCustomPrompt(combined);
         }
+        
+        if (parsed.builderData.description !== undefined) {
+          setDescription(parsed.builderData.description);
+        } else {
+          setDescription('');
+        }
       } else {
         setCustomPrompt(parsed.whatsapp || prod.master_prompt || '');
         setOffers([]);
       }
     } catch {
       setCustomPrompt(prod.master_prompt || '');
+      setDescription('');
       setOffers([]);
     }
 
@@ -150,6 +159,13 @@ export function Products() {
       prompt += `\n==============================================\n\n`;
     }
 
+    if (description.trim()) {
+      prompt += `== DESCRIPCIÓN Y DETALLES DEL PRODUCTO ==\n`;
+      prompt += `(Debes basar tus respuestas estrictamente en esta información cuando te pregunten sobre el producto, NO inventes colores ni tallas ni detalles que no estén aquí)\n`;
+      prompt += `${description.trim()}\n\n`;
+      prompt += `==============================================\n\n`;
+    }
+
     prompt += `== INSTRUCCIONES DEL VENDEDOR (TU COMPORTAMIENTO) ==\n`;
     prompt += customPrompt;
 
@@ -166,7 +182,8 @@ export function Products() {
         social: '',
         builderData: {
           offers,
-          customPrompt
+          customPrompt,
+          description
         }
       });
       
@@ -413,8 +430,17 @@ export function Products() {
                       <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
                         <span className="text-slate-400 font-medium">$</span>
                       </div>
-                      <input type="number" value={price} onChange={e => setPrice(e.target.value)} placeholder="99000" className="block w-full rounded-xl border-slate-200 py-2.5 pl-8 text-slate-900 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm font-medium transition-colors" />
                     </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Descripción del Producto</label>
+                    <textarea 
+                      value={description} 
+                      onChange={e => setDescription(e.target.value)} 
+                      placeholder="Ej: Tallas disponibles S, M, L. Colores: Rojo, Azul, Verde. Material: Algodón." 
+                      rows={5}
+                      className="block w-full rounded-xl border-slate-200 py-2.5 text-slate-900 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm font-medium transition-colors resize-none" 
+                    />
                   </div>
                 </div>
               </div>
