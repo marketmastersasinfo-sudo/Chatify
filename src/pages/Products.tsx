@@ -28,7 +28,7 @@ export function Products() {
   const [flowTemplates, setFlowTemplates] = useState<any[]>([]);
   const [selectedFlowTemplateId, setSelectedFlowTemplateId] = useState<string>('');
 
-  const [mediaAssets, setMediaAssets] = useState<{ tag: string, url: string, type: string }[]>([]);
+  const [mediaAssets, setMediaAssets] = useState<{ tag: string, url: string, type: string, rule?: string }[]>([]);
   const [uploadingMedia, setUploadingMedia] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -276,6 +276,12 @@ export function Products() {
 
   function copyToClipboard(text: string) {
     navigator.clipboard.writeText(text);
+  }
+
+  function updateMediaRule(index: number, rule: string) {
+    const newAssets = [...mediaAssets];
+    newAssets[index].rule = rule;
+    setMediaAssets(newAssets);
   }
 
   return (
@@ -540,11 +546,21 @@ export function Products() {
                       </div>
                       
                       {/* Info Area */}
-                      <div className="p-3 bg-white border-t border-slate-100 flex items-center justify-between">
-                        <span className="text-xs font-bold text-slate-700 font-mono bg-slate-100 px-2 py-1 rounded">
-                          {asset.tag}
-                        </span>
-                        <button onClick={() => copyToClipboard(asset.tag)} className="text-slate-400 hover:text-indigo-600 transition-colors" title="Copiar Tag"><Copy className="w-4 h-4" /></button>
+                      <div className="p-3 bg-white border-t border-slate-100 flex flex-col gap-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-slate-700 font-mono bg-slate-100 px-2 py-1 rounded">
+                            {asset.tag}
+                          </span>
+                          <button onClick={() => copyToClipboard(asset.tag)} className="text-slate-400 hover:text-indigo-600 transition-colors" title="Copiar Tag"><Copy className="w-4 h-4" /></button>
+                        </div>
+                        <input
+                          type="text"
+                          value={asset.rule || ''}
+                          onChange={(e) => updateMediaRule(idx, e.target.value)}
+                          placeholder="Condición (ej: Si pide tallas)"
+                          className="w-full text-xs p-1.5 border border-slate-200 rounded text-slate-700 placeholder-slate-400 focus:outline-none focus:border-indigo-400"
+                          title="¿Cuándo enviar esta imagen? Deja en blanco para usar solo el [MEDIA_X]"
+                        />
                       </div>
                     </div>
                   ))}

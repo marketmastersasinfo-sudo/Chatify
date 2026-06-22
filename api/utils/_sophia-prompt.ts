@@ -25,6 +25,15 @@ export const buildSophiaPrompt = (leadInfo: any, productInfo: any, variantInfo?:
       const count = Array.isArray(parsed) ? parsed.length : 0;
       if (count > 0) {
         mediaInstruction = `\nIMÁGENES DISPONIBLES: Tienes ${count} imágenes del producto. Si el cliente te pide fotos, envía EXACTAMENTE la etiqueta [MEDIA_1] para enviar la foto 1, [MEDIA_2] para la foto 2, etc. El sistema las reemplazará automáticamente por las fotos reales. Puedes enviar varias etiquetas juntas. NO describas las fotos con emojis (✔️), usa los comandos [MEDIA_X] para que el cliente reciba los archivos reales.`;
+        
+        const mappedRules = parsed.filter((a: any) => a.rule && a.rule.trim() !== '');
+        if (mappedRules.length > 0) {
+          mediaInstruction += `\n\n════════════════════════════════════════\nREGLAS DE MULTIMEDIA (MAPEADAS)\n════════════════════════════════════════\nDebes enviar ESTRICTAMENTE la etiqueta de imagen correspondiente cuando se cumplan estas condiciones exactas:\n`;
+          mappedRules.forEach((a: any) => {
+            mediaInstruction += `- ENVÍA la etiqueta ${a.tag} SI EL CLIENTE: ${a.rule}\n`;
+          });
+          mediaInstruction += `\n(Nota: Si la condición se cumple, incluye la etiqueta ${mappedRules[0].tag} directamente en tu respuesta como si fuera texto).`;
+        }
       }
     } catch {}
   }
