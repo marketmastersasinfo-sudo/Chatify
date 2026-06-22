@@ -560,13 +560,18 @@ async function handleSophia({ lead, productInfo, leadId, incomingText, storeTwil
     });
 
     const aiOutput = response.choices[0]?.message?.content?.trim() || '{}';
+    let cleanedOutput = aiOutput;
+    if (cleanedOutput.startsWith('```')) {
+      cleanedOutput = cleanedOutput.replace(/^```json\s*/i, '').replace(/^```\s*/, '').replace(/\s*```$/i, '').trim();
+    }
+    
     let parsed: { reply: string, intent: string, extracted_city?: string, extracted_address?: string, extracted_last_name?: string, extracted_department?: string, extracted_sector?: string, extracted_postal_code?: string } = { reply: '', intent: 'None' };
     
     try {
-      parsed = JSON.parse(aiOutput);
+      parsed = JSON.parse(cleanedOutput);
     } catch {
       // Fallback si la IA no devuelve JSON válido
-      parsed.reply = aiOutput;
+      parsed.reply = cleanedOutput;
     }
 
     let aiReply = parsed.reply || '';
