@@ -1,6 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 
+export const maxDuration = 60; // Vercel Pro limit
+
 // No podemos importar módulos locales (como phoneFormatter) fácilmente en funciones Vercel root sin setup extra, 
 // así que copiamos la lógica de formateo aquí por simplicidad.
 function formatPhone(phone: string, defaultCountryCode: string = '57'): string {
