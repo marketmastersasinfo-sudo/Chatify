@@ -336,12 +336,18 @@ export function LeadChatPanel({
                      }`}
                    >
                        {msg.metadata?.image_url && (
-                         <img src={msg.metadata.image_url} alt="Media" className="w-full h-auto rounded-xl mb-2 object-cover" />
+                         <img src={msg.metadata.image_url} alt="Media" className="max-w-[260px] max-h-[300px] rounded-xl mb-2 object-cover border border-black/5" />
                        )}
-                       {embeddedImages.map((imgUrl, idx) => (
-                         <img key={idx} src={imgUrl} alt="Enviado por IA" className="w-full h-auto rounded-xl mb-2 object-cover" />
-                       ))}
-                       {finalContent && <p className="text-[15px] leading-relaxed" style={{ wordBreak: 'break-word' }}>{finalContent}</p>}
+                       {embeddedImages.length > 0 && (
+                         <div className={`mb-2 ${embeddedImages.length === 1 ? '' : 'grid grid-cols-2 gap-1'}`}>
+                           {embeddedImages.map((imgUrl, idx) => (
+                             <a key={idx} href={imgUrl} target="_blank" rel="noopener noreferrer" className={`block overflow-hidden rounded-lg border border-black/5 ${embeddedImages.length === 1 ? 'max-w-[260px] max-h-[300px]' : 'aspect-square'}`}>
+                               <img src={imgUrl} alt="Enviado por IA" className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" />
+                             </a>
+                           ))}
+                         </div>
+                       )}
+                       {finalContent && <p className="text-[15px] leading-relaxed mt-1" style={{ wordBreak: 'break-word' }}>{finalContent}</p>}
                        <span className="absolute bottom-1 right-3 text-[10px] opacity-70 whitespace-nowrap">
                          {msg.created_at ? new Date(msg.created_at).toLocaleDateString('es-ES', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}
                        </span>
