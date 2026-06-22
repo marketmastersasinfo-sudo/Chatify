@@ -669,32 +669,43 @@ async function handleSophia({ lead, productInfo, leadId, incomingText, storeTwil
     }
 
     // ══════════════════════════════════════════════════════
-    // EXTRACCIÓN DE MULTIMEDIA (Imágenes / Audios)
+    // EXTRACCIÓN DE MULTIMEDIA (Imágenes / Audios / Videos / Docs)
     // ══════════════════════════════════════════════════════
     const mediaUrlsToSend: string[] = [];
-    const mediaRegex = /\[MEDIA_(\d+)\]/g;
-    let match;
     let textForDB = aiReply;
     let textForTwilio = aiReply;
 
-    while ((match = mediaRegex.exec(aiReply)) !== null) {
-      const mediaIndex = parseInt(match[1], 10) - 1; // [MEDIA_1] -> index 0
-      let assets = [];
-      try { 
-        if (productInfo?.media_assets) {
-          assets = typeof productInfo.media_assets === 'string' 
-            ? JSON.parse(productInfo.media_assets) 
-            : productInfo.media_assets;
+    let assets: any[] = [];
+    try { 
+      if (productInfo?.media_assets) {
+        assets = typeof productInfo.media_assets === 'string' 
+          ? JSON.parse(productInfo.media_assets) 
+          : productInfo.media_assets;
+      }
+    } catch {}
+
+    if (Array.isArray(assets)) {
+      for (const asset of assets) {
+        if (asset.tag && textForDB.includes(asset.tag)) {
+          mediaUrlsToSend.push(asset.url);
+          
+          let dbPrefix = 'IMG';
+          if (asset.type === 'video') dbPrefix = 'VID';
+          else if (asset.type === 'audio') dbPrefix = 'SND';
+          else if (asset.type === 'pdf' || asset.type === 'file') dbPrefix = 'DOC';
+          else if (asset.type === 'gif') dbPrefix = 'GIF';
+
+          // Reemplazar globalmente para la DB
+          textForDB = textForDB.split(asset.tag).join(`[${dbPrefix}:${asset.url}]`);
+          // Limpiar para el texto de Twilio (ya que se va a enviar como mediaUrl aparte)
+          textForTwilio = textForTwilio.split(asset.tag).join('');
         }
-      } catch {}
-      if (assets[mediaIndex]?.url) {
-        mediaUrlsToSend.push(assets[mediaIndex].url);
-        textForDB = textForDB.replace(match[0], `[IMG:${assets[mediaIndex].url}]`);
       }
     }
-    // Borrar los tags restantes del mensaje de texto
-    textForTwilio = textForTwilio.replace(/\[MEDIA_(\d+)\]/g, '').trim();
-    textForDB = textForDB.replace(/\[MEDIA_(\d+)\]/g, '').trim();
+
+    // Limpieza preventiva por si la IA alucinó tags viejos o no existentes
+    textForTwilio = textForTwilio.replace(/\[(MEDIA|AUDIO|VIDEO|FILE|GIF)_\d+\]/g, '').trim();
+    textForDB = textForDB.trim();
 
     const msgPayload: any = {
       from: `whatsapp:+${storeTwilioPhone.replace('+', '')}`,

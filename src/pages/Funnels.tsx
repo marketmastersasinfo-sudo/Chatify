@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Loader2, Plus, Copy, Save, ArrowUp, ArrowDown, Trash2, ShieldAlert, Image as ImageIcon, Mic, FileText, BarChart3 } from 'lucide-react';
+import { Loader2, Plus, Copy, Save, ArrowUp, ArrowDown, Trash2, ShieldAlert, Image as ImageIcon, Mic, FileText, BarChart3, Video } from 'lucide-react';
 
 interface Interaction {
   id: string;
@@ -407,12 +407,6 @@ export function Funnels() {
                         {!selectedTemplate.is_base && (
                           <div className="flex flex-wrap gap-2 items-center mt-2">
                             <span className="text-xs font-semibold text-slate-400 uppercase mr-1">Inyectar:</span>
-                            <button onClick={() => injectTag(index, '[MEDIA_1]')} className="flex items-center gap-1 px-2 py-1 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded text-xs font-medium hover:bg-indigo-100 transition-colors">
-                              <ImageIcon className="w-3 h-3" /> Foto 1
-                            </button>
-                            <button onClick={() => injectTag(index, '[MEDIA_2]')} className="flex items-center gap-1 px-2 py-1 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded text-xs font-medium hover:bg-indigo-100 transition-colors">
-                              <ImageIcon className="w-3 h-3" /> Foto 2
-                            </button>
                             <select 
                               onChange={(e) => {
                                 if (e.target.value) {
@@ -421,19 +415,67 @@ export function Funnels() {
                                 }
                               }}
                               className="px-2 py-1 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded text-xs font-medium hover:bg-indigo-100 transition-colors outline-none cursor-pointer appearance-none text-center"
-                              title="Inyectar más fotos"
+                              title="Inyectar foto"
                             >
-                              <option value="">+ Más Fotos ▼</option>
-                              {[3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20].map(n => (
-                                <option key={n} value={n}>Foto {n}</option>
-                              ))}
+                              <option value="">+ Fotos ▼</option>
+                              {[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15].map(n => <option key={n} value={n}>Foto {n}</option>)}
                             </select>
-                            <button onClick={() => injectTag(index, '[AUDIO_1]')} className="flex items-center gap-1 px-2 py-1 bg-fuchsia-50 text-fuchsia-600 border border-fuchsia-100 rounded text-xs font-medium hover:bg-fuchsia-100 transition-colors ml-2">
-                              <Mic className="w-3 h-3" /> Audio 1
-                            </button>
-                            <button onClick={() => injectTag(index, '[FILE_1]')} className="flex items-center gap-1 px-2 py-1 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded text-xs font-medium hover:bg-emerald-100 transition-colors">
-                              <FileText className="w-3 h-3" /> PDF 1
-                            </button>
+
+                            <select 
+                              onChange={(e) => {
+                                if (e.target.value) {
+                                  injectTag(index, `[GIF_${e.target.value}]`);
+                                  e.target.value = '';
+                                }
+                              }}
+                              className="px-2 py-1 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded text-xs font-medium hover:bg-indigo-100 transition-colors outline-none cursor-pointer appearance-none text-center"
+                              title="Inyectar GIF animado"
+                            >
+                              <option value="">+ GIFs ▼</option>
+                              {[1,2,3,4,5,6,7,8,9,10].map(n => <option key={n} value={n}>GIF {n}</option>)}
+                            </select>
+
+                            <select 
+                              onChange={(e) => {
+                                if (e.target.value) {
+                                  injectTag(index, `[VIDEO_${e.target.value}]`);
+                                  e.target.value = '';
+                                }
+                              }}
+                              className="px-2 py-1 bg-orange-50 text-orange-600 border border-orange-100 rounded text-xs font-medium hover:bg-orange-100 transition-colors outline-none cursor-pointer appearance-none text-center"
+                              title="Inyectar video corto"
+                            >
+                              <option value="">+ Videos ▼</option>
+                              {[1,2,3,4,5,6,7,8,9,10].map(n => <option key={n} value={n}>Video {n}</option>)}
+                            </select>
+
+                            <select 
+                              onChange={(e) => {
+                                if (e.target.value) {
+                                  injectTag(index, `[AUDIO_${e.target.value}]`);
+                                  e.target.value = '';
+                                }
+                              }}
+                              className="px-2 py-1 bg-fuchsia-50 text-fuchsia-600 border border-fuchsia-100 rounded text-xs font-medium hover:bg-fuchsia-100 transition-colors outline-none cursor-pointer appearance-none text-center"
+                              title="Inyectar nota de voz"
+                            >
+                              <option value="">+ Audios ▼</option>
+                              {[1,2,3,4,5,6,7,8,9,10].map(n => <option key={n} value={n}>Audio {n}</option>)}
+                            </select>
+
+                            <select 
+                              onChange={(e) => {
+                                if (e.target.value) {
+                                  injectTag(index, `[FILE_${e.target.value}]`);
+                                  e.target.value = '';
+                                }
+                              }}
+                              className="px-2 py-1 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded text-xs font-medium hover:bg-emerald-100 transition-colors outline-none cursor-pointer appearance-none text-center"
+                              title="Inyectar PDF o documento"
+                            >
+                              <option value="">+ PDFs ▼</option>
+                              {[1,2,3,4,5,6,7,8,9,10].map(n => <option key={n} value={n}>PDF {n}</option>)}
+                            </select>
                           </div>
                         )}
 
@@ -441,28 +483,20 @@ export function Funnels() {
                         {(() => {
                           const text = interaction.instruction || '';
                           const mediaCount = (text.match(/\[MEDIA_\d+\]/g) || []).length;
+                          const gifCount = (text.match(/\[GIF_\d+\]/g) || []).length;
+                          const videoCount = (text.match(/\[VIDEO_\d+\]/g) || []).length;
                           const audioCount = (text.match(/\[AUDIO_\d+\]/g) || []).length;
                           const fileCount = (text.match(/\[FILE_\d+\]/g) || []).length;
                           
-                          if (mediaCount === 0 && audioCount === 0 && fileCount === 0) return null;
+                          if (mediaCount === 0 && gifCount === 0 && videoCount === 0 && audioCount === 0 && fileCount === 0) return null;
                           return (
                             <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-slate-100">
                               <span className="text-xs font-medium text-slate-500">Este paso enviará:</span>
-                              {mediaCount > 0 && (
-                                <span className="flex items-center gap-1 px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded-full text-xs font-semibold">
-                                  <ImageIcon className="w-3 h-3" /> {mediaCount} Foto{mediaCount > 1 ? 's' : ''}
-                                </span>
-                              )}
-                              {audioCount > 0 && (
-                                <span className="flex items-center gap-1 px-2 py-0.5 bg-fuchsia-100 text-fuchsia-700 rounded-full text-xs font-semibold">
-                                  <Mic className="w-3 h-3" /> {audioCount} Audio{audioCount > 1 ? 's' : ''}
-                                </span>
-                              )}
-                              {fileCount > 0 && (
-                                <span className="flex items-center gap-1 px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full text-xs font-semibold">
-                                  <FileText className="w-3 h-3" /> {fileCount} Archivo{fileCount > 1 ? 's' : ''}
-                                </span>
-                              )}
+                              {mediaCount > 0 && <span className="flex items-center gap-1 px-2 py-1 bg-indigo-100 text-indigo-700 rounded text-[10px] font-bold"><ImageIcon className="w-3 h-3" /> {mediaCount} Foto{mediaCount > 1 ? 's' : ''}</span>}
+                              {gifCount > 0 && <span className="flex items-center gap-1 px-2 py-1 bg-indigo-100 text-indigo-700 rounded text-[10px] font-bold"><ImageIcon className="w-3 h-3" /> {gifCount} GIF{gifCount > 1 ? 's' : ''}</span>}
+                              {videoCount > 0 && <span className="flex items-center gap-1 px-2 py-1 bg-orange-100 text-orange-700 rounded text-[10px] font-bold"><Video className="w-3 h-3" /> {videoCount} Video{videoCount > 1 ? 's' : ''}</span>}
+                              {audioCount > 0 && <span className="flex items-center gap-1 px-2 py-1 bg-fuchsia-100 text-fuchsia-700 rounded text-[10px] font-bold"><Mic className="w-3 h-3" /> {audioCount} Audio{audioCount > 1 ? 's' : ''}</span>}
+                              {fileCount > 0 && <span className="flex items-center gap-1 px-2 py-1 bg-emerald-100 text-emerald-700 rounded text-[10px] font-bold"><FileText className="w-3 h-3" /> {fileCount} PDF{fileCount > 1 ? 's' : ''}</span>}
                             </div>
                           );
                         })()}

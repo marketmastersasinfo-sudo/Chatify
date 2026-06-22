@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Image as ImageIcon, Music, Loader2, Save, Trash2, Copy, Store, Plus, ArrowUp, ArrowDown, Gift, BrainCircuit, ChevronLeft } from 'lucide-react';
+import { Image as ImageIcon, Music, Loader2, Save, Trash2, Copy, Store, Plus, ArrowUp, ArrowDown, Gift, BrainCircuit, ChevronLeft, Video, FileText, PlayCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import imageCompression from 'browser-image-compression';
 
@@ -220,19 +220,42 @@ export function Products() {
     setSaving(false);
   }
 
+  function retagAssets(assets: any[]) {
+    let counts: Record<string, number> = { image: 0, gif: 0, audio: 0, video: 0, pdf: 0 };
+    return assets.map(a => {
+      counts[a.type] = (counts[a.type] || 0) + 1;
+      let prefix = 'MEDIA';
+      if (a.type === 'gif') prefix = 'GIF';
+      else if (a.type === 'audio') prefix = 'AUDIO';
+      else if (a.type === 'video') prefix = 'VIDEO';
+      else if (a.type === 'pdf' || a.type === 'file') prefix = 'FILE';
+      return { ...a, tag: `[${prefix}_${counts[a.type]}]` };
+    });
+  }
+
   async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
 
     setUploadingMedia(true);
     try {
-      const newAssets: { tag: string, url: string, type: string }[] = [];
-      let currentIndex = mediaAssets.length;
+      let currentAssets = [...mediaAssets];
 
       for (const file of files) {
         let finalFile: File | Blob = file;
-        const isImage = file.type.startsWith('image/');
+        const isGif = file.type === 'image/gif';
+        const isImage = file.type.startsWith('image/') && !isGif;
+        const isAudio = file.type.startsWith('audio/');
+        const isVideo = file.type.startsWith('video/');
+        const isPdf = file.type === 'application/pdf';
         
+        let assetType = 'file';
+        if (isImage) assetType = 'image';
+        else if (isGif) assetType = 'gif';
+        else if (isAudio) assetType = 'audio';
+        else if (isVideo) assetType = 'video';
+        else if (isPdf) assetType = 'pdf';
+
         if (isImage) {
           const options = {
             maxSizeMB: 0.5,
@@ -253,16 +276,15 @@ export function Products() {
 
         const { data: { publicUrl } } = supabase.storage.from('chatify_media').getPublicUrl(data.path);
         
-        currentIndex++;
-        const newTag = `[MEDIA_${currentIndex}]`;
-        newAssets.push({
-          tag: newTag,
+        currentAssets.push({
+          tag: '',
           url: publicUrl,
-          type: isImage ? 'image' : 'audio'
+          type: assetType,
+          name: file.name
         });
       }
 
-      setMediaAssets(prev => [...prev, ...newAssets]);
+      setMediaAssets(retagAssets(currentAssets));
     } catch (err) {
       console.error('Error uploading:', err);
       alert('Error subiendo uno o más archivos. Asegúrate de haber creado el bucket "chatify_media".');
@@ -274,8 +296,7 @@ export function Products() {
   function removeMedia(index: number) {
     const newAssets = [...mediaAssets];
     newAssets.splice(index, 1);
-    const retagged = newAssets.map((a, i) => ({ ...a, tag: `[MEDIA_${i + 1}]` }));
-    setMediaAssets(retagged);
+    setMediaAssets(retagAssets(newAssets));
   }
 
   function moveMedia(index: number, direction: 'up' | 'down') {
@@ -286,9 +307,7 @@ export function Products() {
     const swapIndex = direction === 'up' ? index - 1 : index + 1;
     
     [newAssets[index], newAssets[swapIndex]] = [newAssets[swapIndex], newAssets[index]];
-    
-    const retagged = newAssets.map((a, i) => ({ ...a, tag: `[MEDIA_${i + 1}]` }));
-    setMediaAssets(retagged);
+    setMediaAssets(retagAssets(newAssets));
   }
 
   function copyToClipboard(text: string) {
@@ -545,16 +564,16 @@ export function Products() {
                 <div className="flex justify-between items-center mb-5">
                   <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2 uppercase tracking-wider">
                     <ImageIcon className="w-4 h-4 text-orange-500" />
-                    Archivos Multimedia
+                    Catálogo Multimedia (Fotos, Audios, Videos, PDFs)
                   </h4>
                   <button 
                     onClick={() => fileInputRef.current?.click()}
                     disabled={uploadingMedia}
                     className="text-xs text-indigo-600 hover:text-indigo-800 font-bold bg-indigo-50 px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
                   >
-                    {uploadingMedia ? <><Loader2 className="w-3 h-3 animate-spin" /> Subiendo...</> : <><Plus className="w-3 h-3" /> Subir Fotos/Audios</>}
+                    {uploadingMedia ? <><Loader2 className="w-3 h-3 animate-spin" /> Subiendo...</> : <><Plus className="w-3 h-3" /> Subir Archivos</>}
                   </button>
-                  <input type="file" ref={fileInputRef} className="hidden" accept="image/*, audio/mp3, audio/ogg, audio/mpeg" multiple onChange={handleFileUpload} />
+                  <input type="file" ref={fileInputRef} className="hidden" accept="image/*, audio/*, video/*, application/pdf" multiple onChange={handleFileUpload} />
                 </div>
                 
                 <div className="flex overflow-x-auto gap-4 pb-2 snap-x">
@@ -562,13 +581,30 @@ export function Products() {
                     <div key={idx} className="flex-shrink-0 w-48 bg-white border border-slate-200 rounded-xl overflow-hidden group hover:border-indigo-300 hover:shadow-md transition-all snap-start">
                       {/* Thumbnail Area */}
                       <div className="h-32 bg-slate-100 flex items-center justify-center relative group-hover:opacity-90 transition-opacity">
-                        {asset.type === 'image' ? (
-                          <img src={asset.url} alt="thumbnail" className="w-full h-full object-cover" />
-                        ) : (
-                          <Music className="w-8 h-8 text-indigo-400" />
-                        )}
+                        {asset.type === 'image' || asset.type === 'gif' ? (
+                          <div className="relative w-full h-full">
+                            <img src={asset.url} alt="thumbnail" className="w-full h-full object-cover" />
+                            {asset.type === 'gif' && <span className="absolute bottom-1 right-1 bg-black/70 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">GIF</span>}
+                          </div>
+                        ) : asset.type === 'video' ? (
+                          <div className="relative w-full h-full bg-slate-900 flex items-center justify-center">
+                            <video src={asset.url} className="w-full h-full object-cover opacity-60" />
+                            <PlayCircle className="absolute w-8 h-8 text-white/80" />
+                          </div>
+                        ) : asset.type === 'audio' ? (
+                          <div className="w-full h-full bg-gradient-to-br from-fuchsia-100 to-indigo-100 flex flex-col items-center justify-center">
+                            <Music className="w-8 h-8 text-fuchsia-500 mb-1" />
+                            <span className="text-[10px] font-bold text-fuchsia-700 uppercase">Audio</span>
+                          </div>
+                        ) : asset.type === 'pdf' || asset.type === 'file' ? (
+                          <div className="w-full h-full bg-gradient-to-br from-rose-50 to-red-100 flex flex-col items-center justify-center p-2 text-center">
+                            <FileText className="w-8 h-8 text-red-500 mb-1" />
+                            <span className="text-[9px] font-bold text-red-700 truncate w-full">{asset.name || 'Documento PDF'}</span>
+                          </div>
+                        ) : null}
+                        
                         {/* Overlay Controls */}
-                        <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 backdrop-blur-sm">
+                        <div className="absolute inset-0 bg-slate-900/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 backdrop-blur-sm">
                           <button onClick={() => moveMedia(idx, 'up')} disabled={idx === 0} className="p-2 bg-white/90 rounded-full hover:bg-white text-slate-700 disabled:opacity-50 transition-colors shadow-sm"><ArrowUp className="w-4 h-4" /></button>
                           <button onClick={() => removeMedia(idx)} className="p-2 bg-red-500/90 rounded-full hover:bg-red-500 text-white transition-colors shadow-sm"><Trash2 className="w-4 h-4" /></button>
                           <button onClick={() => moveMedia(idx, 'down')} disabled={idx === mediaAssets.length - 1} className="p-2 bg-white/90 rounded-full hover:bg-white text-slate-700 disabled:opacity-50 transition-colors shadow-sm"><ArrowDown className="w-4 h-4" /></button>
@@ -578,7 +614,12 @@ export function Products() {
                       {/* Info Area */}
                       <div className="p-3 bg-white border-t border-slate-100 flex flex-col gap-2">
                         <div className="flex items-center justify-between">
-                          <span className="text-xs font-bold text-slate-700 font-mono bg-slate-100 px-2 py-1 rounded">
+                          <span className={`text-xs font-bold font-mono px-2 py-1 rounded ${
+                            asset.type === 'video' ? 'bg-orange-100 text-orange-700' : 
+                            asset.type === 'audio' ? 'bg-fuchsia-100 text-fuchsia-700' : 
+                            asset.type === 'pdf' || asset.type === 'file' ? 'bg-red-100 text-red-700' : 
+                            'bg-indigo-100 text-indigo-700'
+                          }`}>
                             {asset.tag}
                           </span>
                           <button onClick={() => copyToClipboard(asset.tag)} className="text-slate-400 hover:text-indigo-600 transition-colors" title="Copiar Tag"><Copy className="w-4 h-4" /></button>
@@ -589,7 +630,7 @@ export function Products() {
                           onChange={(e) => updateMediaRule(idx, e.target.value)}
                           placeholder="Condición (ej: Si pide tallas)"
                           className="w-full text-xs p-1.5 border border-slate-200 rounded text-slate-700 placeholder-slate-400 focus:outline-none focus:border-indigo-400"
-                          title="¿Cuándo enviar esta imagen? Deja en blanco para usar solo el [MEDIA_X]"
+                          title="¿Cuándo enviar este archivo? Deja en blanco para usar solo su etiqueta"
                         />
                       </div>
                     </div>
@@ -597,7 +638,7 @@ export function Products() {
                   {mediaAssets.length === 0 && (
                     <div className="w-full h-32 rounded-xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-400 bg-slate-50">
                       <ImageIcon className="w-6 h-6 mb-2 opacity-50" />
-                      <span className="text-xs font-medium">Sube fotos o audios para generar las etiquetas [MEDIA_X]</span>
+                      <span className="text-xs font-medium">Sube fotos, videos, audios o PDFs</span>
                     </div>
                   )}
                 </div>

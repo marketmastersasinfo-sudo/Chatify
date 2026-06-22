@@ -315,13 +315,13 @@ export function LeadChatPanel({
                     );
                   }
 
-                  // Extraer imágenes incrustadas [IMG:url]
+                  // Extraer archivos multimedia incrustados [IMG:url], [VID:url], [SND:url], [DOC:url], [GIF:url]
                   let finalContent = cleanContent;
-                  const embeddedImages: string[] = [];
-                  const imgRegex = /\[IMG:(.+?)\]/g;
+                  const embeddedMedia: { type: string, url: string }[] = [];
+                  const mediaRegex = /\[(IMG|VID|SND|DOC|GIF):(.+?)\]/g;
                   let m;
-                  while ((m = imgRegex.exec(cleanContent)) !== null) {
-                    embeddedImages.push(m[1]);
+                  while ((m = mediaRegex.exec(cleanContent)) !== null) {
+                    embeddedMedia.push({ type: m[1], url: m[2] });
                     finalContent = finalContent.replace(m[0], '');
                   }
                   finalContent = finalContent.trim();
@@ -338,13 +338,46 @@ export function LeadChatPanel({
                        {msg.metadata?.image_url && (
                          <img src={msg.metadata.image_url} alt="Media" className="max-w-[260px] max-h-[300px] rounded-xl mb-2 object-cover border border-black/5" />
                        )}
-                       {embeddedImages.length > 0 && (
-                         <div className={`mb-2 ${embeddedImages.length === 1 ? '' : 'grid grid-cols-2 gap-1'}`}>
-                           {embeddedImages.map((imgUrl, idx) => (
-                             <a key={idx} href={imgUrl} target="_blank" rel="noopener noreferrer" className={`block overflow-hidden rounded-lg border border-black/5 ${embeddedImages.length === 1 ? 'max-w-[260px] max-h-[300px]' : 'aspect-square'}`}>
-                               <img src={imgUrl} alt="Enviado por IA" className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" />
-                             </a>
-                           ))}
+                       {embeddedMedia.length > 0 && (
+                         <div className={`mb-2 ${embeddedMedia.filter(m => m.type === 'IMG' || m.type === 'GIF').length > 1 ? 'grid grid-cols-2 gap-1' : 'flex flex-col gap-2'}`}>
+                           {embeddedMedia.map((media, idx) => {
+                             if (media.type === 'IMG' || media.type === 'GIF') {
+                               return (
+                                 <a key={idx} href={media.url} target="_blank" rel="noopener noreferrer" className={`block overflow-hidden rounded-lg border border-black/5 ${embeddedMedia.filter(m => m.type === 'IMG' || m.type === 'GIF').length === 1 ? 'max-w-[260px] max-h-[300px]' : 'aspect-square relative'}`}>
+                                   <img src={media.url} alt="Enviado por IA" className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" />
+                                   {media.type === 'GIF' && <span className="absolute bottom-1 right-1 bg-black/70 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">GIF</span>}
+                                 </a>
+                               );
+                             }
+                             if (media.type === 'VID') {
+                               return (
+                                 <div key={idx} className="relative rounded-lg overflow-hidden border border-black/5 max-w-[260px]">
+                                   <video src={media.url} controls className="w-full bg-black max-h-[250px]" />
+                                 </div>
+                               );
+                             }
+                             if (media.type === 'SND') {
+                               return (
+                                 <div key={idx} className="bg-white/10 p-2 rounded-lg max-w-[260px] border border-black/5 backdrop-blur-sm">
+                                   <audio src={media.url} controls className="w-full h-10" />
+                                 </div>
+                               );
+                             }
+                             if (media.type === 'DOC') {
+                               return (
+                                 <a key={idx} href={media.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 bg-white/10 hover:bg-white/20 transition-colors rounded-lg border border-black/5 max-w-[260px]">
+                                   <div className="bg-white/20 text-white p-2 rounded-lg">
+                                     <FileText className="w-5 h-5" />
+                                   </div>
+                                   <div className="flex flex-col overflow-hidden">
+                                     <span className="text-sm font-bold truncate">Documento PDF</span>
+                                     <span className="text-[10px] opacity-70">Haz clic para abrir</span>
+                                   </div>
+                                 </a>
+                               );
+                             }
+                             return null;
+                           })}
                          </div>
                        )}
                        {finalContent && <p className="text-[15px] leading-relaxed mt-1" style={{ wordBreak: 'break-word' }}>{finalContent}</p>}
