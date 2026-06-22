@@ -424,14 +424,7 @@ export function Products() {
                     <label className="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Palabra Clave (Producto)</label>
                     <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Ej: Jogger Hombre Variable" className="block w-full rounded-xl border-slate-200 py-2.5 text-slate-900 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm font-medium transition-colors" />
                   </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Precio Base Referencia</label>
-                    <div className="relative">
-                      <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                        <span className="text-slate-400 font-medium">$</span>
-                      </div>
-                    </div>
-                  </div>
+
                   <div>
                     <label className="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Descripción del Producto</label>
                     <textarea 
@@ -460,6 +453,17 @@ export function Products() {
                   </button>
                 </div>
                 
+                {/* PRECIO BASE */}
+                <div className="mb-5 p-4 bg-emerald-50/50 border border-emerald-100 rounded-xl">
+                  <label className="block text-xs font-bold text-emerald-800 mb-1.5 uppercase tracking-wide">Precio Base (1 Unidad)</label>
+                  <div className="relative">
+                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                      <span className="text-emerald-600 font-bold">$</span>
+                    </div>
+                    <input type="number" value={price} onChange={e => setPrice(e.target.value)} placeholder="Ej: 59900" className="block w-full rounded-lg border-emerald-200 py-2.5 pl-8 text-emerald-900 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm font-bold bg-white transition-colors outline-none" />
+                  </div>
+                </div>
+
                 <div className="space-y-4">
                   {offers.length === 0 && (
                     <div className="bg-slate-50 border border-dashed border-slate-200 rounded-xl p-4 text-center">
