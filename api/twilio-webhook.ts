@@ -96,7 +96,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // ── Find Lead ───────────────────────────────────
-    const { data: lead } = await supabase
+    let { data: lead } = await supabase
       .from('leads')
       .select('id, status, board_type, address, city, name, product_name, total_price, notes, document_id, email, recovery_touch, last_name, department, sector, postal_code')
       .eq('phone', customerPhone)
