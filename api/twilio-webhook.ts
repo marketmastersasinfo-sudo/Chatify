@@ -555,7 +555,7 @@ async function handleSophia({ lead, productInfo, leadId, incomingText, storeTwil
       model: 'gpt-4o-mini',
       messages: aiMessages,
       temperature: 0.65,
-      max_tokens: 200,
+      max_tokens: 800,
       response_format: { type: 'json_object' }
     });
 
