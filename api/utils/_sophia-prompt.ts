@@ -12,7 +12,7 @@ export const buildSophiaPrompt = (leadInfo: any, productInfo: any, variantInfo?:
 
   let funnelContext = '';
   if (productInfo?.flow_template && Array.isArray(productInfo.flow_template)) {
-    funnelContext = `\n════════════════════════════════════════\nSECUENCIA ESTRICTA DE VENTAS (EMBUDO)\n════════════════════════════════════════\nDebes seguir ESTRICTAMENTE esta secuencia paso a paso. No te saltes pasos. Evalúa la conversación con el cliente para saber en qué paso estás, y ejecuta ÚNICAMENTE la instrucción del paso actual o del siguiente paso si el cliente ya respondió lo necesario.\n\n`;
+    funnelContext = `\n════════════════════════════════════════\nSECUENCIA ESTRICTA DE VENTAS (EMBUDO)\n════════════════════════════════════════\nDebes seguir ESTRICTAMENTE esta secuencia paso a paso. No te saltes pasos. Evalúa la conversación con el cliente para saber en qué paso estás, y ejecuta ÚNICAMENTE la instrucción del paso actual o del siguiente paso si el cliente ya respondió lo necesario.\n¡IMPORTANTE!: Si la instrucción del paso contiene etiquetas entre corchetes como [MEDIA_X], [VIDEO_X], [AUDIO_X], [GIF_X] o [FILE_X], DEBES COPIARLAS Y PEGARLAS EXACTAMENTE IGUAL en tu respuesta. Estos son comandos de sistema que inyectan los archivos al cliente. ¡No los omitas!\n\n`;
     productInfo.flow_template.forEach((step: any, index: number) => {
       funnelContext += `PASO ${index + 1} - ${step.title}:\n${step.instruction}\n\n`;
     });
@@ -24,11 +24,11 @@ export const buildSophiaPrompt = (leadInfo: any, productInfo: any, variantInfo?:
       const parsed = typeof productInfo.media_assets === 'string' ? JSON.parse(productInfo.media_assets) : productInfo.media_assets;
       const count = Array.isArray(parsed) ? parsed.length : 0;
       if (count > 0) {
-        mediaInstruction = `\nIMÁGENES DISPONIBLES: Tienes ${count} imágenes del producto. Si el cliente te pide fotos, envía EXACTAMENTE la etiqueta [MEDIA_1] para enviar la foto 1, [MEDIA_2] para la foto 2, etc. El sistema las reemplazará automáticamente por las fotos reales. Puedes enviar varias etiquetas juntas. NO describas las fotos con emojis (✔️), usa los comandos [MEDIA_X] para que el cliente reciba los archivos reales.`;
+        mediaInstruction = `\nARCHIVOS DISPONIBLES: Tienes ${count} archivos multimedia cargados para este producto (Fotos, Audios, Videos, PDFs). Si el cliente pide información visual o auditiva que no esté en el embudo, usa los comandos de la lista de reglas si aplican.`;
         
         const mappedRules = parsed.filter((a: any) => a.rule && a.rule.trim() !== '');
         if (mappedRules.length > 0) {
-          mediaInstruction += `\n\n════════════════════════════════════════\nREGLAS DE MULTIMEDIA (MAPEADAS)\n════════════════════════════════════════\nDebes enviar ESTRICTAMENTE la etiqueta de imagen correspondiente cuando se cumplan estas condiciones exactas:\n`;
+          mediaInstruction += `\n\n════════════════════════════════════════\nREGLAS DE MULTIMEDIA (MAPEADAS)\n════════════════════════════════════════\nDebes enviar ESTRICTAMENTE la etiqueta de archivo correspondiente cuando se cumplan estas condiciones exactas:\n`;
           mappedRules.forEach((a: any) => {
             mediaInstruction += `- ENVÍA la etiqueta ${a.tag} SI EL CLIENTE: ${a.rule}\n`;
           });
