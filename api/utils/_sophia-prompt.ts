@@ -32,7 +32,7 @@ export const buildSophiaPrompt = (leadInfo: any, productInfo: any, variantInfo?:
           mappedRules.forEach((a: any) => {
             mediaInstruction += `- ENVÍA la etiqueta ${a.tag} SI EL CLIENTE: ${a.rule}\n`;
           });
-          mediaInstruction += `\n(Nota: Si la condición se cumple, incluye la etiqueta ${mappedRules[0].tag} directamente en tu respuesta como si fuera texto).`;
+          mediaInstruction += `\n(Nota: Si la condición se cumple o el cliente explícitamente pide fotos/audios, INCLUYE LA ETIQUETA ${mappedRules[0].tag} pegada al final de tu respuesta como si fuera texto. ¡NO LA OMITAS!).`;
         }
       }
     } catch {}
