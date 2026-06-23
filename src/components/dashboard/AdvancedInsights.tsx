@@ -23,7 +23,7 @@ export function AdvancedInsights({ insightsData, leads }: AdvancedInsightsProps)
   // AI Analysis State
   const [aiAnalysisLoading, setAiAnalysisLoading] = useState(false);
   const [aiAnalysisResult, setAiAnalysisResult] = useState<{ text?: string, error?: string } | null>(null);
-  const [aiProvider, setAiProvider] = useState<'openai' | 'anthropic' | 'google'>('openai');
+  const [aiProvider, setAiProvider] = useState<string>('openai');
 
   // Helper para normalizar (igual que en dashboard-data.ts)
   const normalizeProductName = (name: string) => {
@@ -337,11 +337,14 @@ export function AdvancedInsights({ insightsData, leads }: AdvancedInsightsProps)
                         <select 
                           className="bg-gray-800 text-sm text-gray-300 border border-gray-700 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-purple-500"
                           value={aiProvider}
-                          onChange={(e) => setAiProvider(e.target.value as any)}
+                          onChange={(e) => setAiProvider(e.target.value)}
                         >
                           <option value="openai">OpenAI (GPT-4o)</option>
                           <option value="anthropic">Anthropic (Claude 3.5)</option>
                           <option value="google">Google (Gemini 1.5)</option>
+                          <option value="llama">Meta Llama (Groq)</option>
+                          <option value="grok">xAI (Grok)</option>
+                          <option value="deepseek">Deepseek</option>
                         </select>
                         <button 
                           onClick={generateAIAnalysis}

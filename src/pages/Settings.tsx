@@ -19,6 +19,28 @@ export function Settings() {
   const [ga4ApiSecret, setGa4ApiSecret] = useState('');
   const [showGa4Secret, setShowGa4Secret] = useState(false);
 
+  // AI Settings
+  const [aiSettings, setAiSettings] = useState<Record<string, { model: string; key: string }>>({
+    openai: { model: 'gpt-4o-mini', key: '' },
+    gemini: { model: 'gemini-1.5-flash', key: '' },
+    llama: { model: 'llama-3.1-8b-instant', key: '' },
+    anthropic: { model: 'claude-3-haiku-20240307', key: '' },
+    grok: { model: 'grok-2-latest', key: '' },
+    deepseek: { model: 'deepseek-reasoner', key: '' }
+  });
+  const [showAiKeys, setShowAiKeys] = useState<Record<string, boolean>>({});
+
+  const updateAiSetting = (provider: string, field: 'model' | 'key', value: string) => {
+    setAiSettings((prev) => ({
+      ...prev,
+      [provider]: { ...prev[provider], [field]: value }
+    }));
+  };
+
+  const toggleAiKeyVisibility = (provider: string) => {
+    setShowAiKeys((prev) => ({ ...prev, [provider]: !prev[provider] }));
+  };
+
   useEffect(() => {
     loadSettings();
   }, []);
@@ -40,6 +62,18 @@ export function Settings() {
         setTiktokAccessToken(data[0].tiktok_access_token || '');
         setGa4MeasurementId(data[0].ga4_measurement_id || '');
         setGa4ApiSecret(data[0].ga4_api_secret || '');
+        if (data[0].ai_settings) {
+          setAiSettings((prev) => {
+            const newSettings = { ...prev };
+            Object.keys(data[0].ai_settings).forEach((provider) => {
+              newSettings[provider] = {
+                ...newSettings[provider],
+                ...data[0].ai_settings[provider]
+              };
+            });
+            return newSettings;
+          });
+        }
       }
     } catch (e) {
       console.error("Catch error:", e);
@@ -57,7 +91,8 @@ export function Settings() {
         tiktok_pixel_id: tiktokPixelId,
         tiktok_access_token: tiktokAccessToken,
         ga4_measurement_id: ga4MeasurementId,
-        ga4_api_secret: ga4ApiSecret
+        ga4_api_secret: ga4ApiSecret,
+        ai_settings: aiSettings
       };
 
       if (!orgId) {
@@ -130,25 +165,45 @@ export function Settings() {
             <b className="text-blue-800">🧠 AI Router & Fallback (Cascada):</b> Chatify usará <b>GPT-4o mini</b> para cerrar ventas por WA, <b>Claude 3</b> para moderar Redes Sociales, y <b>Llama 3</b> para clasificar Kanban. Si el motor principal se cae en un lanzamiento, el tráfico saltará automáticamente al motor de respaldo para garantizar 100% de operatividad.
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* 1. OpenAI (Mejor Calidad/Precio) */}
+            {/* 1. OpenAI */}
             <div className="p-4 bg-gray-50 rounded-xl border border-blue-200 flex flex-col justify-between shadow-sm relative">
               <div className="absolute -top-3 right-4 bg-blue-100 text-blue-700 text-[10px] font-bold px-2 py-1 rounded-full border border-blue-200">
                 #1 Recomendado (Calidad/Precio)
               </div>
               <div>
                 <label className="block text-sm font-bold text-gray-900 mb-2">OpenAI</label>
-                <select className="w-full mb-3 px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-blue-500 focus:border-blue-500">
-                  <option>GPT-4o mini (El más barato/obediente)</option>
-                  <option>GPT-4o (Gasto alto)</option>
-                  <option>GPT-4 Turbo</option>
+                <select 
+                  className="w-full mb-3 px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-blue-500 focus:border-blue-500"
+                  value={aiSettings.openai.model}
+                  onChange={(e) => updateAiSetting('openai', 'model', e.target.value)}
+                >
+                  <option value="gpt-4o-mini">GPT-4o mini (El más barato/obediente)</option>
+                  <option value="gpt-4o">GPT-4o (Gasto alto)</option>
+                  <option value="gpt-4-turbo">GPT-4 Turbo</option>
                 </select>
-                <input type="password" placeholder="sk-proj-..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500" defaultValue="sk-proj-123456789" />
+                <div className="relative">
+                  <input 
+                    type={showAiKeys['openai'] ? "text" : "password"} 
+                    placeholder="sk-proj-..." 
+                    value={aiSettings.openai.key}
+                    onChange={(e) => updateAiSetting('openai', 'key', e.target.value)}
+                    className="w-full pl-3 pr-10 py-2 border border-gray-200 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500" 
+                  />
+                  <button type="button" onClick={() => toggleAiKeyVisibility('openai')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                    {showAiKeys['openai'] ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
               </div>
               <div className="mt-4 flex items-center justify-between">
-                <div className="flex items-center gap-2 text-xs text-green-700 font-bold bg-green-50 px-2 py-1.5 rounded-md border border-green-200">
-                  <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div> ✅ Conectado de forma exitosa
-                </div>
-                <button className="text-xs font-bold text-blue-600 hover:text-blue-800">Editar</button>
+                {aiSettings.openai.key.length > 20 ? (
+                  <div className="flex items-center gap-2 text-xs text-green-700 font-bold bg-green-50 px-2 py-1.5 rounded-md border border-green-200">
+                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div> ✅ Conectado
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 text-xs text-gray-500 font-medium">
+                    <div className="w-2 h-2 rounded-full bg-gray-300"></div> No Configurado
+                  </div>
+                )}
               </div>
             </div>
 
@@ -156,14 +211,37 @@ export function Settings() {
             <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 flex flex-col justify-between">
               <div>
                 <label className="block text-sm font-semibold text-gray-900 mb-2">Google Gemini</label>
-                <select className="w-full mb-3 px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-blue-500 focus:border-blue-500">
-                  <option>Gemini 1.5 Flash (Excelente contexto)</option>
-                  <option>Gemini 1.5 Pro</option>
+                <select 
+                  className="w-full mb-3 px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-blue-500 focus:border-blue-500"
+                  value={aiSettings.gemini.model}
+                  onChange={(e) => updateAiSetting('gemini', 'model', e.target.value)}
+                >
+                  <option value="gemini-1.5-flash">Gemini 1.5 Flash (Excelente contexto)</option>
+                  <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
                 </select>
-                <input type="password" placeholder="AIzaSy..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500" />
+                <div className="relative">
+                  <input 
+                    type={showAiKeys['gemini'] ? "text" : "password"} 
+                    placeholder="AIzaSy..." 
+                    value={aiSettings.gemini.key}
+                    onChange={(e) => updateAiSetting('gemini', 'key', e.target.value)}
+                    className="w-full pl-3 pr-10 py-2 border border-gray-200 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500" 
+                  />
+                  <button type="button" onClick={() => toggleAiKeyVisibility('gemini')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                    {showAiKeys['gemini'] ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
               </div>
-              <div className="mt-4 flex items-center gap-2 text-xs text-gray-500 font-medium">
-                <div className="w-2 h-2 rounded-full bg-gray-300"></div> No Configurado
+              <div className="mt-4 flex items-center justify-between">
+                {aiSettings.gemini.key.length > 20 ? (
+                  <div className="flex items-center gap-2 text-xs text-green-700 font-bold bg-green-50 px-2 py-1.5 rounded-md border border-green-200">
+                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div> ✅ Conectado
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 text-xs text-gray-500 font-medium">
+                    <div className="w-2 h-2 rounded-full bg-gray-300"></div> No Configurado
+                  </div>
+                )}
               </div>
             </div>
 
@@ -171,14 +249,38 @@ export function Settings() {
             <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 flex flex-col justify-between">
               <div>
                 <label className="block text-sm font-semibold text-gray-900 mb-2">Meta Llama (vía Groq)</label>
-                <select className="w-full mb-3 px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-blue-500 focus:border-blue-500">
-                  <option>Llama 3 8B (Gratis / Instantáneo)</option>
-                  <option>Llama 3 70B</option>
+                <select 
+                  className="w-full mb-3 px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-blue-500 focus:border-blue-500"
+                  value={aiSettings.llama.model}
+                  onChange={(e) => updateAiSetting('llama', 'model', e.target.value)}
+                >
+                  <option value="llama-3.1-8b-instant">Llama 3.1 8B (Gratis / Instantáneo)</option>
+                  <option value="llama-3.1-70b-versatile">Llama 3.1 70B</option>
+                  <option value="llama-3.3-70b-versatile">Llama 3.3 70B</option>
                 </select>
-                <input type="password" placeholder="gsk_..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500" />
+                <div className="relative">
+                  <input 
+                    type={showAiKeys['llama'] ? "text" : "password"} 
+                    placeholder="gsk_..." 
+                    value={aiSettings.llama.key}
+                    onChange={(e) => updateAiSetting('llama', 'key', e.target.value)}
+                    className="w-full pl-3 pr-10 py-2 border border-gray-200 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500" 
+                  />
+                  <button type="button" onClick={() => toggleAiKeyVisibility('llama')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                    {showAiKeys['llama'] ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
               </div>
-              <div className="mt-4 flex items-center gap-2 text-xs text-gray-500 font-medium">
-                <div className="w-2 h-2 rounded-full bg-gray-300"></div> No Configurado
+              <div className="mt-4 flex items-center justify-between">
+                {aiSettings.llama.key.length > 20 ? (
+                  <div className="flex items-center gap-2 text-xs text-green-700 font-bold bg-green-50 px-2 py-1.5 rounded-md border border-green-200">
+                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div> ✅ Conectado
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 text-xs text-gray-500 font-medium">
+                    <div className="w-2 h-2 rounded-full bg-gray-300"></div> No Configurado
+                  </div>
+                )}
               </div>
             </div>
 
@@ -186,14 +288,37 @@ export function Settings() {
             <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 flex flex-col justify-between">
               <div>
                 <label className="block text-sm font-semibold text-gray-900 mb-2">Anthropic (Claude)</label>
-                <select className="w-full mb-3 px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-blue-500 focus:border-blue-500">
-                  <option>Claude 3 Haiku (Más humano)</option>
-                  <option>Claude 3.5 Sonnet</option>
+                <select 
+                  className="w-full mb-3 px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-blue-500 focus:border-blue-500"
+                  value={aiSettings.anthropic.model}
+                  onChange={(e) => updateAiSetting('anthropic', 'model', e.target.value)}
+                >
+                  <option value="claude-3-haiku-20240307">Claude 3 Haiku (Más humano)</option>
+                  <option value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet</option>
                 </select>
-                <input type="password" placeholder="sk-ant-..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500" />
+                <div className="relative">
+                  <input 
+                    type={showAiKeys['anthropic'] ? "text" : "password"} 
+                    placeholder="sk-ant-..." 
+                    value={aiSettings.anthropic.key}
+                    onChange={(e) => updateAiSetting('anthropic', 'key', e.target.value)}
+                    className="w-full pl-3 pr-10 py-2 border border-gray-200 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500" 
+                  />
+                  <button type="button" onClick={() => toggleAiKeyVisibility('anthropic')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                    {showAiKeys['anthropic'] ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
               </div>
-              <div className="mt-4 flex items-center gap-2 text-xs text-gray-500 font-medium">
-                <div className="w-2 h-2 rounded-full bg-gray-300"></div> No Configurado
+              <div className="mt-4 flex items-center justify-between">
+                {aiSettings.anthropic.key.length > 20 ? (
+                  <div className="flex items-center gap-2 text-xs text-green-700 font-bold bg-green-50 px-2 py-1.5 rounded-md border border-green-200">
+                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div> ✅ Conectado
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 text-xs text-gray-500 font-medium">
+                    <div className="w-2 h-2 rounded-full bg-gray-300"></div> No Configurado
+                  </div>
+                )}
               </div>
             </div>
 
@@ -201,14 +326,37 @@ export function Settings() {
             <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 flex flex-col justify-between">
               <div>
                 <label className="block text-sm font-semibold text-gray-900 mb-2">xAI (Grok)</label>
-                <select className="w-full mb-3 px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-blue-500 focus:border-blue-500">
-                  <option>Grok-2</option>
-                  <option>Grok-1.5</option>
+                <select 
+                  className="w-full mb-3 px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-blue-500 focus:border-blue-500"
+                  value={aiSettings.grok.model}
+                  onChange={(e) => updateAiSetting('grok', 'model', e.target.value)}
+                >
+                  <option value="grok-2-latest">Grok-2 Latest</option>
+                  <option value="grok-beta">Grok Beta</option>
                 </select>
-                <input type="password" placeholder="xai-..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500" />
+                <div className="relative">
+                  <input 
+                    type={showAiKeys['grok'] ? "text" : "password"} 
+                    placeholder="xai-..." 
+                    value={aiSettings.grok.key}
+                    onChange={(e) => updateAiSetting('grok', 'key', e.target.value)}
+                    className="w-full pl-3 pr-10 py-2 border border-gray-200 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500" 
+                  />
+                  <button type="button" onClick={() => toggleAiKeyVisibility('grok')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                    {showAiKeys['grok'] ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
               </div>
-              <div className="mt-4 flex items-center gap-2 text-xs text-gray-500 font-medium">
-                <div className="w-2 h-2 rounded-full bg-gray-300"></div> No Configurado
+              <div className="mt-4 flex items-center justify-between">
+                {aiSettings.grok.key.length > 20 ? (
+                  <div className="flex items-center gap-2 text-xs text-green-700 font-bold bg-green-50 px-2 py-1.5 rounded-md border border-green-200">
+                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div> ✅ Conectado
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 text-xs text-gray-500 font-medium">
+                    <div className="w-2 h-2 rounded-full bg-gray-300"></div> No Configurado
+                  </div>
+                )}
               </div>
             </div>
 
@@ -219,14 +367,37 @@ export function Settings() {
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-900 mb-2">Deepseek AI</label>
-                <select className="w-full mb-3 px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-blue-500 focus:border-blue-500">
-                  <option>Deepseek R1 (Razonamiento)</option>
-                  <option>Deepseek V3 (Rápido)</option>
+                <select 
+                  className="w-full mb-3 px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-blue-500 focus:border-blue-500"
+                  value={aiSettings.deepseek.model}
+                  onChange={(e) => updateAiSetting('deepseek', 'model', e.target.value)}
+                >
+                  <option value="deepseek-reasoner">Deepseek R1 (Razonamiento)</option>
+                  <option value="deepseek-chat">Deepseek V3 (Rápido)</option>
                 </select>
-                <input type="password" placeholder="sk-..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500" />
+                <div className="relative">
+                  <input 
+                    type={showAiKeys['deepseek'] ? "text" : "password"} 
+                    placeholder="sk-..." 
+                    value={aiSettings.deepseek.key}
+                    onChange={(e) => updateAiSetting('deepseek', 'key', e.target.value)}
+                    className="w-full pl-3 pr-10 py-2 border border-gray-200 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500" 
+                  />
+                  <button type="button" onClick={() => toggleAiKeyVisibility('deepseek')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                    {showAiKeys['deepseek'] ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
               </div>
-              <div className="mt-4 flex items-center gap-2 text-xs text-gray-500 font-medium">
-                <div className="w-2 h-2 rounded-full bg-gray-300"></div> No Configurado
+              <div className="mt-4 flex items-center justify-between">
+                {aiSettings.deepseek.key.length > 20 ? (
+                  <div className="flex items-center gap-2 text-xs text-green-700 font-bold bg-green-50 px-2 py-1.5 rounded-md border border-green-200">
+                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div> ✅ Conectado
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 text-xs text-gray-500 font-medium">
+                    <div className="w-2 h-2 rounded-full bg-gray-300"></div> No Configurado
+                  </div>
+                )}
               </div>
             </div>
           </div>
