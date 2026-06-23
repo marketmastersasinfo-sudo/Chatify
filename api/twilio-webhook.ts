@@ -555,7 +555,7 @@ async function handleSophia({ lead, productInfo, leadId, incomingText, storeTwil
       model: 'gpt-4o-mini',
       messages: aiMessages,
       temperature: 0.65,
-      max_tokens: 800,
+      max_tokens: 2000,
       response_format: { type: 'json_object' }
     });
 
@@ -570,8 +570,18 @@ async function handleSophia({ lead, productInfo, leadId, incomingText, storeTwil
     try {
       parsed = JSON.parse(cleanedOutput);
     } catch {
-      // Fallback si la IA no devuelve JSON válido
-      parsed.reply = cleanedOutput;
+      // Fallback si la IA no devuelve JSON válido o se trunca
+      console.error('Failed to parse AI JSON:', cleanedOutput);
+      const replyMatch = cleanedOutput.match(/"reply"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"/is);
+      if (replyMatch) {
+        parsed.reply = replyMatch[1].replace(/\\n/g, '\n').replace(/\\"/g, '"');
+      } else {
+        parsed.reply = "Disculpa, tuve un pequeño problema procesando tu mensaje. ¿Me lo puedes repetir? 🙏";
+      }
+      const intentMatch = cleanedOutput.match(/"intent"\s*:\s*"([^"]+)"/i);
+      if (intentMatch) {
+        parsed.intent = intentMatch[1];
+      }
     }
 
     let aiReply = parsed.reply || '';
@@ -587,17 +597,18 @@ async function handleSophia({ lead, productInfo, leadId, incomingText, storeTwil
     let newAddress = lead?.address || '';
     let newCity = lead?.city || '';
     let addressUpdated = false;
+    let facadeChanged = false;
 
     if (parsed.extracted_address || parsed.extracted_city || parsed.extracted_last_name || parsed.extracted_department || parsed.extracted_sector || parsed.extracted_postal_code) {
       const updateData: any = {};
       // PERMITIR ACTUALIZAR DIRECCIÓN/CIUDAD AUNQUE YA EXISTAN, PERO IGNORAR CAMBIOS MINÚSCULOS DE FORMATO O MAYÚSCULAS
       const cleanOldAddr = (lead?.address || '').toLowerCase().replace(/[^a-z0-9]/g, '');
       const cleanNewAddr = (parsed.extracted_address || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-      if (parsed.extracted_address && cleanOldAddr !== cleanNewAddr) { updateData.address = parsed.extracted_address; newAddress = parsed.extracted_address; addressUpdated = true; }
+      if (parsed.extracted_address && cleanOldAddr !== cleanNewAddr) { updateData.address = parsed.extracted_address; newAddress = parsed.extracted_address; addressUpdated = true; facadeChanged = true; }
       
       const cleanOldCity = (lead?.city || '').toLowerCase().replace(/[^a-z0-9]/g, '');
       const cleanNewCity = (parsed.extracted_city || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-      if (parsed.extracted_city && cleanOldCity !== cleanNewCity) { updateData.city = parsed.extracted_city; newCity = parsed.extracted_city; addressUpdated = true; }
+      if (parsed.extracted_city && cleanOldCity !== cleanNewCity) { updateData.city = parsed.extracted_city; newCity = parsed.extracted_city; addressUpdated = true; facadeChanged = true; }
       
       if (parsed.extracted_last_name && !lead?.last_name) { updateData.last_name = parsed.extracted_last_name; addressUpdated = true; }
       if (parsed.extracted_department && !lead?.department) { updateData.department = parsed.extracted_department; addressUpdated = true; }
@@ -606,7 +617,7 @@ async function handleSophia({ lead, productInfo, leadId, incomingText, storeTwil
       
       if (addressUpdated) {
         // Si estábamos en verificación de fachada y el cliente cambió la dirección, lo devolvemos a negociando para forzar una nueva foto
-        if (lead && (lead.status === 'verifying_address' || lead.status === 'closed' || lead.status === 'confirmado')) {
+        if (facadeChanged && lead && (lead.status === 'verifying_address' || lead.status === 'closed' || lead.status === 'confirmado')) {
           updateData.status = 'negotiating';
           lead.status = 'negotiating';
         }

@@ -56,14 +56,14 @@ export function processSalesWaFunnels(leads: any[]) {
     !['nuevo', 'cold_lead'].includes(l.status)
   ).length;
   const dataCollected = salesLeads.filter(l => 
-    ['verifying_address', 'address_confirming', 'confirmado', 'recovered', 'despachado', 'entregado'].includes(l.status)
+    ['verifying_address', 'address_confirming', 'confirmado', 'recovered', 'closed', 'despachado', 'entregado'].includes(l.status)
   ).length;
   const confirmed = salesLeads.filter(l => 
-    ['confirmado', 'recovered', 'despachado', 'entregado'].includes(l.status)
+    ['confirmado', 'recovered', 'closed', 'despachado', 'entregado'].includes(l.status)
   ).length;
 
   const revenue = salesLeads
-    .filter(l => ['confirmado', 'recovered', 'despachado', 'entregado'].includes(l.status))
+    .filter(l => ['confirmado', 'recovered', 'closed', 'despachado', 'entregado'].includes(l.status))
     .reduce((sum, l) => sum + (l.total_price || 0), 0);
 
   return {
@@ -225,7 +225,7 @@ export function processAIMetrics(leads: any[]) {
 export function processAdvancedInsights(leads: any[]) {
   // 1. HEATMAP (Día vs Hora)
   const heatmapData = Array(7).fill(0).map(() => Array(24).fill(0));
-  const confirmedLeads = leads.filter(l => ['confirmado', 'recovered', 'despachado', 'entregado'].includes(l.status));
+  const confirmedLeads = leads.filter(l => ['confirmado', 'recovered', 'closed', 'despachado', 'entregado'].includes(l.status));
   
   confirmedLeads.forEach(l => {
     if (l.created_at) {
@@ -239,7 +239,7 @@ export function processAdvancedInsights(leads: any[]) {
   const trafficMap = new Map<string, { total: number, converted: number, revenue: number }>();
   leads.forEach(l => {
     const source = l.traffic_source || 'Desconocido/Orgánico';
-    const isConverted = ['confirmado', 'recovered', 'despachado', 'entregado'].includes(l.status);
+    const isConverted = ['confirmado', 'recovered', 'closed', 'despachado', 'entregado'].includes(l.status);
     
     if (!trafficMap.has(source)) {
       trafficMap.set(source, { total: 0, converted: 0, revenue: 0 });
@@ -315,7 +315,7 @@ export function processAdvancedInsights(leads: any[]) {
   leads.forEach(l => {
     // Si no hay ciudad, es Fricción Inicial
     const city = l.city ? l.city.trim().toUpperCase() : 'DESCONOCIDA (Fricción Inicial)';
-    const isConverted = ['confirmado', 'recovered', 'despachado', 'entregado'].includes(l.status);
+    const isConverted = ['confirmado', 'recovered', 'closed', 'despachado', 'entregado'].includes(l.status);
     
     if (!cityMap.has(city)) {
       cityMap.set(city, { total: 0, converted: 0, revenue: 0 });
