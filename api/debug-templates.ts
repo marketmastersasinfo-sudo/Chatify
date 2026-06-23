@@ -4,17 +4,17 @@ export default async function handler(req: any, res: any) {
   try {
     const supabase = createClient(process.env.VITE_SUPABASE_URL, process.env.VITE_SUPABASE_ANON_KEY);
     
-    // Buscar la tienda VenezuelaShop
+    const storeName = req.query.store || 'VenezuelaShop';
+
     const { data: store } = await supabase.from('stores')
       .select('id, name')
-      .eq('name', 'VenezuelaShop')
-      .single();
+      .eq('name', storeName)
+      .limit(1).single();
       
     if (!store) {
-      return res.status(404).json({ success: false, error: 'Tienda VenezuelaShop no encontrada' });
+      return res.status(404).json({ success: false, error: 'Tienda no encontrada' });
     }
 
-    // Ver plantillas configuradas
     const { data: templates } = await supabase.from('store_templates')
       .select('template_name, template_type, is_active, twilio_content_sid')
       .eq('store_id', store.id);
