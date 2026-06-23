@@ -41,6 +41,19 @@ export function TrafficBadge({ source }: { source: string }) {
     );
   }
 
+  if (text.includes('tiktok')) {
+    return (
+      <span className="text-[10px] font-bold px-2.5 py-1 bg-gradient-to-r from-gray-900 to-black text-white rounded-full shadow-sm flex items-center gap-1.5 uppercase tracking-wide border border-gray-800">
+        <span className="relative flex items-center justify-center">
+           <span className="absolute w-3 h-3 rounded-full bg-cyan-400 mix-blend-screen blur-[1px] translate-x-[1px]"></span>
+           <span className="absolute w-3 h-3 rounded-full bg-pink-500 mix-blend-screen blur-[1px] -translate-x-[1px]"></span>
+           <Zap className="w-3 h-3 relative z-10 text-white" />
+        </span>
+        TikTok Ads
+      </span>
+    );
+  }
+
   return (
     <span className="text-[10px] font-bold px-2.5 py-1 bg-gray-100 text-gray-700 border border-gray-200 rounded-full flex items-center gap-1.5 uppercase tracking-wide">
       <Zap className="w-3 h-3" />
