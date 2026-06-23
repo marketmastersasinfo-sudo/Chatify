@@ -239,7 +239,10 @@ export function CrmSales() {
         {/* Kanban Board Area */}
         <div className="flex gap-6 min-w-max h-full flex-1">
           {columns.map(col => {
-            const columnLeads = leads.filter(l => l.status === col.id);
+            const columnLeads = leads.filter(l => 
+              l.status === col.id || 
+              (col.id === 'negotiating' && l.status === 'verifying_address')
+            );
             return (
               <div 
                 key={col.id} 
