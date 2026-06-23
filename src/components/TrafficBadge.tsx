@@ -41,6 +41,15 @@ export function TrafficBadge({ source }: { source: string }) {
     );
   }
 
+  if (text.includes('whatsapp')) {
+    return (
+      <span className="text-[10px] font-bold px-2.5 py-1 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-full shadow-sm flex items-center gap-1.5 uppercase tracking-wide">
+        <MessageSquare className="w-3 h-3 fill-white/20" />
+        WhatsApp Direct
+      </span>
+    );
+  }
+
   if (text.includes('tiktok')) {
     return (
       <span className="text-[10px] font-bold px-2.5 py-1 bg-gradient-to-r from-gray-900 to-black text-white rounded-full shadow-sm flex items-center gap-1.5 uppercase tracking-wide border border-gray-800">
