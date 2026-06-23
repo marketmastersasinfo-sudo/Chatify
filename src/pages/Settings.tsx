@@ -428,45 +428,45 @@ export function Settings() {
             <div className="p-4 bg-gray-50 rounded-xl border border-purple-100 shadow-sm">
               <label className="block text-sm font-bold text-purple-900 mb-2">Bot WhatsApp</label>
               <select className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-purple-500" value={aiRouting.whatsapp} onChange={(e) => setAiRouting({...aiRouting, whatsapp: e.target.value})}>
-                <option value="openai">OpenAI (GPT-4o)</option>
-                <option value="anthropic">Anthropic (Claude 3.5)</option>
-                <option value="google">Google (Gemini)</option>
+                <option value="openai">OpenAI (Usa modelo elegido arriba)</option>
+                <option value="anthropic">Anthropic (Usa modelo elegido arriba)</option>
+                <option value="google">Google Gemini (Usa modelo elegido arriba)</option>
                 <option value="llama">Meta Llama (Groq)</option>
-                <option value="grok">xAI (Grok)</option>
-                <option value="deepseek">Deepseek</option>
+                <option value="grok">xAI Grok (Usa modelo elegido arriba)</option>
+                <option value="deepseek">Deepseek (Usa modelo elegido arriba)</option>
               </select>
             </div>
             <div className="p-4 bg-gray-50 rounded-xl border border-gray-200">
               <label className="block text-sm font-semibold text-gray-900 mb-2">Bot Redes Sociales</label>
               <select className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-purple-500" value={aiRouting.social_media} onChange={(e) => setAiRouting({...aiRouting, social_media: e.target.value})}>
-                <option value="openai">OpenAI (GPT-4o)</option>
-                <option value="anthropic">Anthropic (Claude 3.5)</option>
-                <option value="google">Google (Gemini)</option>
+                <option value="openai">OpenAI (Usa modelo elegido arriba)</option>
+                <option value="anthropic">Anthropic (Usa modelo elegido arriba)</option>
+                <option value="google">Google Gemini (Usa modelo elegido arriba)</option>
                 <option value="llama">Meta Llama (Groq)</option>
-                <option value="grok">xAI (Grok)</option>
-                <option value="deepseek">Deepseek</option>
+                <option value="grok">xAI Grok (Usa modelo elegido arriba)</option>
+                <option value="deepseek">Deepseek (Usa modelo elegido arriba)</option>
               </select>
             </div>
             <div className="p-4 bg-gray-50 rounded-xl border border-gray-200">
               <label className="block text-sm font-semibold text-gray-900 mb-2">Plantillas (Ads)</label>
               <select className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-purple-500" value={aiRouting.templates} onChange={(e) => setAiRouting({...aiRouting, templates: e.target.value})}>
-                <option value="openai">OpenAI (GPT-4o)</option>
-                <option value="anthropic">Anthropic (Claude 3.5)</option>
-                <option value="google">Google (Gemini)</option>
+                <option value="openai">OpenAI (Usa modelo elegido arriba)</option>
+                <option value="anthropic">Anthropic (Usa modelo elegido arriba)</option>
+                <option value="google">Google Gemini (Usa modelo elegido arriba)</option>
                 <option value="llama">Meta Llama (Groq)</option>
-                <option value="grok">xAI (Grok)</option>
-                <option value="deepseek">Deepseek</option>
+                <option value="grok">xAI Grok (Usa modelo elegido arriba)</option>
+                <option value="deepseek">Deepseek (Usa modelo elegido arriba)</option>
               </select>
             </div>
             <div className="p-4 bg-gray-50 rounded-xl border border-gray-200">
               <label className="block text-sm font-semibold text-gray-900 mb-2">Reportes (NLP)</label>
               <select className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-purple-500" value={aiRouting.nlp} onChange={(e) => setAiRouting({...aiRouting, nlp: e.target.value})}>
-                <option value="openai">OpenAI (GPT-4o)</option>
-                <option value="anthropic">Anthropic (Claude 3.5)</option>
-                <option value="google">Google (Gemini)</option>
+                <option value="openai">OpenAI (Usa modelo elegido arriba)</option>
+                <option value="anthropic">Anthropic (Usa modelo elegido arriba)</option>
+                <option value="google">Google Gemini (Usa modelo elegido arriba)</option>
                 <option value="llama">Meta Llama (Groq)</option>
-                <option value="grok">xAI (Grok)</option>
-                <option value="deepseek">Deepseek</option>
+                <option value="grok">xAI Grok (Usa modelo elegido arriba)</option>
+                <option value="deepseek">Deepseek (Usa modelo elegido arriba)</option>
               </select>
             </div>
           </div>
