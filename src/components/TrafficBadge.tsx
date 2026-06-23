@@ -23,9 +23,18 @@ export function TrafficBadge({ source }: { source: string }) {
     );
   }
 
-  if (text.includes('messenger') || text.includes('facebook')) {
+  if (text.includes('facebook')) {
     return (
-      <span className="text-[10px] font-bold px-2.5 py-1 bg-gradient-to-r from-blue-500 to-blue-700 text-white rounded-full shadow-sm flex items-center gap-1.5 uppercase tracking-wide">
+      <span className="text-[10px] font-bold px-2.5 py-1 bg-gradient-to-r from-blue-600 to-blue-800 text-white rounded-full shadow-sm flex items-center gap-1.5 uppercase tracking-wide">
+        <Target className="w-3 h-3" />
+        Facebook Ads
+      </span>
+    );
+  }
+
+  if (text.includes('messenger')) {
+    return (
+      <span className="text-[10px] font-bold px-2.5 py-1 bg-gradient-to-r from-blue-400 to-blue-600 text-white rounded-full shadow-sm flex items-center gap-1.5 uppercase tracking-wide">
         <MessageSquare className="w-3 h-3" />
         Messenger
       </span>
