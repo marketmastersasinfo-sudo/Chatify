@@ -38,6 +38,8 @@ export interface Database {
           waba_number: string | null
           meta_pixel_id: string | null
           meta_capi_token: string | null
+          fb_page_id: string | null
+          ig_account_id: string | null
           created_at: string
         }
         Insert: {
@@ -48,6 +50,8 @@ export interface Database {
           waba_number?: string | null
           meta_pixel_id?: string | null
           meta_capi_token?: string | null
+          fb_page_id?: string | null
+          ig_account_id?: string | null
           created_at?: string
         }
         Update: {
@@ -58,6 +62,8 @@ export interface Database {
           waba_number?: string | null
           meta_pixel_id?: string | null
           meta_capi_token?: string | null
+          fb_page_id?: string | null
+          ig_account_id?: string | null
           created_at?: string
         }
       }

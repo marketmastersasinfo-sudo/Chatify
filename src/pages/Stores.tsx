@@ -539,6 +539,72 @@ export function Stores() {
                 </div>
               </div>
 
+              {/* Conexión Redes Sociales (Make.com) */}
+              <div className="mt-8 border-t border-gray-200 pt-8">
+                <div className="flex justify-between items-center mb-6">
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                      <Target className="w-5 h-5 text-blue-600" /> Redes Sociales (Para CRM Make.com)
+                    </h3>
+                    <p className="text-sm text-gray-500 mt-1">Vincula los IDs de Facebook e Instagram para que la IA responda comentarios automáticamente.</p>
+                  </div>
+                  <button 
+                    onClick={async () => {
+                      if (!selectedStore) return;
+                      try {
+                        const { error } = await (supabase as any).from('stores').update({
+                          fb_page_id: selectedStore.fb_page_id,
+                          ig_account_id: selectedStore.ig_account_id,
+                        }).eq('id', selectedStore.id);
+                        if (error) throw error;
+                        alert('Redes Sociales guardadas exitosamente');
+                      } catch(e) {
+                        alert('Error al guardar Redes Sociales');
+                      }
+                    }}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-colors"
+                  >
+                    <Save className="w-4 h-4" /> Guardar Redes
+                  </button>
+                </div>
+
+                <div className="p-6 bg-white border border-gray-100 shadow-sm rounded-2xl grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2 mb-4">
+                      <div className="w-8 h-8 rounded bg-blue-100 flex items-center justify-center text-blue-600 font-bold">f</div>
+                      <h4 className="font-bold text-slate-700">Facebook Page ID</h4>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 mb-1">ID de la Fan Page</label>
+                      <input 
+                        type="text" 
+                        value={selectedStore.fb_page_id || ''}
+                        onChange={(e) => setSelectedStore({...selectedStore, fb_page_id: e.target.value})}
+                        className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-600" 
+                        placeholder="1234567890" 
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2 mb-4">
+                      <div className="w-8 h-8 rounded bg-pink-100 flex items-center justify-center text-pink-600 font-bold">ig</div>
+                      <h4 className="font-bold text-slate-700">Instagram Account ID</h4>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 mb-1">ID de la Cuenta de Instagram</label>
+                      <input 
+                        type="text" 
+                        value={selectedStore.ig_account_id || ''}
+                        onChange={(e) => setSelectedStore({...selectedStore, ig_account_id: e.target.value})}
+                        className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-pink-600" 
+                        placeholder="0987654321" 
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               {/* Tracking Avanzado (API) */}
               <div className="mt-8 border-t border-gray-200 pt-8">
                 <div className="flex justify-between items-center mb-6">
