@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Store, Smartphone, Target, Plus, ShoppingBag, Loader2, Save, X, BrainCircuit, TrendingDown, AlertTriangle, FileText, RefreshCw, RefreshCcw, CheckCircle2 } from 'lucide-react';
+import { Store, Smartphone, Target, Plus, ShoppingBag, Loader2, Save, X, AlertTriangle, RefreshCw, RefreshCcw, CheckCircle2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 
@@ -22,55 +22,9 @@ export function Stores() {
   
 
 
-  // Templates State
-  const [storeTemplates, setStoreTemplates] = useState<any[]>([]);
-
   useEffect(() => {
     loadStores();
   }, [selectedCountry]);
-
-  useEffect(() => {
-    if (selectedStore) {
-      loadTemplates(selectedStore.id);
-    } else {
-      setStoreTemplates([]);
-    }
-  }, [selectedStore]);
-
-  async function loadTemplates(storeId: string) {
-    try {
-      const { data } = await supabase.from('store_templates').select('*').eq('store_id', storeId);
-      setStoreTemplates(data || []);
-    } catch (err) {
-      console.error("Error loading templates", err);
-    }
-  }
-
-  async function handleAssignTemplate(templateId: string, triggerType: string) {
-    try {
-      // First, remove the trigger from any other template in this store
-      await (supabase as any).from('store_templates')
-        .update({ template_type: 'custom' })
-        .eq('store_id', selectedStore.id)
-        .eq('template_type', triggerType);
-        
-      // Now set it on the selected template
-      if (templateId) {
-        await (supabase as any).from('store_templates')
-          .update({ template_type: triggerType })
-          .eq('id', templateId);
-      }
-      
-      // Reload templates to reflect changes
-      loadTemplates(selectedStore.id);
-      alert(`Trigger de automatización actualizado correctamente.`);
-    } catch (err) {
-      console.error("Error assigning template", err);
-      alert("Error al asignar la plantilla.");
-    }
-  }
-
-
 
   async function loadStores() {
     setLoading(true);
@@ -446,22 +400,6 @@ export function Stores() {
                       <label className="block text-xs font-semibold text-gray-500 mb-1">Logo (Sube una Imagen)</label>
                       <input type="file" accept="image/*" className="w-full px-3 py-1.5 border border-gray-200 rounded-lg text-sm bg-white text-gray-600 focus:ring-1 focus:ring-blue-500 file:mr-4 file:py-1 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
                     </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-500 mb-1">Línea Móvil Virtual Asignada</label>
-                      <select className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white text-gray-600 focus:ring-1 focus:ring-blue-500 mb-2">
-                        <option>Selecciona un número virtual...</option>
-                        <option>+57 300 123 4567 (Colombia)</option>
-                        <option>+52 55 1234 5678 (México)</option>
-                      </select>
-                      <p className="text-[11px] text-gray-500 flex items-start gap-1">
-                        <AlertTriangle className="w-3 h-3 text-orange-500 flex-shrink-0 mt-0.5" />
-                        <span>¿No tienes línea? Compra un número en el menú <Link to="/virtual-sims" className="text-blue-600 font-bold hover:underline">Líneas y SIMs Virtuales</Link>.</span>
-                      </p>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-500 mb-1">ID del Pixel (Opcional)</label>
-                      <input type="text" placeholder="123456789" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white text-gray-600 focus:ring-1 focus:ring-blue-500" />
-                    </div>
                   </div>
 
                   <h4 className="font-bold text-gray-900 mt-6 mb-3 border-b pb-2">Integraciones y APIs (Webhooks)</h4>
@@ -731,138 +669,8 @@ export function Stores() {
                     <div className="pt-2 text-xs text-slate-500 leading-relaxed">
                       Para Google Ads, requerimos el ID para conversiones offline. Asegúrate de configurar la captura de `gclid` en tus links.
                     </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* AI Template Manager */}
-              <div className="mt-8 border-t border-gray-200 pt-8">
-                <div className="flex justify-between items-center mb-6">
-                  <div>
-                    <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                      <FileText className="w-5 h-5 text-indigo-600" /> Gestor de Plantillas IA
-                    </h3>
-                    <p className="text-sm text-gray-500 mt-1">Crea, edita y mide el éxito de tus plantillas oficiales para esta tienda.</p>
-                  </div>
-                  <button className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-soft flex items-center gap-2">
-                    <BrainCircuit className="w-4 h-4" /> Generar con IA
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Template Card */}
-                  <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm relative overflow-hidden">
-                    <div className="absolute top-0 right-0 p-3 flex gap-2">
-                      <span className="bg-green-100 text-green-700 text-[10px] font-bold px-2 py-1 rounded uppercase">Aprobada</span>
-                    </div>
-                    <h4 className="font-bold text-gray-900 mb-1">Confirmación V1 (Con Foto)</h4>
-                    <p className="text-xs text-gray-500 mb-3 uppercase font-semibold">Categoría: UTILITY</p>
-                    <div className="bg-gray-50 p-3 rounded-lg text-sm text-gray-700 mb-4 border border-gray-100 italic">
-                      "Hola {'{{1}}'}, gracias por tu compra. Te muestro la foto real del {'{{2}}'} en color {'{{3}}'} que separaste."
-                    </div>
-                    <div className="flex justify-between items-end border-t border-gray-100 pt-3">
-                      <div className="flex gap-4">
-                        <div>
-                          <p className="text-[10px] font-bold text-gray-400 uppercase">Leídos</p>
-                          <p className="text-sm font-bold text-gray-900">89%</p>
-                        </div>
-                        <div>
-                          <p className="text-[10px] font-bold text-gray-400 uppercase">Respuesta</p>
-                          <p className="text-sm font-bold text-green-600">64%</p>
-                        </div>
-                      </div>
-                      <button className="text-xs font-bold text-blue-600 hover:text-blue-800">Editar (A/B Test)</button>
-                    </div>
-                  </div>
-
-                  {/* Template Card 2 */}
-                  <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm relative overflow-hidden">
-                    <div className="absolute top-0 right-0 p-3 flex gap-2">
-                      <span className="bg-green-100 text-green-700 text-[10px] font-bold px-2 py-1 rounded uppercase">Aprobada</span>
-                    </div>
-                    <h4 className="font-bold text-gray-900 mb-1">Carrito Abandonado V1</h4>
-                    <p className="text-xs text-gray-500 mb-3 uppercase font-semibold">Categoría: MARKETING</p>
-                    <div className="bg-gray-50 p-3 rounded-lg text-sm text-gray-700 mb-4 border border-gray-100 italic">
-                      "Hola {'{{1}}'}, notamos que no terminaste tu compra del {'{{2}}'}... ¿Tuviste algún problema?"
-                    </div>
-                    <div className="flex justify-between items-end border-t border-gray-100 pt-3">
-                      <div className="flex gap-4">
-                        <div>
-                          <p className="text-[10px] font-bold text-gray-400 uppercase">Leídos</p>
-                          <p className="text-sm font-bold text-gray-900">75%</p>
-                        </div>
-                        <div>
-                          <p className="text-[10px] font-bold text-gray-400 uppercase">Respuesta</p>
-                          <p className="text-sm font-bold text-green-600">22%</p>
-                        </div>
-                      </div>
-                      <button className="text-xs font-bold text-blue-600 hover:text-blue-800">Editar (A/B Test)</button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-
-                  {/* A/B Template Mapping */}
-                  <div className="px-5 py-4 bg-gray-50 border-b border-gray-100">
-                    <h5 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">🧩 Mapeo de Automatizaciones (A/B Testing)</h5>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-xs font-semibold text-gray-700 mb-1">Trigger: Confirmación de Pedido</label>
-                        <select 
-                          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-1 focus:ring-blue-500 bg-white"
-                          value={storeTemplates.find(t => t.template_type === 'order_confirmation')?.id || ''}
-                          onChange={(e) => handleAssignTemplate(e.target.value, 'order_confirmation')}
-                        >
-                          <option value="">-- Sin automatización --</option>
-                          {storeTemplates.map(t => (
-                            <option key={t.id} value={t.id}>{t.template_name}</option>
-                          ))}
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-xs font-semibold text-gray-700 mb-1">Trigger: Carrito Abandonado</label>
-                        <select 
-                          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-1 focus:ring-blue-500 bg-white"
-                          value={storeTemplates.find(t => t.template_type === 'abandoned_cart')?.id || ''}
-                          onChange={(e) => handleAssignTemplate(e.target.value, 'abandoned_cart')}
-                        >
-                          <option value="">-- Sin automatización --</option>
-                          {storeTemplates.map(t => (
-                            <option key={t.id} value={t.id}>{t.template_name}</option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* AI Feedback Loop Panel */}
-                  <div className="p-5 bg-gradient-to-br from-indigo-50/50 to-purple-50/50">
-                    <h5 className="text-sm font-bold text-indigo-900 flex items-center gap-2 mb-4">
-                      <BrainCircuit className="w-4 h-4 text-indigo-600" /> Insights de IA (Ciclo de Retroalimentación 360°)
-                    </h5>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {/* Social Fricction */}
-                      <div className="bg-white p-4 rounded-xl border border-indigo-100 shadow-sm">
-                        <h6 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1"><AlertTriangle className="w-3 h-3 text-orange-500"/> Fricción en Anuncios (Redes Sociales)</h6>
-                        <ul className="space-y-2 text-sm text-gray-700">
-                          <li className="flex justify-between items-center"><span className="font-medium text-gray-900">"¿Tienen garantía?"</span> <span className="bg-orange-100 text-orange-700 px-2 py-0.5 rounded text-xs font-bold">34 casos</span></li>
-                          <li className="flex justify-between items-center"><span className="font-medium text-gray-900">"¿Se puede pagar al recibir?"</span> <span className="bg-orange-100 text-orange-700 px-2 py-0.5 rounded text-xs font-bold">28 casos</span></li>
-                        </ul>
-                        <p className="text-xs text-indigo-600 mt-3 font-medium bg-indigo-50 p-2 rounded-lg">💡 <span className="font-bold">Sugerencia IA para el Media Buyer:</span> Agrega un banner gigante de "PAGO CONTRA ENTREGA" en el video del anuncio.</p>
-                      </div>
-                      
-                      {/* WA Friction */}
-                      <div className="bg-white p-4 rounded-xl border border-purple-100 shadow-sm">
-                        <h6 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1"><TrendingDown className="w-3 h-3 text-red-500"/> Fricción de Venta (WhatsApp)</h6>
-                        <ul className="space-y-2 text-sm text-gray-700">
-                          <li className="flex justify-between items-center"><span className="font-medium text-gray-900">El envío a regiones es muy caro</span> <span className="bg-red-100 text-red-700 px-2 py-0.5 rounded text-xs font-bold">45 ventas caídas</span></li>
-                          <li className="flex justify-between items-center"><span className="font-medium text-gray-900">Buscaban color plateado</span> <span className="bg-orange-100 text-orange-700 px-2 py-0.5 rounded text-xs font-bold">18 ventas caídas</span></li>
-                        </ul>
-                        <p className="text-xs text-purple-600 mt-3 font-medium bg-purple-50 p-2 rounded-lg">💡 <span className="font-bold">Sugerencia IA para el Importador:</span> Importa stock del color plateado de inmediato (Mucha demanda perdida).</p>
-                      </div>
-                    </div>
+                           {/* Fin Tracking Avanzado */}
+            </div>                </div>
                   </div>
               </div>
           ) : (
