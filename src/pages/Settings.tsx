@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Key, MapPin, Target, Plus, Save, Loader2, CheckCircle2, Eye, EyeOff } from 'lucide-react';
+import { Key, MapPin, Target, Plus, Save, Loader2, CheckCircle2, Eye, EyeOff, Network } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 export function Settings() {
@@ -29,6 +29,12 @@ export function Settings() {
     deepseek: { model: 'deepseek-reasoner', key: '' }
   });
   const [showAiKeys, setShowAiKeys] = useState<Record<string, boolean>>({});
+  const [aiRouting, setAiRouting] = useState<Record<string, string>>({
+    whatsapp: 'openai',
+    social_media: 'anthropic',
+    templates: 'openai',
+    nlp: 'openai'
+  });
 
   const updateAiSetting = (provider: string, field: 'model' | 'key', value: string) => {
     setAiSettings((prev) => ({
@@ -66,6 +72,7 @@ export function Settings() {
           setAiSettings((prev) => {
             const newSettings = { ...prev };
             Object.keys(data[0].ai_settings).forEach((provider) => {
+              if (provider === 'routing') return;
               newSettings[provider] = {
                 ...newSettings[provider],
                 ...data[0].ai_settings[provider]
@@ -73,6 +80,9 @@ export function Settings() {
             });
             return newSettings;
           });
+          if (data[0].ai_settings.routing) {
+            setAiRouting((prev) => ({ ...prev, ...data[0].ai_settings.routing }));
+          }
         }
       }
     } catch (e) {
@@ -92,7 +102,7 @@ export function Settings() {
         tiktok_access_token: tiktokAccessToken,
         ga4_measurement_id: ga4MeasurementId,
         ga4_api_secret: ga4ApiSecret,
-        ai_settings: aiSettings
+        ai_settings: { ...aiSettings, routing: aiRouting }
       };
 
       if (!orgId) {
@@ -399,6 +409,65 @@ export function Settings() {
                   </div>
                 )}
               </div>
+            </div>
+          </div>
+        </div>
+
+        {/* AI Routing Rules */}
+        <div className="glass-card rounded-2xl p-6">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-2 bg-purple-50 rounded-lg">
+              <Network className="h-6 w-6 text-purple-600" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-gray-900">Reglas de Enrutamiento (Cascada)</h2>
+              <p className="text-sm text-gray-500">Selecciona qué motor se hará cargo de cada tarea de tu empresa.</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="p-4 bg-gray-50 rounded-xl border border-purple-100 shadow-sm">
+              <label className="block text-sm font-bold text-purple-900 mb-2">Bot WhatsApp</label>
+              <select className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-purple-500" value={aiRouting.whatsapp} onChange={(e) => setAiRouting({...aiRouting, whatsapp: e.target.value})}>
+                <option value="openai">OpenAI (GPT-4o)</option>
+                <option value="anthropic">Anthropic (Claude 3.5)</option>
+                <option value="google">Google (Gemini)</option>
+                <option value="llama">Meta Llama (Groq)</option>
+                <option value="grok">xAI (Grok)</option>
+                <option value="deepseek">Deepseek</option>
+              </select>
+            </div>
+            <div className="p-4 bg-gray-50 rounded-xl border border-gray-200">
+              <label className="block text-sm font-semibold text-gray-900 mb-2">Bot Redes Sociales</label>
+              <select className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-purple-500" value={aiRouting.social_media} onChange={(e) => setAiRouting({...aiRouting, social_media: e.target.value})}>
+                <option value="openai">OpenAI (GPT-4o)</option>
+                <option value="anthropic">Anthropic (Claude 3.5)</option>
+                <option value="google">Google (Gemini)</option>
+                <option value="llama">Meta Llama (Groq)</option>
+                <option value="grok">xAI (Grok)</option>
+                <option value="deepseek">Deepseek</option>
+              </select>
+            </div>
+            <div className="p-4 bg-gray-50 rounded-xl border border-gray-200">
+              <label className="block text-sm font-semibold text-gray-900 mb-2">Plantillas (Ads)</label>
+              <select className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-purple-500" value={aiRouting.templates} onChange={(e) => setAiRouting({...aiRouting, templates: e.target.value})}>
+                <option value="openai">OpenAI (GPT-4o)</option>
+                <option value="anthropic">Anthropic (Claude 3.5)</option>
+                <option value="google">Google (Gemini)</option>
+                <option value="llama">Meta Llama (Groq)</option>
+                <option value="grok">xAI (Grok)</option>
+                <option value="deepseek">Deepseek</option>
+              </select>
+            </div>
+            <div className="p-4 bg-gray-50 rounded-xl border border-gray-200">
+              <label className="block text-sm font-semibold text-gray-900 mb-2">Reportes (NLP)</label>
+              <select className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-purple-500" value={aiRouting.nlp} onChange={(e) => setAiRouting({...aiRouting, nlp: e.target.value})}>
+                <option value="openai">OpenAI (GPT-4o)</option>
+                <option value="anthropic">Anthropic (Claude 3.5)</option>
+                <option value="google">Google (Gemini)</option>
+                <option value="llama">Meta Llama (Groq)</option>
+                <option value="grok">xAI (Grok)</option>
+                <option value="deepseek">Deepseek</option>
+              </select>
             </div>
           </div>
         </div>

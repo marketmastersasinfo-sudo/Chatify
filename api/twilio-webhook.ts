@@ -515,7 +515,7 @@ async function handleSophia({ lead, productInfo, leadId, incomingText, storeTwil
   if (isAIPaused) return;
 
   const { buildSophiaPrompt } = await import('./utils/_sophia-prompt.js');
-  const { OpenAI } = await import('openai');
+  const { routeAIRequest } = await import('./utils/ai-router.js');
 
   const storeSlug = store?.slug || '';
   if (!cachedCoverage || Date.now() - lastCoverageFetch > 1000 * 60 * 60) {
@@ -533,9 +533,10 @@ async function handleSophia({ lead, productInfo, leadId, incomingText, storeTwil
   // Get the full confirmation template message — it has the complete order: name, products, variants, price
   const variantInfo = await getTemplateMessageContext(leadId);
 
-  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
   const promptOpts = { storeCountry: store?.country || 'Colombia' };
-  const aiMessages: any[] = [{ role: 'system', content: buildSophiaPrompt(lead || {}, productInfo, variantInfo, cachedCoverage || undefined, promptOpts) }];
+  const systemPrompt = buildSophiaPrompt(lead || {}, productInfo, variantInfo, cachedCoverage || undefined, promptOpts);
+  
+  const aiMessages: any[] = [];
 
   for (const msg of recentMessages) {
     if (msg.content.startsWith('[')) continue; // skip system/debug messages
@@ -551,16 +552,15 @@ async function handleSophia({ lead, productInfo, leadId, incomingText, storeTwil
   }
 
   try {
-    const response = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+    const aiOutput = await routeAIRequest({
+      organizationId: store?.organization_id || '',
+      module: 'whatsapp',
+      systemPrompt,
       messages: aiMessages,
-      temperature: 0.65,
-      max_tokens: 2000,
-      response_format: { type: 'json_object' }
+      requireJson: true
     });
 
-    const aiOutput = response.choices[0]?.message?.content?.trim() || '{}';
-    let cleanedOutput = aiOutput;
+    let cleanedOutput = aiOutput.trim() || '{}';
     if (cleanedOutput.startsWith('```')) {
       cleanedOutput = cleanedOutput.replace(/^```json\s*/i, '').replace(/^```\s*/, '').replace(/\s*```$/i, '').trim();
     }

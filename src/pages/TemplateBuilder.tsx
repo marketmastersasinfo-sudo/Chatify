@@ -47,7 +47,7 @@ export function TemplateBuilder() {
       const res = await fetch('/api/ai/generate-template', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: aiPrompt })
+        body: JSON.stringify({ prompt: aiPrompt, organizationId: selectedStore?.organization_id })
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Error de la IA');
