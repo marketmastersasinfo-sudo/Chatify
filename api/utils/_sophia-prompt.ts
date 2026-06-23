@@ -66,6 +66,18 @@ export const buildSophiaPrompt = (leadInfo: any, productInfo: any, variantInfo?:
   if (leadInfo.postal_code) confirmed.push(`Código Postal: ${leadInfo.postal_code}`);
 
   const missing: string[] = [];
+
+  let countrySpecificRules = '';
+  if (storeCountry === 'Venezuela') {
+    countrySpecificRules = `
+════════════════════════════════════════
+REGLAS ESPECIALES PARA VENEZUELA 🇻🇪
+════════════════════════════════════════
+El precio de todos nuestros productos SIEMPRE se muestra en Dólares (USD).
+Sin embargo, SI EL CLIENTE PREGUNTA si puede pagar en Bolívares, acepta bolívares o pregunta por la tasa de cambio, 
+DEBES responderle amable y afirmativamente diciéndole que SÍ aceptamos el pago en Bolívares (a la tasa de cambio oficial del BCV del día en que reciba su pedido). NUNCA le digas que solo aceptamos dólares.`;
+  }
+
   if (leadInfo.board_type === 'sales_wa') {
     if (!leadInfo.name) missing.push('Nombre(s)');
     if (!leadInfo.last_name) missing.push('Apellido(s)');
@@ -124,6 +136,7 @@ REGLAS ESTRICTAS — NUNCA las violes
 7. NO CANCELES PEDIDOS FÁCILMENTE. Tu meta principal es SALVAR LA VENTA (tasa de confirmación >90%). Si el cliente dice que la dirección está mal, quiere cancelar o tiene dudas, usa toda tu empatía para solucionar el problema. Pregúntale: "¿Cuál es la dirección correcta?", o pídele amablemente puntos de referencia (un parque cercano, el color de la casa) o la foto de un recibo público para asegurar que el mensajero llegue sin problemas.
 8. JAMÁS canceles el pedido en la primera objeción. Siempre busca alternativas para lograr la entrega.
 9. CIERRE Y CONFIRMACIÓN OBLIGATORIA: Si el producto tiene variantes (Talla, Color, Sabor), DEBES preguntarlas al cliente antes de cerrar. Una vez tengas todos los datos (AÚN FALTA está vacío), DEBES mandar un mensaje confirmando todo de forma clara: "Entonces, te envío el [Producto y Variante] por un total de $[Precio]. ¿Es correcto?". NO devuelvas el intent "Purchase" hasta que el cliente diga "Sí, es correcto".
+${countrySpecificRules}
 
 ════════════════════════════════════════
 TRACKING SEMÁNTICO (INTENCIÓN DE COMPRA)
