@@ -565,7 +565,7 @@ async function handleSophia({ lead, productInfo, leadId, incomingText, storeTwil
       cleanedOutput = cleanedOutput.replace(/^```json\s*/i, '').replace(/^```\s*/, '').replace(/\s*```$/i, '').trim();
     }
     
-    let parsed: { reply: string, intent: string, extracted_city?: string, extracted_address?: string, extracted_last_name?: string, extracted_department?: string, extracted_sector?: string, extracted_postal_code?: string } = { reply: '', intent: 'None' };
+    let parsed: { reply: string, intent: string, extracted_city?: string, extracted_address?: string, extracted_last_name?: string, extracted_department?: string, extracted_sector?: string, extracted_postal_code?: string, extracted_total_price?: string | number } = { reply: '', intent: 'None' };
     
     try {
       parsed = JSON.parse(cleanedOutput);
@@ -599,7 +599,7 @@ async function handleSophia({ lead, productInfo, leadId, incomingText, storeTwil
     let addressUpdated = false;
     let facadeChanged = false;
 
-    if (parsed.extracted_address || parsed.extracted_city || parsed.extracted_last_name || parsed.extracted_department || parsed.extracted_sector || parsed.extracted_postal_code) {
+    if (parsed.extracted_address || parsed.extracted_city || parsed.extracted_last_name || parsed.extracted_department || parsed.extracted_sector || parsed.extracted_postal_code || parsed.extracted_total_price) {
       const updateData: any = {};
       // PERMITIR ACTUALIZAR DIRECCIÓN/CIUDAD AUNQUE YA EXISTAN, PERO IGNORAR CAMBIOS MINÚSCULOS DE FORMATO O MAYÚSCULAS
       const cleanOldAddr = (lead?.address || '').toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -614,6 +614,8 @@ async function handleSophia({ lead, productInfo, leadId, incomingText, storeTwil
       if (parsed.extracted_department && !lead?.department) { updateData.department = parsed.extracted_department; addressUpdated = true; }
       if (parsed.extracted_sector && !lead?.sector) { updateData.sector = parsed.extracted_sector; addressUpdated = true; }
       if (parsed.extracted_postal_code && !lead?.postal_code) { updateData.postal_code = parsed.extracted_postal_code; addressUpdated = true; }
+      
+      if (parsed.extracted_total_price) { updateData.total_price = Number(parsed.extracted_total_price); }
       
       if (addressUpdated) {
         // Si estábamos en verificación de fachada y el cliente cambió la dirección, lo devolvemos a negociando para forzar una nueva foto

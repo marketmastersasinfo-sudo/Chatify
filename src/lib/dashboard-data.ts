@@ -203,7 +203,7 @@ export function processSocialFunnels(leads: any[]) {
 // ══════════════════════════════════════
 export function processAIMetrics(leads: any[]) {
   // Leads cerrados por el bot (no tuvieron intervención humana)
-  const confirmedLeads = leads.filter(l => ['recovered', 'confirmado', 'despachado', 'entregado'].includes(l.status));
+  const confirmedLeads = leads.filter(l => ['recovered', 'confirmado', 'closed', 'despachado', 'entregado'].includes(l.status));
   const total = confirmedLeads.length;
   if (total === 0) return { aiPercent: 0, humanPercent: 0, totalClosed: 0 };
 

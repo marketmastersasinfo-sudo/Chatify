@@ -160,6 +160,7 @@ Return a raw JSON object (NO markdown formatting, NO \`\`\`json) with the follow
   "extracted_last_name": "El apellido del cliente si lo mencionó",
   "extracted_department": "Departamento, Estado o Provincia si lo mencionó",
   "extracted_sector": "Barrio, colonia o sector si lo mencionó",
-  "extracted_postal_code": "Código postal si lo mencionó"
+  "extracted_postal_code": "Código postal si lo mencionó",
+  "extracted_total_price": "El valor NUMÉRICO total del pedido (solo números, ej: 85000) si ya está claro qué va a llevar el cliente"
 }`;
 };
