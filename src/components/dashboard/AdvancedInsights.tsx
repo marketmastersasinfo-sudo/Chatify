@@ -62,7 +62,10 @@ export function AdvancedInsights({ insightsData, leads }: AdvancedInsightsProps)
       }
 
       // Basic NLP Algorithm (Stop words and frequency)
-      const stopWords = ['de','la','que','el','en','y','a','los','del','se','las','por','un','para','con','no','una','su','al','lo','como','más','pero','sus','le','ya','o','este','sí','porque','esta','entre','cuando','muy','sin','sobre','también','me','hasta','hay','donde','quien','desde','todo','nos','durante','todos','uno','les','ni','contra','otros','ese','eso','ante','ellos','e','esto','mí','antes','algunos','qué','unos','yo','otro','otras','otra','él','tanto','esa','estos','mucho','quienes','nada','muchos','cual','poco','ella','estar','estas','algunas','algo','nosotros','mi','mis','tú','te','ti','tu','tus','ellas','nosotras','vosotros','vosotras','os','mío','mía','míos','mías','tuyo','tuya','tuyos','tuyas','suyo','suya','suyos','suyas','nuestro','nuestra','nuestros','nuestras','vuestro','vuestra','vuestros','vuestras','esos','esas','aquel','aquella','aquellos','aquellas','esto','eso','aquello','precio','costo','valor','hola','buenas','tardes','días','noches','cuanto','cuesta','vale','quiero','gracias','info','informacion'];
+      const baseStopWords = ['de','la','que','el','en','y','a','los','del','se','las','por','un','para','con','no','una','su','al','lo','como','más','pero','sus','le','ya','o','este','sí','porque','esta','entre','cuando','muy','sin','sobre','también','me','hasta','hay','donde','quien','desde','todo','nos','durante','todos','uno','les','ni','contra','otros','ese','eso','ante','ellos','e','esto','mí','antes','algunos','qué','unos','yo','otro','otras','otra','él','tanto','esa','estos','mucho','quienes','nada','muchos','cual','poco','ella','estar','estas','algunas','algo','nosotros','mi','mis','tú','te','ti','tu','tus','ellas','nosotras','vosotros','vosotras','os','mío','mía','míos','mías','tuyo','tuya','tuyos','tuyas','suyo','suya','suyos','suyas','nuestro','nuestra','nuestros','nuestras','vuestro','vuestra','vuestros','vuestras','esos','esas','aquel','aquella','aquellos','aquellas','esto','eso','aquello','precio','costo','valor','hola','buenas','tardes','días','noches','cuanto','cuesta','vale','quiero','gracias','info','informacion', 'anuncio', 'facebook', 'tiktok', 'instagram', 'pedir', 'encantaría', 'confirmado', 'correcto', 'pedido', 'enviar', 'envío', 'carrera', 'calle', 'barrio', 'ciudad', 'departamento', 'municipio', 'cliente', 'realizar', 'redes', 'sociales', 'aviso', 'madname', 'andres', 'cristóbal', 'venezuela', 'caracas', 'bolivares', 'bueno', 'fotos', 'dame', 'video', 'azul', 'gris', 'negro', 'blanco', 'bogotá', 'medellin', 'cali', 'barranquilla', 'bucaramanga', 'pereira', 'manizales', 'armenia', 'ibague', 'villavicencio', 'cucuta', 'pasto', 'popayan', 'neiva', 'cartagena', 'santamarta', 'valledupar', 'monteria', 'sincelejo', 'riohacha', 'quibdo', 'puertoasis', 'florencia', 'yopal', 'arauca', 'mocoa', 'leticia', 'mitu', 'inirida', 'sanjose', 'sanandres', 'providencia', 'santacatalina', 'malpelo', 'gorgona', 'tumaco', 'buenaventura', 'turbaco', 'soacha', 'chia', 'zipaquira', 'facatativa', 'madrid', 'mosquera', 'funza', 'cota', 'tocancipa', 'gachancipa', 'sopo', 'cajica', 'tabio', 'tenjo', 'subachoque', 'elrosal', 'bojacá', 'sibate', 'granada', 'silvania', 'fusagasuga', 'arbelaez', 'pasca', 'tibacuy', 'sanbernardo', 'venecia', 'cabrera', 'pandi'];
+      
+      const productWords = productName.toLowerCase().replace(/[^\w\sáéíóúüñ]/g, '').split(/\s+/);
+      const stopWords = [...baseStopWords, ...productWords];
       
       const wordCounts: Record<string, number> = {};
       
@@ -270,7 +273,7 @@ export function AdvancedInsights({ insightsData, leads }: AdvancedInsightsProps)
                 {selectedProductNlp && !nlpLoading && nlpResults.length > 0 && (
                   <div className="w-full">
                     <p className="text-xs text-gray-400 mb-4 text-center">Fricciones encontradas para: <strong className="text-white">{selectedProductNlp}</strong></p>
-                    <div className="flex flex-wrap justify-center gap-2">
+                    <div className="flex flex-wrap justify-center gap-2 mb-6">
                       {nlpResults.map((res, i) => {
                         // Max size 2rem, min size 0.75rem based on count
                         const maxCount = Math.max(...nlpResults.map(r => r.count));
@@ -284,6 +287,16 @@ export function AdvancedInsights({ insightsData, leads }: AdvancedInsightsProps)
                           </span>
                         );
                       })}
+                    </div>
+                    
+                    <div className="bg-gray-800/50 p-3 rounded-xl border border-gray-700 mt-4">
+                      <p className="text-xs text-gray-400">
+                        <strong className="text-yellow-400">💡 ¿Cómo interpretar esto?</strong><br/>
+                        La IA extrajo las palabras más repetidas de los clientes que no compraron. 
+                        Busca patrones: si resalta <strong>"caro"</strong> o <strong>"precio"</strong>, es una objeción financiera. 
+                        Si ves <strong>"talla"</strong>, <strong>"color"</strong> o <strong>"tela"</strong>, faltan fotos o variantes en tu anuncio. 
+                        Si ves <strong>"envío"</strong> o <strong>"demora"</strong>, desconfían de la logística.
+                      </p>
                     </div>
                   </div>
                 )}
