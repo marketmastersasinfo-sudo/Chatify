@@ -163,8 +163,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    // Actualizar estado del lead a respondido
-    await supabase.from('leads').update({ status: 'responded' }).eq('id', lead!.id);
+    // Actualizar estado del lead dependiendo de la acción
+    let newStatus = 'comentario';
+    if (aiDecision.action === 'reply_and_dm') newStatus = 'dm_enviado';
+    if (aiDecision.action === 'delete') newStatus = 'moderado';
+    
+    await supabase.from('leads').update({ status: newStatus }).eq('id', lead!.id);
 
     // 6. Devolver decisión a Make.com para que ejecute la API de Meta
     return res.status(200).json(aiDecision);
