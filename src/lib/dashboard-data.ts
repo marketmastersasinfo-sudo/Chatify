@@ -64,7 +64,7 @@ export function processSalesWaFunnels(leads: any[]) {
 
   const revenue = salesLeads
     .filter(l => ['confirmado', 'recovered', 'closed', 'despachado', 'entregado'].includes(l.status))
-    .reduce((sum, l) => sum + (l.total_price || 0), 0);
+    .reduce((sum, l) => sum + (Number(l.total_price) || 0), 0);
 
   return {
     kpis: { incoming, interaction, dataCollected, confirmed, revenue },
@@ -98,7 +98,7 @@ export function processRemarketingFunnels(leads: any[]) {
 
   const revenue = remarketingLeads
     .filter(l => l.status === 'recovered')
-    .reduce((sum, l) => sum + (l.total_price || 0), 0);
+    .reduce((sum, l) => sum + (Number(l.total_price) || 0), 0);
 
   return {
     kpis: { detected, sentTemplates, replies, recovered, revenue },
@@ -125,7 +125,7 @@ export function processRemarketingWaFunnels(leads: any[]) {
 
   const revenue = rmLeads
     .filter(l => ['recovered', 'confirmado'].includes(l.status))
-    .reduce((sum, l) => sum + (l.total_price || 0), 0);
+    .reduce((sum, l) => sum + (Number(l.total_price) || 0), 0);
 
   return {
     kpis: { total, contacted, engaged, converted, revenue },
@@ -155,7 +155,7 @@ export function processLogisticsFunnels(leads: any[]) {
 
   const revenue = logLeads
     .filter(l => ['confirmado', 'despachado', 'entregado'].includes(l.status))
-    .reduce((sum, l) => sum + (l.total_price || 0), 0);
+    .reduce((sum, l) => sum + (Number(l.total_price) || 0), 0);
 
   return {
     kpis: { total, contacted, addressVerified, confirmed, revenue },
@@ -185,7 +185,7 @@ export function processSocialFunnels(leads: any[]) {
 
   const revenue = socialLeads
     .filter(l => ['recovered', 'confirmado'].includes(l.status))
-    .reduce((sum, l) => sum + (l.total_price || 0), 0);
+    .reduce((sum, l) => sum + (Number(l.total_price) || 0), 0);
 
   return {
     kpis: { total, engaged, interested, converted, revenue },
@@ -248,7 +248,7 @@ export function processAdvancedInsights(leads: any[]) {
     data.total++;
     if (isConverted) {
       data.converted++;
-      data.revenue += (l.total_price || 0);
+      data.revenue += (Number(l.total_price) || 0);
     }
   });
   const trafficQuality = Array.from(trafficMap.entries()).map(([source, data]) => ({
@@ -324,7 +324,7 @@ export function processAdvancedInsights(leads: any[]) {
     data.total++;
     if (isConverted) {
       data.converted++;
-      data.revenue += (l.total_price || 0);
+      data.revenue += (Number(l.total_price) || 0);
     }
   });
   

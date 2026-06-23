@@ -12,6 +12,7 @@ const columns = [
   { id: 'qualifying', title: 'En Cualificación', icon: AlertCircle, color: 'border-orange-200 bg-orange-50/30', headerColor: 'bg-orange-100 text-orange-800', tooltip: 'Interactuando y determinando interés.' },
   { id: 'hot_lead', title: 'Alta Intención', icon: MessageSquare, color: 'border-purple-200 bg-purple-50/30', headerColor: 'bg-purple-100 text-purple-800', tooltip: 'Cliente muy interesado, listo para cerrar.' },
   { id: 'negotiating', title: 'Negociación', icon: Handshake, color: 'border-yellow-200 bg-yellow-50/30', headerColor: 'bg-yellow-100 text-yellow-800', tooltip: 'Resolviendo objeciones o detalles finales.' },
+  { id: 'verifying_address', title: 'Verificando Dirección', icon: Store, color: 'border-pink-200 bg-pink-50/30', headerColor: 'bg-pink-100 text-pink-800', tooltip: 'Validando fachada o datos logísticos.' },
   { id: 'recovered', title: 'Venta Cerrada', icon: CheckCircle2, color: 'border-green-200 bg-green-50/30', headerColor: 'bg-green-100 text-green-800', tooltip: '¡El cliente compró!' },
   { id: 'lost', title: 'Descartado', icon: XCircle, color: 'border-gray-200 bg-gray-50/30', headerColor: 'bg-gray-100 text-gray-800', tooltip: 'No califica o no está interesado.' }
 ];

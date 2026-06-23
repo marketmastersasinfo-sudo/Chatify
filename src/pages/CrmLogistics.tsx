@@ -11,6 +11,7 @@ const columns = [
   { id: 'nuevo', title: 'Nuevo Pedido Web', color: 'border-blue-500', bg: 'bg-blue-50' },
   { id: 'confirmation_sent', title: 'Confirmación Solicitada', color: 'border-orange-500', bg: 'bg-orange-50' },
   { id: 'client_replied', title: 'Cliente Respondió', color: 'border-yellow-500', bg: 'bg-yellow-50' },
+  { id: 'verifying_address', title: 'Verificando Dirección', color: 'border-pink-500', bg: 'bg-pink-50' },
   { id: 'confirmado', title: 'Confirmado 100%', color: 'border-green-500', bg: 'bg-green-50' },
   { id: 'despachado', title: 'Despachado / En Ruta', color: 'border-teal-500', bg: 'bg-teal-50' },
   { id: 'cancelled', title: '🛑 Cancelado / Falso', color: 'border-red-500', bg: 'bg-red-50' },

@@ -13,6 +13,7 @@ const columns = [
   { id: 'new', title: 'Nuevo Lead', color: 'border-blue-500', bg: 'bg-blue-50' },
   { id: 'inquiry', title: 'Interesado / Preguntando', color: 'border-purple-500', bg: 'bg-purple-50' },
   { id: 'negotiating', title: 'En Cierre / Cotizando', color: 'border-orange-500', bg: 'bg-orange-50' },
+  { id: 'verifying_address', title: 'Verificando Dirección', color: 'border-pink-500', bg: 'bg-pink-50' },
   { id: 'closed', title: 'Cierre Exitoso', color: 'border-green-500', bg: 'bg-green-50' },
   { id: 'lost', title: 'Venta Perdida', color: 'border-gray-500', bg: 'bg-gray-50' },
   { id: 'human', title: '🛑 Intervención Humana', color: 'border-red-500', bg: 'bg-red-50' },
@@ -239,10 +240,7 @@ export function CrmSales() {
         {/* Kanban Board Area */}
         <div className="flex gap-6 min-w-max h-full flex-1">
           {columns.map(col => {
-            const columnLeads = leads.filter(l => 
-              l.status === col.id || 
-              (col.id === 'negotiating' && l.status === 'verifying_address')
-            );
+            const columnLeads = leads.filter(l => l.status === col.id);
             return (
               <div 
                 key={col.id} 

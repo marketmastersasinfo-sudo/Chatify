@@ -11,6 +11,7 @@ const columns = [
   { id: 'comentario', title: 'Comentario Público', color: 'border-blue-500', bg: 'bg-blue-50' },
   { id: 'dm_enviado', title: 'DM Enviado', color: 'border-purple-500', bg: 'bg-purple-50' },
   { id: 'charla_dm', title: 'Conversación en DM', color: 'border-orange-500', bg: 'bg-orange-50' },
+  { id: 'verifying_address', title: 'Verificando Dirección', color: 'border-pink-500', bg: 'bg-pink-50' },
   { id: 'venta_dm', title: 'Venta Directa DM', color: 'border-green-500', bg: 'bg-green-50' },
   { id: 'derivado', title: 'Derivado a WA', color: 'border-teal-500', bg: 'bg-teal-50' },
   { id: 'moderado', title: '🛑 Moderado / Humano', color: 'border-red-500', bg: 'bg-red-50' },
