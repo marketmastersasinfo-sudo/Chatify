@@ -115,14 +115,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       const toNumber = `whatsapp:+${lead.phone}`;
 
-      // Build variables: {{1}}=name, {{2}}=product, {{3}}=price (T3 only)
+      // Build variables for Meta: {{1}}=name, {{2}}=product, {{3}}=price, {{4}}=address, {{5}}=city, {{6}}=phone
       const contentVariables: Record<string, string> = {
         '1': lead.name?.split(' ')[0] || 'Amigo',
-        '2': lead.product_name || 'tu producto',
+        '2': lead.product_name || 'tu pedido',
+        '3': lead.total_price ? `$${Number(lead.total_price).toLocaleString('es-CO')}` : 'tu pedido',
+        '4': lead.address || 'tu dirección',
+        '5': `${lead.city || ''}`.trim() || 'tu ciudad',
+        '6': lead.phone || ''
       };
-      if (touch === 3 && lead.total_price) {
-        contentVariables['3'] = `$${Number(lead.total_price).toLocaleString('es-CO')}`;
-      }
 
       // Filter empty variables
       const filtered = Object.fromEntries(
