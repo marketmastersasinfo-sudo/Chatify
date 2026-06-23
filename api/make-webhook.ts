@@ -18,26 +18,40 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const { 
       source, // 'facebook' | 'instagram'
       page_id, 
+      store_id,
       sender_id, 
       sender_name, 
       message, 
       is_dm 
     } = req.body;
 
-    if (!page_id || !sender_id || !message) {
-      return res.status(400).json({ error: 'Missing required fields: page_id, sender_id, message' });
+    if ((!page_id && !store_id) || !sender_id || !message) {
+      return res.status(400).json({ error: 'Missing required fields: page_id/store_id, sender_id, message' });
     }
 
     // 1. Buscar la tienda a la que pertenece esta página
-    const searchField = source === 'instagram' ? 'ig_account_id' : 'fb_page_id';
-    const { data: store, error: storeError } = await supabase
-      .from('stores')
-      .select('id, name, organization_id')
-      .eq(searchField, page_id)
-      .maybeSingle();
-
-    if (storeError || !store) {
-      return res.status(404).json({ error: 'Store not found for this page_id' });
+    let store;
+    if (store_id) {
+      const { data, error: storeError } = await supabase
+        .from('stores')
+        .select('id, name, organization_id')
+        .eq('id', store_id)
+        .maybeSingle();
+      if (storeError || !data) {
+        return res.status(404).json({ error: 'Store not found for this store_id' });
+      }
+      store = data;
+    } else {
+      const searchField = source === 'instagram' ? 'ig_account_id' : 'fb_page_id';
+      const { data, error: storeError } = await supabase
+        .from('stores')
+        .select('id, name, organization_id')
+        .eq(searchField, page_id)
+        .maybeSingle();
+      if (storeError || !data) {
+        return res.status(404).json({ error: 'Store not found for this page_id' });
+      }
+      store = data;
     }
 
     // 2. Buscar o crear el Lead (Usamos sender_id como phone/id único)
