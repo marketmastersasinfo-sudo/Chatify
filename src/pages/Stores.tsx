@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Store, Smartphone, Target, Plus, ShoppingBag, Loader2, Save, X, AlertTriangle, RefreshCw, RefreshCcw, CheckCircle2 } from 'lucide-react';
+import { Store, Smartphone, Target, Plus, ShoppingBag, Loader2, Save, X, AlertTriangle, RefreshCw, RefreshCcw, CheckCircle2, FileText } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 
@@ -380,9 +380,20 @@ export function Stores() {
             </div>
           ) : selectedStore ? (
             <div className="glass-card rounded-2xl p-6 border-t-4 border-t-blue-600">
-              <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-                <Store className="text-blue-600" /> Configuración: {selectedStore.name}
-              </h2>
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6 gap-4">
+                <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                  <Store className="text-blue-600" /> Configuración: {selectedStore.name}
+                </h2>
+                <button 
+                  onClick={() => {
+                    navigator.clipboard.writeText(selectedStore.id);
+                    alert("¡ID copiado al portapapeles! Ahora pégalo en Make.com");
+                  }}
+                  className="bg-purple-100 text-purple-700 border border-purple-200 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-purple-200 flex items-center gap-2 transition-colors"
+                >
+                  <FileText className="w-3 h-3" /> Copiar ID para Make.com
+                </button>
+              </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* WhatsApp Config (BSP) */}
