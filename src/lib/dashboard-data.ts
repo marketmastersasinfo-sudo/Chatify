@@ -290,7 +290,8 @@ export function processAdvancedInsights(leads: any[]) {
   const productMap = new Map<string, { total: number, abandoned: number }>();
   leads.forEach(l => {
     if (l.product_name) {
-      const isLost = ['lost', 'cold_lead'].includes(l.status);
+      const isConverted = ['confirmado', 'recovered', 'closed', 'despachado', 'entregado'].includes(l.status);
+      const isLost = !isConverted;
       const normalizedName = normalizeProductName(l.product_name);
       
       if (!productMap.has(normalizedName)) {

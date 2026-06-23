@@ -52,7 +52,7 @@ export function AdvancedInsights({ insightsData, leads }: AdvancedInsightsProps)
         .from('messages')
         .select('content')
         .in('lead_id', productLeadIds.slice(0, 100))
-        .eq('sender', 'client') // Only client messages
+        .eq('sender_type', 'client') // Only client messages
         .limit(1000);
 
       if (!messages || messages.length === 0) {
