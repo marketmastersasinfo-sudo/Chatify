@@ -81,6 +81,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 detectedSource = 'TikTok Ads';
               } else if (lowerText.includes('instagram') || lowerText.includes(' ig ')) {
                 detectedSource = 'Instagram Ads';
+              } else if (lowerText.includes('anuncio solicitando información')) {
+                detectedSource = 'Facebook Ads';
               }
               
               // 2. Detectar Nombre del Producto
