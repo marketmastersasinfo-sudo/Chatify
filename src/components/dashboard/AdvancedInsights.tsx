@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Flame, Target, Repeat, AlertTriangle, Map, Brain, Loader2, Search, DollarSign } from 'lucide-react';
+import { Flame, Target, Repeat, AlertTriangle, Map, Brain, Loader2, Search, DollarSign, Sparkles } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 
 interface AdvancedInsightsProps {
@@ -20,6 +20,11 @@ export function AdvancedInsights({ insightsData, leads }: AdvancedInsightsProps)
   const [nlpResults, setNlpResults] = useState<{word: string, count: number}[]>([]);
   const [selectedProductNlp, setSelectedProductNlp] = useState<string | null>(null);
 
+  // AI Analysis State
+  const [aiAnalysisLoading, setAiAnalysisLoading] = useState(false);
+  const [aiAnalysisResult, setAiAnalysisResult] = useState<{ text?: string, error?: string } | null>(null);
+  const [aiProvider, setAiProvider] = useState<'openai' | 'anthropic' | 'google'>('openai');
+
   // Helper para normalizar (igual que en dashboard-data.ts)
   const normalizeProductName = (name: string) => {
     if (!name) return 'Producto Desconocido';
@@ -34,6 +39,7 @@ export function AdvancedInsights({ insightsData, leads }: AdvancedInsightsProps)
     setNlpLoading(true);
     setSelectedProductNlp(productName);
     setNlpResults([]);
+    setAiAnalysisResult(null); // Reset AI result when changing product
     
     try {
       // Find all leads for this product using normalized names
@@ -90,6 +96,33 @@ export function AdvancedInsights({ insightsData, leads }: AdvancedInsightsProps)
       setNlpResults([{ word: 'Error extrayendo datos', count: 1 }]);
     }
     setNlpLoading(false);
+  };
+
+  const generateAIAnalysis = async () => {
+    if (!selectedProductNlp || nlpResults.length === 0) return;
+    setAiAnalysisLoading(true);
+    setAiAnalysisResult(null);
+
+    try {
+      const response = await fetch('/api/analyze-nlp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          productName: selectedProductNlp,
+          words: nlpResults,
+          modelProvider: aiProvider
+        })
+      });
+      const data = await response.json();
+      if (data.error) {
+        setAiAnalysisResult({ error: data.error });
+      } else {
+        setAiAnalysisResult({ text: data.result });
+      }
+    } catch (err: any) {
+      setAiAnalysisResult({ error: 'Error de red conectando con la IA. Asegúrate de tener conexión.' });
+    }
+    setAiAnalysisLoading(false);
   };
 
   return (
@@ -297,6 +330,49 @@ export function AdvancedInsights({ insightsData, leads }: AdvancedInsightsProps)
                         Si ves <strong>"talla"</strong>, <strong>"color"</strong> o <strong>"tela"</strong>, faltan fotos o variantes en tu anuncio. 
                         Si ves <strong>"envío"</strong> o <strong>"demora"</strong>, desconfían de la logística.
                       </p>
+                    </div>
+
+                    <div className="mt-6 pt-6 border-t border-gray-800">
+                      <div className="flex flex-col sm:flex-row items-center gap-3 justify-center mb-4">
+                        <select 
+                          className="bg-gray-800 text-sm text-gray-300 border border-gray-700 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-purple-500"
+                          value={aiProvider}
+                          onChange={(e) => setAiProvider(e.target.value as any)}
+                        >
+                          <option value="openai">OpenAI (GPT-4o)</option>
+                          <option value="anthropic">Anthropic (Claude 3.5)</option>
+                          <option value="google">Google (Gemini 1.5)</option>
+                        </select>
+                        <button 
+                          onClick={generateAIAnalysis}
+                          disabled={aiAnalysisLoading}
+                          className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-bold py-2 px-4 rounded-lg transition-all disabled:opacity-50"
+                        >
+                          {aiAnalysisLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                          Generar Plan de Acción con IA
+                        </button>
+                      </div>
+
+                      {aiAnalysisResult?.error && (
+                        <div className="bg-red-900/50 border border-red-700/50 text-red-200 text-sm p-4 rounded-xl text-center">
+                          {aiAnalysisResult.error}
+                        </div>
+                      )}
+
+                      {aiAnalysisResult?.text && (
+                        <div className="bg-gray-800/80 border border-purple-500/30 p-5 rounded-xl mt-2 text-left shadow-inner">
+                          <h5 className="text-purple-300 font-bold mb-3 flex items-center gap-2">
+                            <Brain className="w-4 h-4" /> Diagnóstico de IA para "{selectedProductNlp}"
+                          </h5>
+                          <div className="text-sm text-gray-300 space-y-2">
+                            {aiAnalysisResult.text.split('\n').map((line, idx) => (
+                              <p key={idx} className={line.trim().startsWith('-') || line.trim().startsWith('*') ? 'pl-4' : ''}>
+                                {line}
+                              </p>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
