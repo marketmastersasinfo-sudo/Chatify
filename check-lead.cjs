@@ -5,7 +5,7 @@ const envFile = fs.readFileSync('.env', 'utf8');
 const env = {};
 envFile.split('\n').forEach(line => {
   const [key, ...vals] = line.split('=');
-  if (key && vals.length) env[key.trim()] = vals.join('=').trim().replace(/['"]/g, '');
+  if (key && vals.length) env[key.trim()] = vals.join('=').trim().replace(/['"]/g, '').replace('\r', '');
 });
 
 const supabaseUrl = env['VITE_SUPABASE_URL'];
@@ -15,8 +15,8 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 async function check() {
   const { data, error } = await supabase
     .from('leads')
-    .select('*')
-    .ilike('name', '%Jose Conteras%');
+    .select('id, name, phone, status, board_type')
+    .or('name.ilike.%Jose Con%,phone.ilike.%584245888874%');
   console.log('Leads:', JSON.stringify(data, null, 2));
   console.log('Error:', error);
 }
