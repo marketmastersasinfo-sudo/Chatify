@@ -53,9 +53,9 @@ DEBES responder ÚNICAMENTE con un objeto JSON con este formato exacto (sin mark
     { "word": "Dolor Prostático", "count": 15 },
     { "word": "Desconfianza Envío", "count": 8 }
   ],
-  "landing_plan": "Crea una estructura SUPER DETALLADA de Landing Page. Escribe 3 párrafos mínimos. Incluye: 1. Qué título principal (Headline) usar para captar atención en 3 segundos. 2. Cómo atacar su dolor específico. 3. Qué prueba social mostrar. 4. Qué garantía ofrecer.",
-  "prompt_plan": "Crea un guión EXACTO de ventas (para copiar y pegar) usando PNL profunda. Escribe 3 párrafos mínimos. Incluye: 1. Saludo empático. 2. Reconocimiento del dolor. 3. Presentación del producto como la ÚNICA solución. 4. Un Call to Action de urgencia.",
-  "ads_plan": "Crea 3 ángulos de anuncios ESPECÍFICOS para Facebook/TikTok. Escribe 3 párrafos mínimos. Para cada ángulo detalla: 1. El gancho visual (Hook). 2. El texto persuasivo (Copy). 3. El llamado a la acción."
+  "landing_plan": "Escribe 3 párrafos mínimos. Tu objetivo NO es crear una landing desde cero, sino OPTIMIZAR la que ya existe. Dime exactamente qué 'sección' o 'bloque' de la landing page actual debería ajustarse, qué promesas específicas agregar o qué palabras cambiar basándote en las objeciones encontradas.",
+  "prompt_plan": "Escribe 3 párrafos mínimos. Tu objetivo NO es crear un bot desde cero, sino OPTIMIZAR el prompt que ya existe. Dime qué líneas o 'condiciones' exactas debemos agregarle al bot actual para que maneje estas objeciones específicas usando PNL.",
+  "ads_plan": "Escribe 3 párrafos mínimos. Tu objetivo NO es crear campañas desde cero, sino OPTIMIZAR los anuncios que ya están rodando. Dime qué pequeño ajuste hacer en los videos actuales, qué frase agregar en los primeros 3 segundos (gancho), o qué viñetas añadir al texto (copy) para matar las dudas."
 }
 
 Reglas para 'words':
