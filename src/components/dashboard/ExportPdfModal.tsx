@@ -27,46 +27,48 @@ export function ExportPdfModal({ isOpen, onClose, productName, currentAnalysis }
   const toggleSection = (key: keyof typeof sections) => setSections(p => ({ ...p, [key]: !p[key] }));
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm print:hidden">
-      <div className="bg-gray-900 border border-gray-700 p-6 rounded-2xl w-full max-w-md shadow-2xl relative">
-        <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-white">
-          <X className="w-6 h-6" />
-        </button>
-        
-        <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
-          <Download className="w-6 h-6 text-purple-500" />
-          Exportar Reporte PDF
-        </h2>
-
-        <div className="space-y-6">
-          <p className="text-sm text-gray-400">
-            Se generará un PDF con el análisis y plan de acción de <strong>{productName}</strong> que tienes actualmente en pantalla.
-          </p>
-
-          <div>
-            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3">Secciones a incluir</h3>
-            <div className="grid grid-cols-1 gap-3">
-              {[
-                { k: 'words', label: 'Nube de Objeciones' },
-                { k: 'landing', label: '1. Mejora de Landing Page' },
-                { k: 'prompt', label: '2. Mejora del Bot / Chat' },
-                { k: 'ads', label: '3. Mejora de Anuncios (Ads)' }
-              ].map(sec => (
-                <button key={sec.k} onClick={() => toggleSection(sec.k as any)} className="flex items-center gap-3 text-white hover:text-purple-400 transition-colors w-full text-left p-2 bg-gray-800 rounded-lg border border-gray-700 hover:border-purple-500/50">
-                  {sections[sec.k as keyof typeof sections] ? <CheckSquare className="w-5 h-5 text-purple-500" /> : <Square className="w-5 h-5 text-gray-500" />}
-                  {sec.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <button
-            onClick={handleExport}
-            className="w-full mt-4 flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-bold py-3 px-4 rounded-xl transition-all"
-          >
-            <Download className="w-5 h-5" />
-            Descargar Documento
+    <>
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm print:hidden">
+        <div className="bg-gray-900 border border-gray-700 p-6 rounded-2xl w-full max-w-md shadow-2xl relative">
+          <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-white">
+            <X className="w-6 h-6" />
           </button>
+          
+          <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
+            <Download className="w-6 h-6 text-purple-500" />
+            Exportar Reporte PDF
+          </h2>
+
+          <div className="space-y-6">
+            <p className="text-sm text-gray-400">
+              Se generará un PDF con el análisis y plan de acción de <strong>{productName}</strong> que tienes actualmente en pantalla.
+            </p>
+
+            <div>
+              <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3">Secciones a incluir</h3>
+              <div className="grid grid-cols-1 gap-3">
+                {[
+                  { k: 'words', label: 'Nube de Objeciones' },
+                  { k: 'landing', label: '1. Mejora de Landing Page' },
+                  { k: 'prompt', label: '2. Mejora del Bot / Chat' },
+                  { k: 'ads', label: '3. Mejora de Anuncios (Ads)' }
+                ].map(sec => (
+                  <button key={sec.k} onClick={() => toggleSection(sec.k as any)} className="flex items-center gap-3 text-white hover:text-purple-400 transition-colors w-full text-left p-2 bg-gray-800 rounded-lg border border-gray-700 hover:border-purple-500/50">
+                    {sections[sec.k as keyof typeof sections] ? <CheckSquare className="w-5 h-5 text-purple-500" /> : <Square className="w-5 h-5 text-gray-500" />}
+                    {sec.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <button
+              onClick={handleExport}
+              className="w-full mt-4 flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-bold py-3 px-4 rounded-xl transition-all"
+            >
+              <Download className="w-5 h-5" />
+              Descargar Documento
+            </button>
+          </div>
         </div>
       </div>
 
@@ -126,6 +128,6 @@ export function ExportPdfModal({ isOpen, onClose, productName, currentAnalysis }
           Reporte generado automáticamente por Chatify AI
         </div>
       </div>
-    </div>
+    </>
   );
 }
