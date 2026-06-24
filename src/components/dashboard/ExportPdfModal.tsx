@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Loader2, Download, X, Calendar, CheckSquare, Square } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 // @ts-ignore
@@ -72,7 +72,7 @@ export function ExportPdfModal({ isOpen, onClose, productName, leads, aiProvider
         .select('id, product_name')
         .in('store_id', storeIds)
         .gte('created_at', startDate.toISOString())
-        .lte('created_at', endDate.toISOString());
+        .lte('created_at', endDate.toISOString()) as { data: any[], error: any };
 
       if (!rangeLeads || rangeLeads.length === 0) return;
 
@@ -145,9 +145,9 @@ export function ExportPdfModal({ isOpen, onClose, productName, leads, aiProvider
           const opt = {
             margin:       0.5,
             filename:     `Reporte_NLP_${productName.replace(/\\s+/g, '_')}.pdf`,
-            image:        { type: 'jpeg', quality: 0.98 },
+            image:        { type: 'jpeg' as const, quality: 0.98 },
             html2canvas:  { scale: 2, useCORS: true },
-            jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+            jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' as const }
           };
           
           html2pdf().set(opt).from(element).save().then(() => {

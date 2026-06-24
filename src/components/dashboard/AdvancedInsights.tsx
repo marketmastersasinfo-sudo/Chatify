@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Flame, Target, Repeat, AlertTriangle, Map, Brain, Loader2, Search, DollarSign, Sparkles } from 'lucide-react';
+import { Flame, Target, Repeat, AlertTriangle, Map, Brain, Loader2, Search, DollarSign, Sparkles, Download } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 
 interface AdvancedInsightsProps {
