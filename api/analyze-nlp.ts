@@ -53,9 +53,9 @@ DEBES responder ÚNICAMENTE con un objeto JSON con este formato exacto (sin mark
     { "word": "Dolor Prostático", "count": 15 },
     { "word": "Desconfianza Envío", "count": 8 }
   ],
-  "landing_plan": "Escribe aquí qué cambiar en la Landing Page (Textos, promesas, diseño) para matar las objeciones.",
-  "prompt_plan": "Escribe aquí qué instrucciones exactas agregarle al Prompt del Bot de IA o asesores de WhatsApp para cerrar más ventas.",
-  "ads_plan": "Escribe aquí qué ángulos mostrar en los Anuncios de Facebook/TikTok (Imágenes, videos, copies) para atraer a la gente correcta."
+  "landing_plan": "Crea una estructura SUPER DETALLADA de Landing Page. Escribe 3 párrafos mínimos. Incluye: 1. Qué título principal (Headline) usar para captar atención en 3 segundos. 2. Cómo atacar su dolor específico. 3. Qué prueba social mostrar. 4. Qué garantía ofrecer.",
+  "prompt_plan": "Crea un guión EXACTO de ventas (para copiar y pegar) usando PNL profunda. Escribe 3 párrafos mínimos. Incluye: 1. Saludo empático. 2. Reconocimiento del dolor. 3. Presentación del producto como la ÚNICA solución. 4. Un Call to Action de urgencia.",
+  "ads_plan": "Crea 3 ángulos de anuncios ESPECÍFICOS para Facebook/TikTok. Escribe 3 párrafos mínimos. Para cada ángulo detalla: 1. El gancho visual (Hook). 2. El texto persuasivo (Copy). 3. El llamado a la acción."
 }
 
 Reglas para 'words':

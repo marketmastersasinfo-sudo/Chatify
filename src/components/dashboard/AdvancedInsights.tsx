@@ -30,13 +30,20 @@ export function AdvancedInsights({ insightsData, leads }: AdvancedInsightsProps)
   } | null>(null);
   const [aiProvider, setAiProvider] = useState<string>('openai');
 
-  // Cache para no perder el análisis si se cambia de producto
+  // Cache persistente para no perder el análisis si se cambia de producto o fecha
   const [nlpCache, setNlpCache] = useState<Record<string, { 
     words: any[], 
     landing_plan?: string,
     prompt_plan?: string,
     ads_plan?: string
-  }>>({});
+  }>>(() => {
+    try {
+      const saved = localStorage.getItem('chatify_nlp_cache');
+      return saved ? JSON.parse(saved) : {};
+    } catch (e) {
+      return {};
+    }
+  });
 
   // Helper para normalizar (igual que en dashboard-data.ts)
   const normalizeProductName = (name: string) => {
@@ -120,16 +127,22 @@ export function AdvancedInsights({ insightsData, leads }: AdvancedInsightsProps)
           ads_plan: resultJson.ads_plan
         });
         
-        // Guardar en caché
-        setNlpCache(prev => ({
-          ...prev,
-          [productName]: { 
-            words, 
-            landing_plan: resultJson.landing_plan,
-            prompt_plan: resultJson.prompt_plan,
-            ads_plan: resultJson.ads_plan
-          }
-        }));
+        // Guardar en caché y en localStorage
+        setNlpCache(prev => {
+          const newCache = {
+            ...prev,
+            [productName]: { 
+              words, 
+              landing_plan: resultJson.landing_plan,
+              prompt_plan: resultJson.prompt_plan,
+              ads_plan: resultJson.ads_plan
+            }
+          };
+          try {
+            localStorage.setItem('chatify_nlp_cache', JSON.stringify(newCache));
+          } catch (e) {}
+          return newCache;
+        });
       }
 
     } catch (e) {
