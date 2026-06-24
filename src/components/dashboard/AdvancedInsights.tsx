@@ -7,6 +7,8 @@ interface AdvancedInsightsProps {
   leads: any[]; // Raw leads for NLP fetching
 }
 
+import { ExportPdfModal } from './ExportPdfModal';
+
 export function AdvancedInsights({ insightsData, leads }: AdvancedInsightsProps) {
   const { heatmapData, trafficQuality, retention, productFriction, geoDemographics } = insightsData;
   const days = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
@@ -19,6 +21,9 @@ export function AdvancedInsights({ insightsData, leads }: AdvancedInsightsProps)
   const [nlpLoading, setNlpLoading] = useState(false);
   const [nlpResults, setNlpResults] = useState<{word: string, count: number}[]>([]);
   const [selectedProductNlp, setSelectedProductNlp] = useState<string | null>(null);
+  
+  // Export Modal State
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
   // AI Analysis State
   const [aiAnalysisLoading, setAiAnalysisLoading] = useState(false);
@@ -160,6 +165,7 @@ export function AdvancedInsights({ insightsData, leads }: AdvancedInsightsProps)
   };
 
   return (
+    <>
     <div className="mt-12 space-y-8 animate-fade-in">
       <div className="flex items-center gap-3 border-b border-gray-200 pb-4">
         <div className="p-2 bg-gradient-to-br from-gray-800 to-black rounded-lg shadow-md">
@@ -367,26 +373,34 @@ export function AdvancedInsights({ insightsData, leads }: AdvancedInsightsProps)
                     </div>
 
                     <div className="mt-6 pt-6 border-t border-gray-800">
-                      <div className="flex flex-col sm:flex-row items-center gap-3 justify-center mb-4">
-                        <select 
-                          className="bg-gray-800 text-sm text-gray-300 border border-gray-700 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-purple-500"
-                          value={aiProvider}
-                          onChange={(e) => setAiProvider(e.target.value)}
-                        >
-                          <option value="openai">OpenAI (GPT-4o)</option>
-                          <option value="anthropic">Anthropic (Claude 3.5)</option>
-                          <option value="google">Google (Gemini 1.5)</option>
-                          <option value="llama">Meta Llama (Groq)</option>
-                          <option value="grok">xAI (Grok)</option>
-                          <option value="deepseek">Deepseek</option>
-                        </select>
-                        <button 
+                      <div className="mt-6 flex flex-col md:flex-row gap-3">
+                        <div className="flex-1">
+                          <select
+                            value={aiProvider}
+                            onChange={(e) => setAiProvider(e.target.value)}
+                            disabled={aiAnalysisLoading || nlpLoading}
+                            className="w-full bg-gray-800 border border-gray-700 text-white text-sm rounded-lg focus:ring-purple-500 focus:border-purple-500 block p-2.5 disabled:opacity-50"
+                          >
+                            <option value="openai">OpenAI (GPT-4o)</option>
+                            <option value="anthropic">Anthropic (Claude 3.5)</option>
+                            <option value="gemini">Google (Gemini Pro)</option>
+                          </select>
+                        </div>
+                        <button
                           onClick={generateAIAnalysis}
                           disabled={aiAnalysisLoading || nlpLoading}
-                          className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-bold py-2 px-4 rounded-lg transition-all disabled:opacity-50"
+                          className="flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-bold py-2 px-4 rounded-lg transition-all disabled:opacity-50 flex-1"
                         >
                           {(aiAnalysisLoading || nlpLoading) ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-                          Re-Analizar con otra IA
+                          Re-Analizar
+                        </button>
+                        <button
+                          onClick={() => setIsExportModalOpen(true)}
+                          disabled={aiAnalysisLoading || nlpLoading}
+                          className="flex items-center justify-center gap-2 bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg transition-all disabled:opacity-50 flex-1"
+                        >
+                          <Download className="w-4 h-4" />
+                          PDF
                         </button>
                       </div>
 
@@ -489,5 +503,15 @@ export function AdvancedInsights({ insightsData, leads }: AdvancedInsightsProps)
 
       </div>
     </div>
+    
+    <ExportPdfModal 
+      isOpen={isExportModalOpen}
+      onClose={() => setIsExportModalOpen(false)}
+      productName={selectedProductNlp || ''}
+      leads={leads}
+      aiProvider={aiProvider}
+      currentAnalysis={aiAnalysisResult ? { words: nlpResults, ...aiAnalysisResult } : null}
+    />
+    </>
   );
 }
