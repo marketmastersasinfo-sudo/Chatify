@@ -22,11 +22,21 @@ export function AdvancedInsights({ insightsData, leads }: AdvancedInsightsProps)
 
   // AI Analysis State
   const [aiAnalysisLoading, setAiAnalysisLoading] = useState(false);
-  const [aiAnalysisResult, setAiAnalysisResult] = useState<{ text?: string, error?: string } | null>(null);
+  const [aiAnalysisResult, setAiAnalysisResult] = useState<{ 
+    landing_plan?: string,
+    prompt_plan?: string,
+    ads_plan?: string,
+    error?: string 
+  } | null>(null);
   const [aiProvider, setAiProvider] = useState<string>('openai');
 
   // Cache para no perder el análisis si se cambia de producto
-  const [nlpCache, setNlpCache] = useState<Record<string, { words: any[], analysis?: string }>>({});
+  const [nlpCache, setNlpCache] = useState<Record<string, { 
+    words: any[], 
+    landing_plan?: string,
+    prompt_plan?: string,
+    ads_plan?: string
+  }>>({});
 
   // Helper para normalizar (igual que en dashboard-data.ts)
   const normalizeProductName = (name: string) => {
@@ -44,7 +54,11 @@ export function AdvancedInsights({ insightsData, leads }: AdvancedInsightsProps)
     // Si ya lo tenemos en caché y no forzamos refresco, lo mostramos inmediatamente
     if (!forceRefresh && nlpCache[productName]) {
       setNlpResults(nlpCache[productName].words);
-      setAiAnalysisResult({ text: nlpCache[productName].analysis });
+      setAiAnalysisResult({ 
+        landing_plan: nlpCache[productName].landing_plan,
+        prompt_plan: nlpCache[productName].prompt_plan,
+        ads_plan: nlpCache[productName].ads_plan
+      });
       return;
     }
     
@@ -98,15 +112,23 @@ export function AdvancedInsights({ insightsData, leads }: AdvancedInsightsProps)
       } else {
         const resultJson = data.result;
         const words = resultJson.words && resultJson.words.length > 0 ? resultJson.words : [{ word: 'Sin dolores claros', count: 1 }];
-        const analysisText = resultJson.analysis;
         
         setNlpResults(words);
-        setAiAnalysisResult({ text: analysisText });
+        setAiAnalysisResult({ 
+          landing_plan: resultJson.landing_plan,
+          prompt_plan: resultJson.prompt_plan,
+          ads_plan: resultJson.ads_plan
+        });
         
         // Guardar en caché
         setNlpCache(prev => ({
           ...prev,
-          [productName]: { words, analysis: analysisText }
+          [productName]: { 
+            words, 
+            landing_plan: resultJson.landing_plan,
+            prompt_plan: resultJson.prompt_plan,
+            ads_plan: resultJson.ads_plan
+          }
         }));
       }
 
@@ -361,17 +383,48 @@ export function AdvancedInsights({ insightsData, leads }: AdvancedInsightsProps)
                         </div>
                       )}
 
-                      {aiAnalysisResult?.text && (
-                        <div className="bg-gray-800/80 border border-purple-500/30 p-5 rounded-xl mt-2 text-left shadow-inner">
-                          <h5 className="text-purple-300 font-bold mb-3 flex items-center gap-2">
-                            <Brain className="w-4 h-4" /> Diagnóstico de IA para "{selectedProductNlp}"
+                      {(aiAnalysisResult?.landing_plan || aiAnalysisResult?.prompt_plan || aiAnalysisResult?.ads_plan) && (
+                        <div className="bg-gray-800/80 border border-purple-500/30 p-5 rounded-xl mt-4 text-left shadow-inner space-y-5 animate-fade-in">
+                          <h5 className="text-purple-300 font-bold flex items-center gap-2 border-b border-purple-500/30 pb-3">
+                            <Brain className="w-5 h-5" /> Plan de Acción para "{selectedProductNlp}"
                           </h5>
-                          <div className="text-sm text-gray-300 space-y-2">
-                            {aiAnalysisResult.text.split('\n').map((line, idx) => (
-                              <p key={idx} className={line.trim().startsWith('-') || line.trim().startsWith('*') ? 'pl-4' : ''}>
-                                {line}
-                              </p>
-                            ))}
+                          
+                          <div className="space-y-4">
+                            {/* Landing Page */}
+                            {aiAnalysisResult.landing_plan && (
+                              <div className="bg-gray-900/50 p-4 rounded-lg border border-gray-700 hover:border-blue-500/50 transition-colors">
+                                <h6 className="text-blue-400 font-bold mb-2 flex items-center gap-2">
+                                  <span>🌐</span> 1. Mejora de Landing Page
+                                </h6>
+                                <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap">
+                                  {aiAnalysisResult.landing_plan}
+                                </p>
+                              </div>
+                            )}
+
+                            {/* Prompt/Bot */}
+                            {aiAnalysisResult.prompt_plan && (
+                              <div className="bg-gray-900/50 p-4 rounded-lg border border-gray-700 hover:border-green-500/50 transition-colors">
+                                <h6 className="text-green-400 font-bold mb-2 flex items-center gap-2">
+                                  <span>🤖</span> 2. Mejora del Bot (Prompt / Cierre)
+                                </h6>
+                                <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap">
+                                  {aiAnalysisResult.prompt_plan}
+                                </p>
+                              </div>
+                            )}
+
+                            {/* Ads */}
+                            {aiAnalysisResult.ads_plan && (
+                              <div className="bg-gray-900/50 p-4 rounded-lg border border-gray-700 hover:border-pink-500/50 transition-colors">
+                                <h6 className="text-pink-400 font-bold mb-2 flex items-center gap-2">
+                                  <span>📸</span> 3. Mejora de Anuncios (Ads)
+                                </h6>
+                                <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap">
+                                  {aiAnalysisResult.ads_plan}
+                                </p>
+                              </div>
+                            )}
                           </div>
                         </div>
                       )}
