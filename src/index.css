@@ -25,3 +25,25 @@
     box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.05);
   }
 }
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #pdf-report-container, #pdf-report-container * {
+    visibility: visible;
+  }
+  #pdf-report-container {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 20px;
+    background: white !important;
+    color: black !important;
+  }
+  @page {
+    margin: 1cm;
+  }
+}

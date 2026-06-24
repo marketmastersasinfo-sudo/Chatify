@@ -1,8 +1,6 @@
 import { useState } from 'react';
 import { Loader2, Download, X, Calendar, CheckSquare, Square } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
-// @ts-ignore
-import html2pdf from 'html2pdf.js';
 
 interface ExportPdfModalProps {
   isOpen: boolean;
@@ -140,38 +138,10 @@ export function ExportPdfModal({ isOpen, onClose, productName, leads, aiProvider
 
       // Wait a bit for React to render the hidden DOM
       setTimeout(() => {
-        try {
-          const element = document.getElementById('pdf-report-container');
-          if (element) {
-            const opt = {
-              margin:       0.5,
-              filename:     `Reporte_NLP_${productName.replace(/\\s+/g, '_')}.pdf`,
-              image:        { type: 'jpeg' as const, quality: 0.98 },
-              html2canvas:  { scale: 2, useCORS: true },
-              jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' as const }
-            };
-            
-            // Fix for Vite default exports
-            const pdfGenerator = typeof html2pdf === 'function' ? html2pdf : (html2pdf as any).default || html2pdf;
-            
-            pdfGenerator().set(opt).from(element).save().then(() => {
-              setIsExporting(false);
-              setExportProgress('');
-              onClose();
-            }).catch((err: any) => {
-              console.error('HTML2PDF Promise Error:', err);
-              setIsExporting(false);
-              setExportProgress('Error Promesa PDF: ' + (err?.message || 'Revisa consola'));
-            });
-          } else {
-            setIsExporting(false);
-            setExportProgress('Elemento DOM no encontrado');
-          }
-        } catch (error: any) {
-          console.error('HTML2PDF Sync Error:', error);
-          setIsExporting(false);
-          setExportProgress('Error Fatal: ' + (error?.message || 'Revisa consola'));
-        }
+        setIsExporting(false);
+        setExportProgress('');
+        window.print();
+        onClose();
       }, 1000);
 
     } catch (e) {
