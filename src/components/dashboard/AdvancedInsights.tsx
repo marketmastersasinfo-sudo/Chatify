@@ -37,6 +37,7 @@ export function AdvancedInsights({ insightsData, leads }: AdvancedInsightsProps)
 
   const runNLPAnalysis = async (productName: string) => {
     setNlpLoading(true);
+    setAiAnalysisLoading(true);
     setSelectedProductNlp(productName);
     setNlpResults([]);
     setAiAnalysisResult(null); // Reset AI result when changing product
@@ -48,81 +49,59 @@ export function AdvancedInsights({ insightsData, leads }: AdvancedInsightsProps)
         .map(l => l.id);
       
       if (productLeadIds.length === 0) {
-        setNlpResults([{ word: 'Sin datos suficientes', count: 1 }]);
+        setNlpResults([{ word: 'Sin datos', count: 1 }]);
         setNlpLoading(false);
+        setAiAnalysisLoading(false);
         return;
       }
 
-      // Fetch messages for these leads (limit to 1000 to avoid crash)
+      // Fetch messages for these leads
       const { data: messages } = await supabase
         .from('messages')
         .select('content')
         .in('lead_id', productLeadIds.slice(0, 100))
         .eq('sender_type', 'client') // Only client messages
-        .limit(1000);
+        .limit(300);
 
       if (!messages || messages.length === 0) {
-        setNlpResults([{ word: 'Sin datos suficientes', count: 1 }]);
+        setNlpResults([{ word: 'Sin mensajes', count: 1 }]);
         setNlpLoading(false);
+        setAiAnalysisLoading(false);
         return;
       }
 
-      // Basic NLP Algorithm (Stop words and frequency)
-      const baseStopWords = ['de','la','que','el','en','y','a','los','del','se','las','por','un','para','con','no','una','su','al','lo','como','más','pero','sus','le','ya','o','este','sí','porque','esta','entre','cuando','muy','sin','sobre','también','me','hasta','hay','donde','quien','desde','todo','nos','durante','todos','uno','les','ni','contra','otros','ese','eso','ante','ellos','e','esto','mí','antes','algunos','qué','unos','yo','otro','otras','otra','él','tanto','esa','estos','mucho','quienes','nada','muchos','cual','poco','ella','estar','estas','algunas','algo','nosotros','mi','mis','tú','te','ti','tu','tus','ellas','nosotras','vosotros','vosotras','os','mío','mía','míos','mías','tuyo','tuya','tuyos','tuyas','suyo','suya','suyos','suyas','nuestro','nuestra','nuestros','nuestras','vuestro','vuestra','vuestros','vuestras','esos','esas','aquel','aquella','aquellos','aquellas','esto','eso','aquello','precio','costo','valor','hola','buenas','tardes','días','noches','cuanto','cuesta','vale','quiero','gracias','info','informacion', 'anuncio', 'facebook', 'tiktok', 'instagram', 'pedir', 'encantaría', 'confirmado', 'correcto', 'pedido', 'enviar', 'envío', 'carrera', 'calle', 'barrio', 'ciudad', 'departamento', 'municipio', 'cliente', 'realizar', 'redes', 'sociales', 'aviso', 'madname', 'andres', 'cristóbal', 'venezuela', 'caracas', 'bolivares', 'bueno', 'fotos', 'dame', 'video', 'azul', 'gris', 'negro', 'blanco', 'bogotá', 'medellin', 'cali', 'barranquilla', 'bucaramanga', 'pereira', 'manizales', 'armenia', 'ibague', 'villavicencio', 'cucuta', 'pasto', 'popayan', 'neiva', 'cartagena', 'santamarta', 'valledupar', 'monteria', 'sincelejo', 'riohacha', 'quibdo', 'puertoasis', 'florencia', 'yopal', 'arauca', 'mocoa', 'leticia', 'mitu', 'inirida', 'sanjose', 'sanandres', 'providencia', 'santacatalina', 'malpelo', 'gorgona', 'tumaco', 'buenaventura', 'turbaco', 'soacha', 'chia', 'zipaquira', 'facatativa', 'madrid', 'mosquera', 'funza', 'cota', 'tocancipa', 'gachancipa', 'sopo', 'cajica', 'tabio', 'tenjo', 'subachoque', 'elrosal', 'bojacá', 'sibate', 'granada', 'silvania', 'fusagasuga', 'arbelaez', 'pasca', 'tibacuy', 'sanbernardo', 'venecia', 'cabrera', 'pandi'];
-      
-      const productWords = productName.toLowerCase().replace(/[^\w\sáéíóúüñ]/g, '').split(/\s+/);
-      const stopWords = [...baseStopWords, ...productWords];
-      
-      const wordCounts: Record<string, number> = {};
-      
-      messages.forEach((msg: any) => {
-        if (!msg.content) return;
-        const words = msg.content.toLowerCase().replace(/[^\w\sáéíóúüñ]/g, '').split(/\s+/);
-        words.forEach((w: string) => {
-          if (w.length > 3 && !stopWords.includes(w)) {
-            wordCounts[w] = (wordCounts[w] || 0) + 1;
-          }
-        });
-      });
-
-      const sortedWords = Object.entries(wordCounts)
-        .map(([word, count]) => ({ word, count }))
-        .sort((a, b) => b.count - a.count)
-        .slice(0, 20); // Top 20
-
-      setNlpResults(sortedWords.length > 0 ? sortedWords : [{ word: 'Solo palabras comunes', count: 1 }]);
-    } catch (e) {
-      console.error(e);
-      setNlpResults([{ word: 'Error extrayendo datos', count: 1 }]);
-    }
-    setNlpLoading(false);
-  };
-
-  const generateAIAnalysis = async () => {
-    if (!selectedProductNlp || nlpResults.length === 0) return;
-    setAiAnalysisLoading(true);
-    setAiAnalysisResult(null);
-
-    try {
       const response = await fetch('/api/analyze-nlp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          productName: selectedProductNlp,
-          words: nlpResults,
+          productName,
+          messages,
           modelProvider: aiProvider
         })
       });
       const data = await response.json();
+      
       if (data.error) {
         setAiAnalysisResult({ error: data.error });
+        setNlpResults([{ word: 'Error extrayendo datos', count: 1 }]);
       } else {
-        setAiAnalysisResult({ text: data.result });
+        const resultJson = data.result;
+        setNlpResults(resultJson.words && resultJson.words.length > 0 ? resultJson.words : [{ word: 'Sin dolores claros', count: 1 }]);
+        setAiAnalysisResult({ text: resultJson.analysis });
       }
-    } catch (err: any) {
+
+    } catch (e) {
+      console.error(e);
+      setNlpResults([{ word: 'Error de red', count: 1 }]);
       setAiAnalysisResult({ error: 'Error de red conectando con la IA. Asegúrate de tener conexión.' });
     }
+    setNlpLoading(false);
     setAiAnalysisLoading(false);
+  };
+
+  const generateAIAnalysis = async () => {
+    if (!selectedProductNlp) return;
+    await runNLPAnalysis(selectedProductNlp);
   };
 
   return (
@@ -348,11 +327,11 @@ export function AdvancedInsights({ insightsData, leads }: AdvancedInsightsProps)
                         </select>
                         <button 
                           onClick={generateAIAnalysis}
-                          disabled={aiAnalysisLoading}
+                          disabled={aiAnalysisLoading || nlpLoading}
                           className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-bold py-2 px-4 rounded-lg transition-all disabled:opacity-50"
                         >
-                          {aiAnalysisLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-                          Generar Plan de Acción con IA
+                          {(aiAnalysisLoading || nlpLoading) ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                          Re-Analizar con otra IA
                         </button>
                       </div>
 

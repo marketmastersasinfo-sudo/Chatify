@@ -15,10 +15,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const { productName, words, modelProvider, organizationId } = req.body;
+    const { productName, messages, modelProvider, organizationId } = req.body;
 
-    if (!productName || !words || words.length === 0) {
-      return res.status(400).json({ error: 'Missing product or words data.' });
+    if (!productName || !messages || messages.length === 0) {
+      return res.status(400).json({ error: 'Missing product or messages data.' });
     }
     
     // Fallback: If organizationId is missing (from older frontend), we fetch the first one like before
@@ -37,25 +37,50 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
        return res.status(400).json({ error: 'No organization found.' });
     }
 
-    const wordsList = words.map((w: any) => `${w.word} (${w.count} veces)`).join(', ');
+    const chatsList = messages.map((m: any, i: number) => `Chat ${i+1}: "${m.content}"`).join('\n');
     
-    const systemPrompt = `Eres un experto en e-commerce y optimización de conversión (CRO). 
+    const systemPrompt = `Eres un experto en e-commerce, Data Science y optimización de conversión (CRO).
 El dueño de la tienda está analizando por qué los clientes abandonan la compra del producto "${productName}".
-Al analizar el historial de chats de cientos de clientes que NO compraron, la IA extrajo las siguientes palabras clave más repetidas:
+Aquí tienes el historial real de decenas de chats de clientes que NO compraron o que dudaron:
 
-${wordsList}
+${chatsList}
 
-Tu tarea es darme un diagnóstico súper conciso y 3 recomendaciones MUY CORTAS (bullet points) para mejorar las ventas de este producto basadas estrictamente en esas palabras. 
-No uses palabras introductorias largas, ve directo al grano. Formatea tu respuesta en markdown con emojis.`;
+Tu tarea es analizar el dolor emocional, la verdadera intención de compra y las objeciones subyacentes.
+
+DEBES responder ÚNICAMENTE con un objeto JSON con este formato exacto (sin markdown \`\`\`json):
+{
+  "words": [
+    { "word": "Dolor Prostático", "count": 15 },
+    { "word": "Desconfianza Envío", "count": 8 }
+  ],
+  "analysis": "Tu diagnóstico conciso en markdown, directo al grano y con emojis. Da 3 recomendaciones clave en bullet points."
+}
+
+Reglas para 'words':
+- Extrae las 10 a 15 verdaderas fricciones, miedos, motivadores o problemas (Ej. 'Próstata', 'Caro', 'Desconfianza', 'Duda Dosis').
+- Agrupa sinónimos o errores ortográficos (Ej. 'prosta', 'protatis' -> 'Salud Prostática').
+- Asigna un 'count' estimado de su nivel de importancia (del 1 al 20, siendo 20 el mayor dolor).
+- NO uses palabras genéricas (info, precio, hola, quiero).
+`;
 
     const aiOutput = await routeAIRequest({
       organizationId: targetOrgId,
       module: 'nlp',
       systemPrompt,
+      requireJson: true,
       providerOverride: modelProvider // The UI dropdown overrides the global setting if provided
     });
 
-    return res.status(200).json({ result: aiOutput });
+    let resultJson;
+    try {
+      const cleanedJson = aiOutput.replace(/```json/g, '').replace(/```/g, '').trim();
+      resultJson = JSON.parse(cleanedJson);
+    } catch (e) {
+      console.error('Failed to parse JSON from AI:', aiOutput);
+      return res.status(500).json({ error: 'La IA no devolvió un formato JSON válido.' });
+    }
+
+    return res.status(200).json({ result: resultJson });
 
   } catch (error: any) {
     console.error('Error analyzing NLP:', error);
