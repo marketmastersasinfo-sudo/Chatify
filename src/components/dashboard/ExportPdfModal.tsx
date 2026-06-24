@@ -140,23 +140,37 @@ export function ExportPdfModal({ isOpen, onClose, productName, leads, aiProvider
 
       // Wait a bit for React to render the hidden DOM
       setTimeout(() => {
-        const element = document.getElementById('pdf-report-container');
-        if (element) {
-          const opt = {
-            margin:       0.5,
-            filename:     `Reporte_NLP_${productName.replace(/\\s+/g, '_')}.pdf`,
-            image:        { type: 'jpeg' as const, quality: 0.98 },
-            html2canvas:  { scale: 2, useCORS: true },
-            jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' as const }
-          };
-          
-          html2pdf().set(opt).from(element).save().then(() => {
+        try {
+          const element = document.getElementById('pdf-report-container');
+          if (element) {
+            const opt = {
+              margin:       0.5,
+              filename:     `Reporte_NLP_${productName.replace(/\\s+/g, '_')}.pdf`,
+              image:        { type: 'jpeg' as const, quality: 0.98 },
+              html2canvas:  { scale: 2, useCORS: true },
+              jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' as const }
+            };
+            
+            // Fix for Vite default exports
+            const pdfGenerator = typeof html2pdf === 'function' ? html2pdf : (html2pdf as any).default || html2pdf;
+            
+            pdfGenerator().set(opt).from(element).save().then(() => {
+              setIsExporting(false);
+              setExportProgress('');
+              onClose();
+            }).catch((err: any) => {
+              console.error('HTML2PDF Promise Error:', err);
+              setIsExporting(false);
+              setExportProgress('Error Promesa PDF: ' + (err?.message || 'Revisa consola'));
+            });
+          } else {
             setIsExporting(false);
-            setExportProgress('');
-            onClose();
-          });
-        } else {
+            setExportProgress('Elemento DOM no encontrado');
+          }
+        } catch (error: any) {
+          console.error('HTML2PDF Sync Error:', error);
           setIsExporting(false);
+          setExportProgress('Error Fatal: ' + (error?.message || 'Revisa consola'));
         }
       }, 1000);
 
@@ -240,7 +254,7 @@ export function ExportPdfModal({ isOpen, onClose, productName, leads, aiProvider
       </div>
 
       {/* HIDDEN REPORT DOM FOR HTML2PDF */}
-      <div className="fixed top-0 left-[-9999px] bg-white text-gray-900 p-10 w-[800px]" id="pdf-report-container">
+      <div className="absolute top-0 left-0 w-[800px] bg-white text-gray-900 p-10 z-[-10] opacity-0 pointer-events-none" id="pdf-report-container">
         <div className="mb-8 border-b-4 border-purple-600 pb-4">
           <h1 className="text-3xl font-black text-gray-900">Reporte Ejecutivo NLP & CRO</h1>
           <h2 className="text-xl font-medium text-gray-600 mt-2">Producto: <span className="text-purple-600 font-bold">{productName}</span></h2>
