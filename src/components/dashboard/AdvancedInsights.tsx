@@ -508,8 +508,6 @@ export function AdvancedInsights({ insightsData, leads }: AdvancedInsightsProps)
       isOpen={isExportModalOpen}
       onClose={() => setIsExportModalOpen(false)}
       productName={selectedProductNlp || ''}
-      leads={leads}
-      aiProvider={aiProvider}
       currentAnalysis={aiAnalysisResult ? { words: nlpResults, ...aiAnalysisResult } : null}
     />
     </>

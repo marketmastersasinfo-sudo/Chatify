@@ -32,6 +32,7 @@
   }
   #pdf-report-container, #pdf-report-container * {
     visibility: visible;
+    opacity: 1 !important;
   }
   #pdf-report-container {
     position: absolute;
@@ -42,6 +43,7 @@
     padding: 20px;
     background: white !important;
     color: black !important;
+    display: block !important;
   }
   @page {
     margin: 1cm;
