@@ -53,7 +53,7 @@ DEBES responder ÚNICAMENTE con un objeto JSON con este formato exacto (sin mark
     { "word": "Dolor Prostático", "count": 15 },
     { "word": "Desconfianza Envío", "count": 8 }
   ],
-  "analysis": "Tu diagnóstico conciso en markdown, directo al grano y con emojis. Da 3 recomendaciones clave en bullet points."
+  "analysis": "Un Plan de Acción DETALLADO y profundo en markdown usando emojis. Debe contener:\\n\\n### 🩺 Diagnóstico del Problema\\n(Explicación psicológica de por qué no compran)\\n\\n### 🎯 Ángulo de Ventas Ganador (Copywriting)\\n(Cómo venderles basado en su dolor principal)\\n\\n### 🖼️ Qué cambiar en los Anuncios\\n(Recomendaciones para las imágenes o videos)\\n\\n### 💬 Estrategia de Cierre en Chat\\n(Qué decirles exactamente por WhatsApp/DM para darles confianza y cerrar la venta)"
 }
 
 Reglas para 'words':

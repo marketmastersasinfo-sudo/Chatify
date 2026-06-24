@@ -25,6 +25,9 @@ export function AdvancedInsights({ insightsData, leads }: AdvancedInsightsProps)
   const [aiAnalysisResult, setAiAnalysisResult] = useState<{ text?: string, error?: string } | null>(null);
   const [aiProvider, setAiProvider] = useState<string>('openai');
 
+  // Cache para no perder el análisis si se cambia de producto
+  const [nlpCache, setNlpCache] = useState<Record<string, { words: any[], analysis?: string }>>({});
+
   // Helper para normalizar (igual que en dashboard-data.ts)
   const normalizeProductName = (name: string) => {
     if (!name) return 'Producto Desconocido';
@@ -35,10 +38,18 @@ export function AdvancedInsights({ insightsData, leads }: AdvancedInsightsProps)
     return n.charAt(0).toUpperCase() + n.slice(1).toLowerCase();
   };
 
-  const runNLPAnalysis = async (productName: string) => {
+  const runNLPAnalysis = async (productName: string, forceRefresh = false) => {
+    setSelectedProductNlp(productName);
+    
+    // Si ya lo tenemos en caché y no forzamos refresco, lo mostramos inmediatamente
+    if (!forceRefresh && nlpCache[productName]) {
+      setNlpResults(nlpCache[productName].words);
+      setAiAnalysisResult({ text: nlpCache[productName].analysis });
+      return;
+    }
+    
     setNlpLoading(true);
     setAiAnalysisLoading(true);
-    setSelectedProductNlp(productName);
     setNlpResults([]);
     setAiAnalysisResult(null); // Reset AI result when changing product
     
@@ -86,8 +97,17 @@ export function AdvancedInsights({ insightsData, leads }: AdvancedInsightsProps)
         setNlpResults([{ word: 'Error extrayendo datos', count: 1 }]);
       } else {
         const resultJson = data.result;
-        setNlpResults(resultJson.words && resultJson.words.length > 0 ? resultJson.words : [{ word: 'Sin dolores claros', count: 1 }]);
-        setAiAnalysisResult({ text: resultJson.analysis });
+        const words = resultJson.words && resultJson.words.length > 0 ? resultJson.words : [{ word: 'Sin dolores claros', count: 1 }];
+        const analysisText = resultJson.analysis;
+        
+        setNlpResults(words);
+        setAiAnalysisResult({ text: analysisText });
+        
+        // Guardar en caché
+        setNlpCache(prev => ({
+          ...prev,
+          [productName]: { words, analysis: analysisText }
+        }));
       }
 
     } catch (e) {
@@ -101,7 +121,7 @@ export function AdvancedInsights({ insightsData, leads }: AdvancedInsightsProps)
 
   const generateAIAnalysis = async () => {
     if (!selectedProductNlp) return;
-    await runNLPAnalysis(selectedProductNlp);
+    await runNLPAnalysis(selectedProductNlp, true); // true = force refresh
   };
 
   return (
