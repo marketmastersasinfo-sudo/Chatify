@@ -34,6 +34,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     try {
       const body = req.body;
 
+      // DEBUG EXTREMO: Guardar el payload crudo que manda Facebook
+      await supabase.from('pending_comments').insert({
+        page_id: 'DEBUG',
+        post_id: 'DEBUG',
+        comment_id: 'DEBUG_' + Date.now(),
+        sender_id: 'DEBUG',
+        sender_name: 'DEBUG',
+        message: JSON.stringify(body).substring(0, 1000),
+        status: 'FAILED',
+        process_after: new Date().toISOString()
+      });
+
       if (body.object === 'whatsapp_business_account') {
         const entry = body.entry?.[0];
         const changes = entry?.changes?.[0];
