@@ -118,6 +118,46 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
         
         return res.status(200).send('EVENT_RECEIVED');
+      } else if (body.object === 'page') {
+        // Facebook Webhook para Fan Pages
+        for (const entry of body.entry || []) {
+          const pageId = entry.id;
+          for (const change of entry.changes || []) {
+            const value = change.value;
+            
+            // Solo procesamos comentarios nuevos (verb: add)
+            if (value && value.item === 'comment' && value.verb === 'add') {
+              const postId = value.post_id;
+              const commentId = value.comment_id;
+              const senderId = value.from?.id;
+              const senderName = value.from?.name || 'Usuario';
+              const messageText = value.message || '';
+
+              // Ignoramos si el comentario lo hicimos nosotros mismos como página
+              if (senderId && senderId !== pageId) {
+                const processAfter = new Date(Date.now() + 2 * 60 * 1000).toISOString();
+                
+                // Guardar en la tabla pending_comments para que el Cron Job lo procese en 2 minutos
+                // Hacemos el insert silencioso si falla por duplicado (ya que comment_id es UNIQUE)
+                const { error } = await supabase.from('pending_comments').insert({
+                  page_id: pageId,
+                  post_id: postId,
+                  comment_id: commentId,
+                  sender_id: senderId,
+                  sender_name: senderName,
+                  message: messageText,
+                  status: 'PENDING',
+                  process_after: processAfter
+                });
+                
+                if (!error) {
+                  console.log(`✅ Comentario guardado en cola: Esperando 2 minutos (${commentId})`);
+                }
+              }
+            }
+          }
+        }
+        return res.status(200).send('EVENT_RECEIVED');
       } else {
         return res.status(404).send('Not Found');
       }

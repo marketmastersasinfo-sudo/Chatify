@@ -1,4 +1,10 @@
 {
+  "crons": [
+    {
+      "path": "/api/cron-process-comments",
+      "schedule": "* * * * *"
+    }
+  ],
   "rewrites": [
     {
       "source": "/api/(.*)",
