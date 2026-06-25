@@ -1,33 +1,30 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
+import OpenAI from 'openai';
 
-export const maxDuration = 60; // 60 seconds is max for free/pro Vercel limits without special edge configs
+export const maxDuration = 60;
 
-// Inicializar Supabase
 const supabaseUrl = process.env.VITE_SUPABASE_URL;
 const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY;
 const supabase = createClient(supabaseUrl || '', supabaseKey || '');
 
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || '' });
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // Asegurarnos de que esto solo se corra por el cron job o un admin
-  // Vercel Cron inyecta un header secreto para verificar que fue lanzado por el cron
   const authHeader = req.headers.authorization;
   if (req.query.cron_key !== process.env.CRON_SECRET_KEY && authHeader !== `Bearer ${process.env.CRON_SECRET_KEY}`) {
-    console.warn('Unauthorized cron attempt');
-    // Para no bloquearnos mientras probamos, si CRON_SECRET_KEY no está seteado, pasamos.
     if (process.env.CRON_SECRET_KEY) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
   }
 
   try {
-    // 1. Buscar comentarios pendientes donde process_after ya pasó
     const { data: pendingComments, error: fetchError } = await supabase
       .from('pending_comments')
       .select('*')
       .eq('status', 'PENDING')
       .lte('process_after', new Date().toISOString())
-      .limit(10); // Procesar en lotes de 10 para no exceder los 60s
+      .limit(5); // Reducido a 5 para dar tiempo a la IA
 
     if (fetchError) throw fetchError;
     
@@ -36,71 +33,137 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     console.log(`Procesando ${pendingComments.length} comentarios de la cola...`);
-
     const results = [];
 
-    // 2. Iterar y procesar cada comentario
     for (const comment of pendingComments) {
       try {
         const { data: pageData } = await supabase
           .from('connected_pages')
-          .select('access_token')
+          .select('access_token, store_id')
           .eq('page_id', comment.page_id)
           .single();
           
         const pageToken = pageData?.access_token;
-        if (!pageToken) {
-          throw new Error('No access_token found for page');
+        const storeId = pageData?.store_id;
+
+        if (!pageToken || !storeId) {
+          throw new Error('No access_token o store_id encontrado');
         }
 
-        // --- LÓGICA DE IA (CHATIFY NLP) ---
-        // Por ahora simularemos la respuesta de NLP para completar el flujo.
-        // Aquí puedes hacer un fetch a tu endpoint de AI interno
-        const generatedReply = `¡Hola ${comment.sender_name}! Gracias por tu comentario. Te hemos enviado más información por mensaje directo (Simulado por IA Chatify).`;
+        // 1. OBTENER CONTEXTO DEL POST DE FACEBOOK
+        let postContext = 'Contexto del post desconocido.';
+        try {
+          const postRes = await fetch(`https://graph.facebook.com/v19.0/${comment.post_id}?fields=message&access_token=${pageToken}`);
+          if (postRes.ok) {
+            const postData = await postRes.json();
+            if (postData.message) postContext = postData.message;
+          }
+        } catch (e) {
+          console.error('Error obteniendo post:', e);
+        }
 
-        // 3. Responder en Facebook Graph API
-        const fbRes = await fetch(`https://graph.facebook.com/v19.0/${comment.comment_id}/comments`, {
+        // 2. OBTENER CATÁLOGO DE PRODUCTOS DE LA BASE DE DATOS
+        let catalogText = 'Sin productos registrados.';
+        try {
+          const { data: products } = await supabase.from('products').select('*').eq('store_id', storeId);
+          if (products && products.length > 0) {
+            catalogText = products.map(p => `Producto: ${p.name}\nPrecio: $${p.price}\nDetalles: ${p.master_prompt || 'N/A'}`).join('\n\n');
+          }
+        } catch (e) {
+          console.error('Error obteniendo catálogo:', e);
+        }
+
+        // 3. LLAMADA A LA IA (SOPHIA) PARA EVITAR ALUCINACIONES
+        let publicReply = `¡Hola ${comment.sender_name}! Gracias por tu comentario. Te hemos enviado la información por interno.`;
+        let privateReply = '';
+
+        if (process.env.OPENAI_API_KEY) {
+          try {
+            const prompt = `
+Eres un asistente de ventas experto.
+Un cliente llamado "${comment.sender_name}" comentó en nuestra publicación de Facebook.
+TEXTO DE LA PUBLICACIÓN DE FACEBOOK (Para que sepas de qué trata el anuncio):
+"${postContext}"
+
+COMENTARIO DEL CLIENTE:
+"${comment.message}"
+
+CATÁLOGO DE PRODUCTOS OFICIAL DE LA TIENDA (No inventes precios ni productos que no estén aquí):
+${catalogText}
+
+INSTRUCCIONES:
+1. Lee la publicación y el catálogo. Averigua por qué producto está preguntando el cliente.
+2. Si pide el precio, DALE EL PRECIO EXACTO DEL CATÁLOGO. No alucines ni inventes datos.
+3. Debes generar DOS mensajes:
+   - "public_reply": Una respuesta corta, amable y pública respondiendo directamente a su duda y diciéndole que también le enviaste un mensaje privado. Incluye siempre este link al final: https://wa.me/message/TU_LINK_AQUI
+   - "private_reply": Un mensaje más extenso para enviarle por mensaje privado (DM) con más detalles del producto.
+
+Devuelve EXCLUSIVAMENTE un JSON válido con estas dos llaves: {"public_reply": "...", "private_reply": "..."}.
+            `;
+
+            const aiResponse = await openai.chat.completions.create({
+              model: "gpt-4o-mini",
+              messages: [{ role: "user", content: prompt }],
+              response_format: { type: "json_object" }
+            });
+
+            const parsed = JSON.parse(aiResponse.choices[0].message.content || '{}');
+            if (parsed.public_reply) publicReply = parsed.public_reply;
+            if (parsed.private_reply) privateReply = parsed.private_reply;
+          } catch (aiError) {
+            console.error('Error en OpenAI:', aiError);
+          }
+        }
+
+        // 4. RESPUESTA PÚBLICA EN FACEBOOK
+        const fbPublicRes = await fetch(`https://graph.facebook.com/v19.0/${comment.comment_id}/comments`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            message: generatedReply,
-            access_token: pageToken
-          })
+          body: JSON.stringify({ message: publicReply, access_token: pageToken })
         });
+        const fbPublicData = await fbPublicRes.json();
+        if (!fbPublicRes.ok) throw new Error(fbPublicData.error?.message || 'Error en FB API Público');
 
-        const fbData = await fbRes.json();
-
-        if (!fbRes.ok) {
-          throw new Error(fbData.error?.message || 'Error en FB API');
+        // 5. RESPUESTA PRIVADA (DM) EN FACEBOOK
+        let dmSent = false;
+        if (privateReply) {
+          const fbPrivateRes = await fetch(`https://graph.facebook.com/v19.0/${comment.page_id}/messages`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              recipient: { comment_id: comment.comment_id },
+              message: { text: privateReply },
+              access_token: pageToken
+            })
+          });
+          if (fbPrivateRes.ok) dmSent = true;
+          else console.error('Error enviando DM:', await fbPrivateRes.json());
         }
 
-        // 4. Marcar como PROCESADO en base de datos
-        await supabase
-          .from('pending_comments')
-          .update({ 
-            status: 'PROCESSED', 
-            processed_at: new Date().toISOString() 
-          })
-          .eq('comment_id', comment.comment_id);
+        // 6. ACTUALIZAR CRM: Marcar que se envió DM
+        const { data: leadData } = await supabase.from('leads').select('id').eq('name', comment.sender_name).eq('store_id', storeId).order('created_at', { ascending: false }).limit(1).single();
+        if (leadData) {
+          await supabase.from('leads').update({
+            status: dmSent ? 'dm_enviado' : 'comentario'
+          }).eq('id', leadData.id);
+          
+          if (dmSent) {
+            await supabase.from('messages').insert({ lead_id: leadData.id, sender_type: 'ai', content: `[DM FB Enviado] ${privateReply}` });
+          }
+        }
 
-        results.push({ comment_id: comment.comment_id, status: 'success', fb_reply_id: fbData.id });
+        // 7. MARCAR COMO PROCESADO
+        await supabase.from('pending_comments').update({ status: 'PROCESSED', processed_at: new Date().toISOString() }).eq('comment_id', comment.comment_id);
+        results.push({ comment_id: comment.comment_id, status: 'success', dm_sent: dmSent });
 
       } catch (err: any) {
         console.error(`Error procesando comentario ${comment.comment_id}:`, err);
-        // Marcar como fallido
-        await supabase
-          .from('pending_comments')
-          .update({ status: 'FAILED' })
-          .eq('comment_id', comment.comment_id);
-          
+        await supabase.from('pending_comments').update({ status: 'FAILED' }).eq('comment_id', comment.comment_id);
         results.push({ comment_id: comment.comment_id, status: 'error', reason: err.message });
       }
     }
 
-    return res.status(200).json({ 
-      message: 'Lote procesado', 
-      results 
-    });
+    return res.status(200).json({ message: 'Lote procesado', results });
 
   } catch (err: any) {
     console.error('Error maestro en cron:', err);

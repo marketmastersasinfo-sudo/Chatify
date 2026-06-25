@@ -151,23 +151,75 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
               // Ignoramos si el comentario lo hicimos nosotros mismos como página
               if (senderId && senderId !== pageId) {
-                const processAfter = new Date(Date.now() + 2 * 60 * 1000).toISOString();
                 
-                // Guardar en la tabla pending_comments para que el Cron Job lo procese en 2 minutos
-                // Hacemos el insert silencioso si falla por duplicado (ya que comment_id es UNIQUE)
-                const { error } = await supabase.from('pending_comments').insert({
-                  page_id: pageId,
-                  post_id: postId,
-                  comment_id: commentId,
-                  sender_id: senderId,
-                  sender_name: senderName,
-                  message: messageText,
-                  status: 'PENDING',
-                  process_after: processAfter
-                });
+                // 1. FILTRO ANTI-HATERS (Moderación Automática)
+                const badWords = ['estafa', 'fraude', 'ladrón', 'ladrones', 'puta', 'mierda', 'estafadores', 'robo', 'basura'];
+                const isHater = badWords.some(word => messageText.toLowerCase().includes(word));
                 
-                if (!error) {
-                  console.log(`✅ Comentario guardado en cola: Esperando 2 minutos (${commentId})`);
+                let isDeleted = false;
+                if (isHater) {
+                  console.log(`🛑 Mala palabra detectada. Intentando borrar comentario: ${commentId}`);
+                  // Obtener token para borrar
+                  const { data: pageData } = await supabase.from('connected_pages').select('access_token, store_id').eq('page_id', pageId).single();
+                  if (pageData?.access_token) {
+                    await fetch(`https://graph.facebook.com/v19.0/${commentId}`, {
+                      method: 'DELETE',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ access_token: pageData.access_token })
+                    });
+                    isDeleted = true;
+                  }
+                }
+
+                // 2. SINCRONIZACIÓN CON CRM (Tabla leads)
+                const { data: storeData } = await supabase.from('connected_pages').select('store_id').eq('page_id', pageId).single();
+                let leadId = null;
+                if (storeData?.store_id) {
+                  const { data: newLead } = await supabase.from('leads').insert({
+                    store_id: storeData.store_id,
+                    name: senderName,
+                    traffic_source: 'organic',
+                    board_type: 'social_media',
+                    status: isDeleted ? 'moderado' : 'comentario',
+                    social_platform: 'facebook', // Asumimos FB por defecto en páginas
+                    comment_content: messageText,
+                    comment_status: isDeleted ? 'deleted' : 'active'
+                  }).select().single();
+                  
+                  if (newLead) leadId = newLead.id;
+
+                  // Disparar evento al Pixel si NO es hater
+                  if (!isDeleted) {
+                    // Llamada asíncrona fire-event para que no bloquee el webhook
+                    fetch(`https://${req.headers.host || 'localhost'}/api/tracking/fire-event`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ leadId: newLead.id, eventName: 'Lead', currency: 'COP' })
+                    }).catch(e => console.error('Error disparando pixel:', e));
+                  }
+                }
+
+                // 3. ENVIAR A LA IA (Solo si NO fue eliminado por ser hater)
+                if (!isDeleted) {
+                  const processAfter = new Date(Date.now() + 2 * 60 * 1000).toISOString();
+                  
+                  // Guardar en la tabla pending_comments para que el Cron Job lo procese en 2 minutos
+                  const { error } = await supabase.from('pending_comments').insert({
+                    page_id: pageId,
+                    post_id: postId,
+                    comment_id: commentId,
+                    sender_id: senderId,
+                    sender_name: senderName,
+                    message: messageText,
+                    status: 'PENDING',
+                    process_after: processAfter
+                  });
+                  
+                  if (!error) {
+                    console.log(`✅ Comentario guardado en cola y CRM: Esperando 2 minutos (${commentId})`);
+                  }
+                } else {
+                  console.log(`🗑️ Comentario Hater eliminado y enviado al CRM como Moderado.`);
                 }
               }
             }
