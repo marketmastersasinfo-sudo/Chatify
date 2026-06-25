@@ -44,33 +44,66 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           .single();
           
         const pageToken = pageData?.access_token;
-        const storeId = pageData?.store_id;
+        let storeId = pageData?.store_id;
 
-        if (!pageToken || !storeId) {
-          throw new Error('No access_token o store_id encontrado');
+        if (!pageToken) {
+          throw new Error('No access_token encontrado para la Fan Page');
         }
 
-        // 1. OBTENER CONTEXTO DEL POST DE FACEBOOK
+        // 1. OBTENER CONTEXTO DEL POST DE FACEBOOK (Para leer el Hashtag)
         let postContext = 'Contexto del post desconocido.';
+        let extractedHashtags: string[] = [];
         try {
           const postRes = await fetch(`https://graph.facebook.com/v19.0/${comment.post_id}?fields=message&access_token=${pageToken}`);
           if (postRes.ok) {
             const postData = await postRes.json();
-            if (postData.message) postContext = postData.message;
+            if (postData.message) {
+              postContext = postData.message;
+              // Extraer hashtags (ej. #JoggerCol01)
+              const matches = postContext.match(/#[a-zA-Z0-9_]+/g);
+              if (matches) extractedHashtags = matches;
+            }
           }
         } catch (e) {
           console.error('Error obteniendo post:', e);
         }
 
-        // 2. OBTENER CATÁLOGO DE PRODUCTOS DE LA BASE DE DATOS
+        // 2. ENCONTRAR EL PRODUCTO Y LA TIENDA (Enrutamiento Dinámico)
         let catalogText = 'Sin productos registrados.';
+        let matchedProduct = null;
+
         try {
-          const { data: products } = await supabase.from('products').select('*').eq('store_id', storeId);
-          if (products && products.length > 0) {
-            catalogText = products.map(p => `Producto: ${p.name}\nPrecio: $${p.price}\nDetalles: ${p.master_prompt || 'N/A'}`).join('\n\n');
+          // Intento A: Buscar por Hashtag exacto en TODAS las tiendas
+          if (extractedHashtags.length > 0) {
+            const { data: hashProducts } = await supabase
+              .from('products')
+              .select('*')
+              .in('ad_hashtag', extractedHashtags)
+              .limit(1);
+            
+            if (hashProducts && hashProducts.length > 0) {
+              matchedProduct = hashProducts[0];
+              storeId = matchedProduct.store_id; // Sobreescribir el store_id con el del producto!
+            }
           }
-        } catch (e) {
-          console.error('Error obteniendo catálogo:', e);
+
+          // Si no encontramos por hashtag y no hay store_id fallback, fallar.
+          if (!storeId) {
+             throw new Error('No se encontró ad_hashtag válido en el post y la Fan Page no tiene store_id por defecto.');
+          }
+
+          // Armar el texto del catálogo (Solo el producto matcheado, o todos los de la tienda fallback)
+          if (matchedProduct) {
+             catalogText = `Producto: ${matchedProduct.name}\nPrecio: $${matchedProduct.price}\nDetalles: ${matchedProduct.master_prompt || 'N/A'}`;
+          } else {
+             const { data: products } = await supabase.from('products').select('*').eq('store_id', storeId);
+             if (products && products.length > 0) {
+               catalogText = products.map(p => `Producto: ${p.name}\nPrecio: $${p.price}\nDetalles: ${p.master_prompt || 'N/A'}`).join('\n\n');
+             }
+          }
+        } catch (e: any) {
+          if (e.message.includes('ad_hashtag')) throw e; // Lanzar el error para que marque FAILED
+          console.error('Error buscando catálogo:', e);
         }
 
         // 3. LLAMADA A LA IA (SOPHIA) PARA EVITAR ALUCINACIONES

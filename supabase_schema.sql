@@ -28,6 +28,7 @@ CREATE TABLE public.products (
     name TEXT NOT NULL,
     price NUMERIC NOT NULL,
     master_prompt TEXT,
+    ad_hashtag TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
