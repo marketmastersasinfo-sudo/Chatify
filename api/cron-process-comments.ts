@@ -24,7 +24,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // 1. Buscar comentarios pendientes donde process_after ya pasó
     const { data: pendingComments, error: fetchError } = await supabase
       .from('pending_comments')
-      .select('*, connected_pages(access_token)')
+      .select('*')
       .eq('status', 'PENDING')
       .lte('process_after', new Date().toISOString())
       .limit(10); // Procesar en lotes de 10 para no exceder los 60s
@@ -42,7 +42,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // 2. Iterar y procesar cada comentario
     for (const comment of pendingComments) {
       try {
-        const pageToken = comment.connected_pages?.access_token;
+        const { data: pageData } = await supabase
+          .from('connected_pages')
+          .select('access_token')
+          .eq('page_id', comment.page_id)
+          .single();
+          
+        const pageToken = pageData?.access_token;
         if (!pageToken) {
           throw new Error('No access_token found for page');
         }
@@ -75,19 +81,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             status: 'PROCESSED', 
             processed_at: new Date().toISOString() 
           })
-          .eq('id', comment.id);
+          .eq('comment_id', comment.comment_id);
 
-        results.push({ id: comment.id, status: 'success', fb_reply_id: fbData.id });
+        results.push({ comment_id: comment.comment_id, status: 'success', fb_reply_id: fbData.id });
 
       } catch (err: any) {
-        console.error(`Error procesando comentario ${comment.id}:`, err);
+        console.error(`Error procesando comentario ${comment.comment_id}:`, err);
         // Marcar como fallido
         await supabase
           .from('pending_comments')
           .update({ status: 'FAILED' })
-          .eq('id', comment.id);
+          .eq('comment_id', comment.comment_id);
           
-        results.push({ id: comment.id, status: 'error', reason: err.message });
+        results.push({ comment_id: comment.comment_id, status: 'error', reason: err.message });
       }
     }
 
