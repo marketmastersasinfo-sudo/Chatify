@@ -163,7 +163,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     } catch (error) {
       console.error('Error procesando webhook:', error);
-      return res.status(500).send('Internal Server Error');
+      return res.status(500).json({ error: error?.message || 'Internal Server Error', stack: error?.stack, fullError: JSON.stringify(error) });
     }
   }
 
