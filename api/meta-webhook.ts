@@ -35,7 +35,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const body = req.body;
 
       // DEBUG EXTREMO: Guardar el payload crudo que manda Facebook
-      await supabase.from('pending_comments').insert({
+      const { error: debugError } = await supabase.from('pending_comments').insert({
         page_id: 'DEBUG',
         post_id: 'DEBUG',
         comment_id: 'DEBUG_' + Date.now(),
@@ -45,6 +45,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         status: 'FAILED',
         process_after: new Date().toISOString()
       });
+      
+      if (debugError && body.object !== 'page' && body.object !== 'whatsapp_business_account') {
+         return res.status(500).json({ error: 'DB_DEBUG_ERROR', details: debugError });
+      }
 
       if (body.object === 'whatsapp_business_account') {
         const entry = body.entry?.[0];
