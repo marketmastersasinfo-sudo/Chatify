@@ -28,6 +28,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const pageToken = pageData?.access_token;
     if (!pageToken) return res.status(200).json({ error: 'No token found' });
+    
+    return res.status(200).json({ token: pageToken.substring(0, 30) });
 
     // 3. Intentar responder
     const fbRes = await fetch(`https://graph.facebook.com/v19.0/${comment.comment_id}/comments`, {
