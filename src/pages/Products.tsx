@@ -17,6 +17,7 @@ export function Products() {
   // Form Fields
   const [name, setName] = useState('');
   const [price, setPrice] = useState(''); 
+  const [adHashtag, setAdHashtag] = useState('');
   
   // Offers
   const [offers, setOffers] = useState<{ id: string, title: string, price: string, gift: string, isUpsell: boolean }[]>([]);
@@ -88,6 +89,7 @@ export function Products() {
     setEditingProduct(null);
     setName('');
     setPrice('');
+    setAdHashtag('');
     setOffers([]);
     setCustomPrompt('');
     setDescription('');
@@ -100,6 +102,7 @@ export function Products() {
     setEditingProduct(prod);
     setName(prod.name);
     setPrice(prod.price.toString());
+    setAdHashtag(prod.ad_hashtag || '');
     setSelectedFlowTemplateId(prod.flow_template_id || '');
     
     try {
@@ -193,7 +196,8 @@ export function Products() {
         offers: JSON.stringify(offers),
         master_prompt: master_prompt,
         flow_template_id: selectedFlowTemplateId || null,
-        media_assets: JSON.stringify(mediaAssets)
+        media_assets: JSON.stringify(mediaAssets),
+        ad_hashtag: adHashtag || null
       };
       
       if (editingProduct) {
@@ -442,6 +446,11 @@ export function Products() {
                   <div>
                     <label className="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Palabra Clave (Producto)</label>
                     <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Ej: Jogger Hombre Variable" className="block w-full rounded-xl border-slate-200 py-2.5 text-slate-900 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm font-medium transition-colors" />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Hashtag de Pauta (Enrutamiento Automático FB)</label>
+                    <input type="text" value={adHashtag} onChange={e => setAdHashtag(e.target.value)} placeholder="Ej: #JoggerCol01 (Pégalo al final del copy del Ad)" className="block w-full rounded-xl border-indigo-200 bg-indigo-50/30 py-2.5 text-indigo-900 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm font-bold transition-colors placeholder:font-medium placeholder:text-indigo-300" />
                   </div>
 
                   <div>
