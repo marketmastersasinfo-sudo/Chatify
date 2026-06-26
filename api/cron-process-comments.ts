@@ -171,12 +171,24 @@ Devuelve EXCLUSIVAMENTE un JSON válido con estas dos llaves: {"public_reply": "
           else console.error('Error enviando DM:', await fbPrivateRes.json());
         }
 
-        // 6. ACTUALIZAR CRM: Marcar que se envió DM
-        const { data: leadData } = await supabase.from('leads').select('id').eq('name', comment.sender_name).eq('store_id', storeId).order('created_at', { ascending: false }).limit(1).single();
+        // 6. ACTUALIZAR CRM: Vincular tienda y marcar que se envió DM
+        const { data: leadData } = await supabase
+          .from('leads')
+          .select('id')
+          .eq('name', comment.sender_name)
+          .eq('board_type', 'social_media')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+          
         if (leadData) {
-          await supabase.from('leads').update({
+          const leadUpdate: any = {
             status: dmSent ? 'dm_enviado' : 'comentario'
-          }).eq('id', leadData.id);
+          };
+          // Vincular la tienda correcta si encontramos producto por hashtag
+          if (storeId) leadUpdate.store_id = storeId;
+          
+          await supabase.from('leads').update(leadUpdate).eq('id', leadData.id);
           
           if (dmSent) {
             await supabase.from('messages').insert({ lead_id: leadData.id, sender_type: 'ai', content: `[DM FB Enviado] ${privateReply}` });

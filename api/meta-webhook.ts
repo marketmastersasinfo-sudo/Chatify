@@ -171,32 +171,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                   }
                 }
 
-                // 2. SINCRONIZACIÓN CON CRM (Tabla leads)
+                // 2. SINCRONIZACIÓN CON CRM (Tabla leads) - Fan Pages Genéricas
                 const { data: storeData } = await supabase.from('connected_pages').select('store_id').eq('page_id', pageId).single();
                 let leadId = null;
-                if (storeData?.store_id) {
-                  const { data: newLead } = await supabase.from('leads').insert({
-                    store_id: storeData.store_id,
-                    name: senderName,
-                    traffic_source: 'organic',
-                    board_type: 'social_media',
-                    status: isDeleted ? 'moderado' : 'comentario',
-                    social_platform: 'facebook', // Asumimos FB por defecto en páginas
-                    comment_content: messageText,
-                    comment_status: isDeleted ? 'deleted' : 'active'
-                  }).select().single();
-                  
-                  if (newLead) leadId = newLead.id;
+                
+                // Crear Lead SIEMPRE (con o sin store_id)
+                const { data: newLead } = await supabase.from('leads').insert({
+                  store_id: storeData?.store_id || null,
+                  name: senderName,
+                  traffic_source: 'Facebook Ads',
+                  board_type: 'social_media',
+                  status: isDeleted ? 'moderado' : 'comentario',
+                  social_platform: 'facebook',
+                  comment_content: messageText,
+                  comment_status: isDeleted ? 'deleted' : 'active'
+                }).select().single();
+                
+                if (newLead) leadId = newLead.id;
 
-                  // Disparar evento al Pixel si NO es hater
-                  if (!isDeleted) {
-                    // Llamada asíncrona fire-event para que no bloquee el webhook
-                    fetch(`https://${req.headers.host || 'localhost'}/api/tracking/fire-event`, {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ leadId: newLead.id, eventName: 'Lead', currency: 'COP' })
-                    }).catch(e => console.error('Error disparando pixel:', e));
-                  }
+                // Disparar evento al Pixel si NO es hater
+                if (!isDeleted && newLead) {
+                  fetch(`https://${req.headers.host || 'localhost'}/api/tracking/fire-event`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ leadId: newLead.id, eventName: 'Lead', currency: 'COP' })
+                  }).catch(e => console.error('Error disparando pixel:', e));
                 }
 
                 // 3. ENVIAR A LA IA (Solo si NO fue eliminado por ser hater)
