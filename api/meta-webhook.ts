@@ -46,7 +46,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         process_after: new Date().toISOString()
       });
       
-      if (debugError && body.object !== 'page' && body.object !== 'whatsapp_business_account') {
+      if (debugError && body.object !== 'page' && body.object !== 'whatsapp_business_account' && body.object !== 'instagram') {
          return res.status(500).json({ error: 'DB_DEBUG_ERROR', details: debugError });
       }
 
@@ -219,6 +219,95 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                   }
                 } else {
                   console.log(`🗑️ Comentario Hater eliminado y enviado al CRM como Moderado.`);
+                }
+              }
+            }
+          }
+        }
+        return res.status(200).send('EVENT_RECEIVED');
+      } else if (body.object === 'instagram') {
+        // ============ INSTAGRAM WEBHOOK ============
+        for (const entry of body.entry || []) {
+          const igAccountId = entry.id; // ID de la cuenta de Instagram
+          
+          for (const change of entry.changes || []) {
+            if (change.field === 'comments') {
+              const commentData = change.value;
+              const commentId = commentData.id;
+              const commentText = commentData.text || '';
+              const senderId = commentData.from?.id;
+              const senderName = commentData.from?.username || 'Usuario IG';
+              const mediaId = commentData.media?.id;
+
+              // Ignorar comentarios propios
+              if (senderId && senderId !== igAccountId) {
+                
+                // Buscar la Fan Page asociada a este Instagram
+                const { data: pageData } = await supabase
+                  .from('connected_pages')
+                  .select('page_id, page_name, access_token, store_id')
+                  .eq('instagram_account_id', igAccountId)
+                  .single();
+
+                if (!pageData?.access_token) {
+                  console.log(`⚠️ Instagram ${igAccountId} no tiene Fan Page asociada en connected_pages`);
+                  continue;
+                }
+
+                // 1. FILTRO ANTI-HATERS (Mismo filtro que Facebook)
+                const badWords = ['estafa', 'fraude', 'ladrón', 'ladrones', 'puta', 'mierda', 'estafadores', 'robo', 'basura', 'malo', 'mala', 'pésimo', 'pesimo', 'horrible', 'asco'];
+                const isHater = badWords.some(word => commentText.toLowerCase().includes(word));
+                
+                let isDeleted = false;
+                if (isHater) {
+                  console.log(`🛑 [IG] Mala palabra detectada. Borrando comentario: ${commentId}`);
+                  await fetch(`https://graph.facebook.com/v25.0/${commentId}`, {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ access_token: pageData.access_token })
+                  });
+                  isDeleted = true;
+                }
+
+                // 2. CREAR LEAD EN CRM
+                const { data: newLead } = await supabase.from('leads').insert({
+                  store_id: pageData.store_id || null,
+                  name: senderName,
+                  traffic_source: 'Instagram Ads',
+                  board_type: 'social_media',
+                  status: isDeleted ? 'moderado' : 'comentario',
+                  social_platform: 'instagram',
+                  comment_content: commentText,
+                  comment_status: isDeleted ? 'deleted' : 'active'
+                }).select().single();
+
+                if (!isDeleted && newLead) {
+                  fetch(`https://${req.headers.host || 'localhost'}/api/tracking/fire-event`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ leadId: newLead.id, eventName: 'Lead', currency: 'COP' })
+                  }).catch(e => console.error('Error disparando pixel:', e));
+                }
+
+                // 3. ENCOLAR PARA RESPUESTA IA (Solo si NO es hater)
+                if (!isDeleted) {
+                  const processAfter = new Date(Date.now() + 2 * 60 * 1000).toISOString();
+                  
+                  await supabase.from('pending_comments').insert({
+                    page_id: igAccountId,
+                    post_id: mediaId || 'unknown',
+                    comment_id: commentId,
+                    sender_id: senderId,
+                    sender_name: senderName,
+                    message: commentText,
+                    status: 'PENDING',
+                    platform: 'instagram',
+                    process_after: processAfter
+                  });
+                  
+                  console.log(`✅ [IG] Comentario encolado para respuesta IA: ${commentId}`);
+                } else {
+                  console.log(`🗑️ [IG] Hater eliminado y registrado en CRM.`);
                 }
               }
             }

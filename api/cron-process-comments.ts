@@ -37,27 +37,49 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     for (const comment of pendingComments) {
       try {
-        const { data: pageData } = await supabase
-          .from('connected_pages')
-          .select('access_token, store_id')
-          .eq('page_id', comment.page_id)
-          .single();
+        const isInstagram = comment.platform === 'instagram';
+        
+        // Buscar token: si es Instagram, buscar por instagram_account_id
+        let pageData;
+        if (isInstagram) {
+          const { data } = await supabase
+            .from('connected_pages')
+            .select('access_token, store_id')
+            .eq('instagram_account_id', comment.page_id)
+            .single();
+          pageData = data;
+        } else {
+          const { data } = await supabase
+            .from('connected_pages')
+            .select('access_token, store_id')
+            .eq('page_id', comment.page_id)
+            .single();
+          pageData = data;
+        }
           
         const pageToken = pageData?.access_token;
 
         if (!pageToken) {
-          throw new Error('No access_token encontrado para la Fan Page');
+          throw new Error(`No access_token encontrado para ${isInstagram ? 'Instagram' : 'Fan Page'}`);
         }
 
-        // 1. OBTENER CONTEXTO DEL POST DE FACEBOOK (Para leer el Hashtag)
+        // 1. OBTENER CONTEXTO DEL POST (Facebook o Instagram)
         let postContext = 'Contexto del post desconocido.';
         let extractedHashtags: string[] = [];
         try {
-          const postRes = await fetch(`https://graph.facebook.com/v19.0/${comment.post_id}?fields=message&access_token=${pageToken}`);
+          let postRes;
+          if (isInstagram) {
+            // Instagram: obtener caption del media
+            postRes = await fetch(`https://graph.facebook.com/v25.0/${comment.post_id}?fields=caption&access_token=${pageToken}`);
+          } else {
+            // Facebook: obtener message del post
+            postRes = await fetch(`https://graph.facebook.com/v19.0/${comment.post_id}?fields=message&access_token=${pageToken}`);
+          }
           if (postRes.ok) {
             const postData = await postRes.json();
-            if (postData.message) {
-              postContext = postData.message;
+            const postText = isInstagram ? postData.caption : postData.message;
+            if (postText) {
+              postContext = postText;
               // Extraer hashtags (ej. #JoggerCol01)
               const matches = postContext.match(/#[a-zA-Z0-9_]+/g);
               if (matches) extractedHashtags = matches;
@@ -146,14 +168,25 @@ Devuelve EXCLUSIVAMENTE un JSON válido con estas dos llaves: {"public_reply": "
           }
         }
 
-        // 4. RESPUESTA PÚBLICA EN FACEBOOK
-        const fbPublicRes = await fetch(`https://graph.facebook.com/v19.0/${comment.comment_id}/comments`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: publicReply, access_token: pageToken })
-        });
-        const fbPublicData = await fbPublicRes.json();
-        if (!fbPublicRes.ok) throw new Error(fbPublicData.error?.message || 'Error en FB API Público');
+        // 4. RESPUESTA PÚBLICA (Facebook o Instagram)
+        let publicRes;
+        if (isInstagram) {
+          // Instagram: reply al comentario
+          publicRes = await fetch(`https://graph.facebook.com/v25.0/${comment.comment_id}/replies`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: publicReply, access_token: pageToken })
+          });
+        } else {
+          // Facebook: comment al comentario
+          publicRes = await fetch(`https://graph.facebook.com/v19.0/${comment.comment_id}/comments`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: publicReply, access_token: pageToken })
+          });
+        }
+        const publicData = await publicRes.json();
+        if (!publicRes.ok) throw new Error(publicData.error?.message || `Error en ${isInstagram ? 'IG' : 'FB'} API Público`);
 
         // 5. RESPUESTA PRIVADA (DM) EN FACEBOOK
         let dmSent = false;
