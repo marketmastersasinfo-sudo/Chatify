@@ -153,7 +153,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               if (senderId && senderId !== pageId) {
                 
                 // 1. FILTRO ANTI-HATERS (Moderación Automática)
-                const badWords = ['estafa', 'fraude', 'ladrón', 'ladrones', 'puta', 'mierda', 'estafadores', 'robo', 'basura'];
+                const badWords = ['estafa', 'fraude', 'ladrón', 'ladrones', 'puta', 'mierda', 'estafadores', 'robo', 'basura', 'malo', 'mala', 'pésimo', 'pesimo', 'horrible', 'asco'];
                 const isHater = badWords.some(word => messageText.toLowerCase().includes(word));
                 
                 let isDeleted = false;
