@@ -85,9 +85,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           }
         }
 
-        // Si encontramos producto por hashtag, armar catálogo
+        // Si encontramos producto por hashtag, armar catálogo CON OFERTAS
         if (matchedProduct) {
-          catalogText = `Producto: ${matchedProduct.name}\nPrecio: $${matchedProduct.price}\nDetalles: ${matchedProduct.master_prompt || 'N/A'}`;
+          let offersText = '';
+          try {
+            const offers = JSON.parse(matchedProduct.offers || '[]');
+            if (offers.length > 0) {
+              offersText = '\nOFERTAS Y COMBOS:\n' + offers.map((o: any) => 
+                `- ${o.title}: $${o.price}${o.gift ? ' + Regalo: ' + o.gift : ''}${o.isUpsell ? ' (Upsell)' : ''}`
+              ).join('\n');
+            }
+          } catch(e) {}
+          
+          const linkText = matchedProduct.product_link ? `\nLINK DE WHATSAPP: ${matchedProduct.product_link}` : '';
+          catalogText = `Producto: ${matchedProduct.name}\nPrecio Base: $${matchedProduct.price}${offersText}${linkText}\nDetalles: ${matchedProduct.master_prompt || 'N/A'}`;
         } else {
           // Sin hashtag = respuesta genérica (no crashear)
           console.log(`⚠️ No se encontró hashtag válido en el post ${comment.post_id}. Respondiendo genéricamente.`);
@@ -113,10 +124,10 @@ ${catalogText}
 
 INSTRUCCIONES:
 1. Lee la publicación y el catálogo. Averigua por qué producto está preguntando el cliente.
-2. Si pide el precio, DALE EL PRECIO EXACTO DEL CATÁLOGO. No alucines ni inventes datos.
+2. Si pide el precio, DALE EL PRECIO BASE Y TAMBIÉN LAS OFERTAS/COMBOS si existen. No alucines ni inventes datos.
 3. Debes generar DOS mensajes:
-   - "public_reply": Una respuesta corta, amable y pública respondiendo directamente a su duda y diciéndole que también le enviaste un mensaje privado. Incluye siempre este link al final: https://wa.me/message/TU_LINK_AQUI
-   - "private_reply": Un mensaje más extenso para enviarle por mensaje privado (DM) con más detalles del producto.
+   - "public_reply": Respuesta CORTA y amable (máximo 2 líneas). Responde su duda brevemente y dile que le enviaste más info por mensaje privado. NO incluyas links largos en la respuesta pública.
+   - "private_reply": Mensaje más detallado con TODOS los precios, ofertas, combos y el LINK DE WHATSAPP si existe en el catálogo. Este es el mensaje que se envía por DM.
 
 Devuelve EXCLUSIVAMENTE un JSON válido con estas dos llaves: {"public_reply": "...", "private_reply": "..."}.
             `;
