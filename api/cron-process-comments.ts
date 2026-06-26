@@ -126,7 +126,7 @@ INSTRUCCIONES:
 1. Lee la publicación y el catálogo. Averigua por qué producto está preguntando el cliente.
 2. Si pide el precio, DALE EL PRECIO BASE Y TAMBIÉN LAS OFERTAS/COMBOS si existen. No alucines ni inventes datos.
 3. Debes generar DOS mensajes:
-   - "public_reply": Respuesta CORTA y amable (máximo 2 líneas). Responde su duda brevemente y dile que le enviaste más info por mensaje privado. NO incluyas links largos en la respuesta pública.
+   - "public_reply": Respuesta CORTA y amable (máximo 3 líneas). Responde su duda brevemente, dile que le enviaste más info por mensaje privado, y AL FINAL incluye el LINK DE WHATSAPP del catálogo si existe.
    - "private_reply": Mensaje más detallado con TODOS los precios, ofertas, combos y el LINK DE WHATSAPP si existe en el catálogo. Este es el mensaje que se envía por DM.
 
 Devuelve EXCLUSIVAMENTE un JSON válido con estas dos llaves: {"public_reply": "...", "private_reply": "..."}.
