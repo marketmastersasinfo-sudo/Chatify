@@ -669,14 +669,11 @@ async function handleSophia({ lead, productInfo, leadId, incomingText, storeTwil
         
         aiReply = `¡Excelente! 🎉 Tengo toda la información. Para asegurar que la entrega de tu pedido sea perfecta, ¿esta es la fachada correcta de tu dirección? 🏠📍`;
         
+        // 💰 OPTIMIZACIÓN: Texto + imagen en 1 solo mensaje (antes eran 2)
         await isTwilioClient.messages.create({
           from: `whatsapp:+${storeTwilioPhone.replace('+', '')}`,
           to: `whatsapp:+${customerPhone}`,
-          body: aiReply
-        });
-        await isTwilioClient.messages.create({
-          from: `whatsapp:+${storeTwilioPhone.replace('+', '')}`,
-          to: `whatsapp:+${customerPhone}`,
+          body: aiReply,
           mediaUrl: [streetViewUrl]
         });
         await sb.from('messages').insert({ lead_id: leadId, sender_type: 'ai', content: `[Automated Street View] ${aiReply}\nImage: ${streetViewUrl}` });
@@ -742,40 +739,44 @@ async function handleSophia({ lead, productInfo, leadId, incomingText, storeTwil
     textForTwilio = textForTwilio.replace(/\[(MEDIA|AUDIO|VIDEO|FILE|GIF)_\d+\]/g, '').trim();
     textForDB = textForDB.trim();
 
-    // Enviar el texto principal primero (si no está vacío)
-    if (textForTwilio) {
-      await isTwilioClient.messages.create({
-        from: `whatsapp:+${storeTwilioPhone.replace('+', '')}`,
-        to: `whatsapp:+${customerPhone}`,
-        body: textForTwilio
-      });
-    }
+    // 💰 OPTIMIZACIÓN: Enviar texto + primera imagen en UN SOLO mensaje (ahorra $0.005 por respuesta)
+    const fromNum = `whatsapp:+${storeTwilioPhone.replace('+', '')}`;
+    const toNum = `whatsapp:+${customerPhone}`;
 
-    // Enviar la primera imagen (si existe)
-    if (mediaUrlsToSend.length > 0) {
+    if (textForTwilio && mediaUrlsToSend.length > 0) {
+      // Texto + imagen en 1 solo mensaje (en vez de 2 separados)
       await isTwilioClient.messages.create({
-        from: `whatsapp:+${storeTwilioPhone.replace('+', '')}`,
-        to: `whatsapp:+${customerPhone}`,
+        from: fromNum, to: toNum,
+        body: textForTwilio,
         mediaUrl: [mediaUrlsToSend[0]]
       });
-    }
-
-    // Twilio fallback if both are empty
-    if (!textForTwilio && mediaUrlsToSend.length === 0) {
+    } else if (textForTwilio) {
+      // Solo texto
       await isTwilioClient.messages.create({
-        from: `whatsapp:+${storeTwilioPhone.replace('+', '')}`,
-        to: `whatsapp:+${customerPhone}`,
+        from: fromNum, to: toNum,
+        body: textForTwilio
+      });
+    } else if (mediaUrlsToSend.length > 0) {
+      // Solo media
+      await isTwilioClient.messages.create({
+        from: fromNum, to: toNum,
+        mediaUrl: [mediaUrlsToSend[0]]
+      });
+    } else {
+      // Fallback
+      await isTwilioClient.messages.create({
+        from: fromNum, to: toNum,
         body: '👍'
       });
     }
 
-    // Enviar el resto de archivos multimedia como mensajes separados (Limitación estricta de la API de WhatsApp de Twilio)
-    for (let i = 1; i < mediaUrlsToSend.length; i++) {
+    // 💰 OPTIMIZACIÓN: Máximo 1 archivo multimedia adicional (limitar costos)
+    if (mediaUrlsToSend.length > 1) {
       await isTwilioClient.messages.create({
-        from: `whatsapp:+${storeTwilioPhone.replace('+', '')}`,
-        to: `whatsapp:+${customerPhone}`,
-        mediaUrl: [mediaUrlsToSend[i]]
+        from: fromNum, to: toNum,
+        mediaUrl: [mediaUrlsToSend[1]]
       });
+      // Ignorar media adicional (3ra, 4ta imagen, etc.) para ahorrar costos
     }
 
     await sb.from('messages').insert({ lead_id: leadId, sender_type: 'ai', content: textForDB });

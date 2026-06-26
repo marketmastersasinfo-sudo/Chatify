@@ -186,6 +186,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return true;
       } catch (e: any) {
         log.push(`[T${touch}] ERROR lead ${lead.id}: ${e.message}`);
+        // 🛑 OPTIMIZACIÓN: Marcar como no entregable para que NUNCA se reintente
+        // Twilio cobra aunque el mensaje falle, así que evitamos reintentos inútiles
+        await supabase.from('leads').update({ 
+          status: 'undeliverable',
+          recovery_touch: -1 // -1 = marcado como fallido permanente
+        }).eq('id', lead.id);
+        log.push(`[T${touch}] 🚫 Lead ${lead.id} marcado como NO ENTREGABLE (no se reintentará)`);
         return false;
       }
     }
