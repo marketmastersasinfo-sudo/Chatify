@@ -44,7 +44,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           .single();
           
         const pageToken = pageData?.access_token;
-        let storeId = pageData?.store_id;
 
         if (!pageToken) {
           throw new Error('No access_token encontrado para la Fan Page');
@@ -68,42 +67,30 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           console.error('Error obteniendo post:', e);
         }
 
-        // 2. ENCONTRAR EL PRODUCTO Y LA TIENDA (Enrutamiento Dinámico)
+        // 2. ENCONTRAR EL PRODUCTO POR HASHTAG (Fan Pages Genéricas - Sin store_id)
         let catalogText = 'Sin productos registrados.';
-        let matchedProduct = null;
+        let matchedProduct: any = null;
+        let storeId: string | null = null;
 
-        try {
-          // Intento A: Buscar por Hashtag exacto en TODAS las tiendas
-          if (extractedHashtags.length > 0) {
-            const { data: hashProducts } = await supabase
-              .from('products')
-              .select('*')
-              .in('ad_hashtag', extractedHashtags)
-              .limit(1);
-            
-            if (hashProducts && hashProducts.length > 0) {
-              matchedProduct = hashProducts[0];
-              storeId = matchedProduct.store_id; // Sobreescribir el store_id con el del producto!
-            }
+        if (extractedHashtags.length > 0) {
+          const { data: hashProducts } = await supabase
+            .from('products')
+            .select('*')
+            .in('ad_hashtag', extractedHashtags)
+            .limit(1);
+          
+          if (hashProducts && hashProducts.length > 0) {
+            matchedProduct = hashProducts[0];
+            storeId = matchedProduct.store_id;
           }
+        }
 
-          // Si no encontramos por hashtag y no hay store_id fallback, fallar.
-          if (!storeId) {
-             throw new Error('No se encontró ad_hashtag válido en el post y la Fan Page no tiene store_id por defecto.');
-          }
-
-          // Armar el texto del catálogo (Solo el producto matcheado, o todos los de la tienda fallback)
-          if (matchedProduct) {
-             catalogText = `Producto: ${matchedProduct.name}\nPrecio: $${matchedProduct.price}\nDetalles: ${matchedProduct.master_prompt || 'N/A'}`;
-          } else {
-             const { data: products } = await supabase.from('products').select('*').eq('store_id', storeId);
-             if (products && products.length > 0) {
-               catalogText = products.map(p => `Producto: ${p.name}\nPrecio: $${p.price}\nDetalles: ${p.master_prompt || 'N/A'}`).join('\n\n');
-             }
-          }
-        } catch (e: any) {
-          if (e.message.includes('ad_hashtag')) throw e; // Lanzar el error para que marque FAILED
-          console.error('Error buscando catálogo:', e);
+        // Si encontramos producto por hashtag, armar catálogo
+        if (matchedProduct) {
+          catalogText = `Producto: ${matchedProduct.name}\nPrecio: $${matchedProduct.price}\nDetalles: ${matchedProduct.master_prompt || 'N/A'}`;
+        } else {
+          // Sin hashtag = respuesta genérica (no crashear)
+          console.log(`⚠️ No se encontró hashtag válido en el post ${comment.post_id}. Respondiendo genéricamente.`);
         }
 
         // 3. LLAMADA A LA IA (SOPHIA) PARA EVITAR ALUCINACIONES
