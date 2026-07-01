@@ -491,7 +491,7 @@ async function fetchProductInfo(lead: any, storeId: string): Promise<any> {
 let cachedCoverage: string | null = null;
 let lastCoverageFetch = 0;
 
-async function handleSophia({ lead, productInfo, leadId, incomingText, storeTwilioPhone, customerPhone, store, supabase: sb }: {
+export async function handleSophia({ lead, productInfo, leadId, incomingText, storeTwilioPhone, customerPhone, store, supabase: sb }: {
   lead: any; productInfo: any; leadId: string; incomingText: string;
   storeTwilioPhone: string; customerPhone: string; store: any; supabase: any;
 }) {
@@ -742,41 +742,67 @@ async function handleSophia({ lead, productInfo, leadId, incomingText, storeTwil
     // 💰 OPTIMIZACIÓN: Enviar texto + primera imagen en UN SOLO mensaje (ahorra $0.005 por respuesta)
     const fromNum = `whatsapp:+${storeTwilioPhone.replace('+', '')}`;
     const toNum = `whatsapp:+${customerPhone}`;
+    
+    const useMetaApi = !!(store?.meta_access_token && store?.meta_phone_number_id);
 
-    if (textForTwilio && mediaUrlsToSend.length > 0) {
-      // Texto + imagen en 1 solo mensaje (en vez de 2 separados)
-      await isTwilioClient.messages.create({
-        from: fromNum, to: toNum,
-        body: textForTwilio,
-        mediaUrl: [mediaUrlsToSend[0]]
-      });
-    } else if (textForTwilio) {
-      // Solo texto
-      await isTwilioClient.messages.create({
-        from: fromNum, to: toNum,
-        body: textForTwilio
-      });
-    } else if (mediaUrlsToSend.length > 0) {
-      // Solo media
-      await isTwilioClient.messages.create({
-        from: fromNum, to: toNum,
-        mediaUrl: [mediaUrlsToSend[0]]
-      });
+    if (useMetaApi) {
+      const { sendMetaText, sendMetaImage } = await import('./utils/_meta-whatsapp.js');
+      const metaOpts = {
+        phoneNumberId: store.meta_phone_number_id,
+        accessToken: store.meta_access_token,
+        to: customerPhone
+      };
+
+      if (textForTwilio && mediaUrlsToSend.length > 0) {
+        await sendMetaImage(metaOpts, mediaUrlsToSend[0], textForTwilio);
+      } else if (textForTwilio) {
+        await sendMetaText(metaOpts, textForTwilio);
+      } else if (mediaUrlsToSend.length > 0) {
+        await sendMetaImage(metaOpts, mediaUrlsToSend[0]);
+      } else {
+        await sendMetaText(metaOpts, '👍');
+      }
+
+      if (mediaUrlsToSend.length > 1) {
+        await sendMetaImage(metaOpts, mediaUrlsToSend[1]);
+      }
+
     } else {
-      // Fallback
-      await isTwilioClient.messages.create({
-        from: fromNum, to: toNum,
-        body: '👍'
-      });
-    }
+      if (textForTwilio && mediaUrlsToSend.length > 0) {
+        // Texto + imagen en 1 solo mensaje (en vez de 2 separados)
+        await isTwilioClient.messages.create({
+          from: fromNum, to: toNum,
+          body: textForTwilio,
+          mediaUrl: [mediaUrlsToSend[0]]
+        });
+      } else if (textForTwilio) {
+        // Solo texto
+        await isTwilioClient.messages.create({
+          from: fromNum, to: toNum,
+          body: textForTwilio
+        });
+      } else if (mediaUrlsToSend.length > 0) {
+        // Solo media
+        await isTwilioClient.messages.create({
+          from: fromNum, to: toNum,
+          mediaUrl: [mediaUrlsToSend[0]]
+        });
+      } else {
+        // Fallback
+        await isTwilioClient.messages.create({
+          from: fromNum, to: toNum,
+          body: '👍'
+        });
+      }
 
-    // 💰 OPTIMIZACIÓN: Máximo 1 archivo multimedia adicional (limitar costos)
-    if (mediaUrlsToSend.length > 1) {
-      await isTwilioClient.messages.create({
-        from: fromNum, to: toNum,
-        mediaUrl: [mediaUrlsToSend[1]]
-      });
-      // Ignorar media adicional (3ra, 4ta imagen, etc.) para ahorrar costos
+      // 💰 OPTIMIZACIÓN: Máximo 1 archivo multimedia adicional (limitar costos)
+      if (mediaUrlsToSend.length > 1) {
+        await isTwilioClient.messages.create({
+          from: fromNum, to: toNum,
+          mediaUrl: [mediaUrlsToSend[1]]
+        });
+        // Ignorar media adicional (3ra, 4ta imagen, etc.) para ahorrar costos
+      }
     }
 
     await sb.from('messages').insert({ lead_id: leadId, sender_type: 'ai', content: textForDB });

@@ -81,7 +81,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // ── Load stores with their Twilio numbers and template SIDs ──────────────
     const { data: stores } = await supabase
       .from('stores')
-      .select('id, twilio_phone_number, organization_id');
+      .select('id, twilio_phone_number, organization_id, meta_access_token, meta_phone_number_id');
 
     // Load recovery templates per store (or global fallback)
     const { data: allTemplates } = await supabase
@@ -103,8 +103,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // ── Helper: send a recovery WhatsApp template ─────────────────────────────
     async function sendRecoveryMessage(lead: any, touch: number, store: any) {
-      const template = getTemplate(store.id, touch);
-      if (!template?.twilio_content_sid) {
+      const useMetaApi = !!(store.meta_access_token && store.meta_phone_number_id);
+
+      if (!template?.twilio_content_sid && !useMetaApi) {
         log.push(`[T${touch}] SKIP lead ${lead.id} — no template configured for store ${store.id}`);
         return false;
       }
@@ -131,43 +132,68 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       );
 
       try {
-        await twilioClient.messages.create({
-          from: fromNumber,
-          to: toNumber,
-          contentSid: template.twilio_content_sid,
-          contentVariables: JSON.stringify(filtered),
-        } as any);
+        if (useMetaApi) {
+          const { sendMetaTemplate } = await import('./utils/_meta-whatsapp.js');
+          const components = [];
+          if (Object.keys(filtered).length > 0) {
+            const parameters = Object.keys(filtered).map(k => ({
+              type: 'text',
+              text: filtered[k]
+            }));
+            components.push({
+              type: 'body',
+              parameters
+            });
+          }
+          
+          const tplName = template?.template_name || `recuperar_carrito_t${touch}`;
+          await sendMetaTemplate({
+            phoneNumberId: store.meta_phone_number_id,
+            accessToken: store.meta_access_token,
+            to: lead.phone
+          }, tplName, 'es', components);
+          
+        } else {
+          await twilioClient.messages.create({
+            from: fromNumber,
+            to: toNumber,
+            contentSid: template.twilio_content_sid,
+            contentVariables: JSON.stringify(filtered),
+          } as any);
+        }
 
         // Fetch actual template body to log the real message content
         let bodyText = `[Bot Carrito T${touch}] Plantilla "${template.template_name}"`;
         try {
-          const content = await twilioClient.content.v1.contents(template.twilio_content_sid).fetch();
-          const types = content.types as any;
-          const rawBody = types['twilio/text']?.body || types['twilio/media']?.body || types['twilio/quick-reply']?.body || '';
-          if (rawBody) {
-            bodyText = rawBody;
-            // Replace variables with actual values
-            for (const [key, val] of Object.entries(filtered)) {
-              bodyText = bodyText.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), val);
-            }
-            // Extraer botones interactivos
-            const buttons: string[] = [];
-            const extractActions = (actions: any[]) => {
-              if (!actions || !Array.isArray(actions)) return;
-              for (const action of actions) {
-                buttons.push(action.title || action.body || action.url || action.id || JSON.stringify(action));
+          if (!useMetaApi) {
+            const content = await twilioClient.content.v1.contents(template.twilio_content_sid).fetch();
+            const types = content.types as any;
+            const rawBody = types['twilio/text']?.body || types['twilio/media']?.body || types['twilio/quick-reply']?.body || '';
+            if (rawBody) {
+              bodyText = rawBody;
+              // Replace variables with actual values
+              for (const [key, val] of Object.entries(filtered)) {
+                bodyText = bodyText.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), val);
               }
-            };
-            if (types['twilio/quick-reply']?.actions) extractActions(types['twilio/quick-reply'].actions);
-            if (types['twilio/call-to-action']?.actions) extractActions(types['twilio/call-to-action'].actions);
-            if (types['whatsapp/card']?.actions) extractActions(types['whatsapp/card'].actions);
-            if (buttons.length === 0) {
-              for (const typeKey of Object.keys(types)) {
-                if (types[typeKey]?.actions) extractActions(types[typeKey].actions);
+              // Extraer botones interactivos
+              const buttons: string[] = [];
+              const extractActions = (actions: any[]) => {
+                if (!actions || !Array.isArray(actions)) return;
+                for (const action of actions) {
+                  buttons.push(action.title || action.body || action.url || action.id || JSON.stringify(action));
+                }
+              };
+              if (types['twilio/quick-reply']?.actions) extractActions(types['twilio/quick-reply'].actions);
+              if (types['twilio/call-to-action']?.actions) extractActions(types['twilio/call-to-action'].actions);
+              if (types['whatsapp/card']?.actions) extractActions(types['whatsapp/card'].actions);
+              if (buttons.length === 0) {
+                for (const typeKey of Object.keys(types)) {
+                  if (types[typeKey]?.actions) extractActions(types[typeKey].actions);
+                }
               }
-            }
-            if (buttons.length > 0) {
-              bodyText += '\n\n' + buttons.map(b => `[BOTÓN] ${b}`).join('\n');
+              if (buttons.length > 0) {
+                bodyText += '\n\n' + buttons.map(b => `[BOTÓN] ${b}`).join('\n');
+              }
             }
           }
         } catch { /* ignore - use fallback text */ }

@@ -459,6 +459,71 @@ export function Stores() {
                       </div>
                     </div>
 
+                    {/* Meta WhatsApp Cloud API (Beta) */}
+                    <div className="col-span-1 md:col-span-2 bg-purple-50 p-4 rounded-xl border border-purple-100 mb-2">
+                      <div className="flex justify-between items-center mb-4">
+                        <div>
+                          <h5 className="text-sm font-bold text-purple-900 flex items-center gap-2">
+                            <Smartphone className="w-4 h-4 text-purple-600" /> WhatsApp API Oficial (Beta)
+                          </h5>
+                          <p className="text-xs text-purple-700 mt-1">Configuración directa con Meta (Bypassea a Twilio). Ideal para pruebas.</p>
+                        </div>
+                        <a href="https://developers.facebook.com" target="_blank" rel="noopener noreferrer" className="bg-purple-600 text-white px-4 py-1.5 rounded-lg text-xs font-bold hover:bg-purple-700 shadow-sm transition-colors">
+                          Meta Developers
+                        </a>
+                      </div>
+
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-xs font-bold text-purple-800 uppercase tracking-wider mb-1.5">Meta Access Token (System User)</label>
+                          <input 
+                            type="password" 
+                            value={(selectedStore as any).meta_access_token || ''}
+                            onChange={async (e) => {
+                              const val = e.target.value;
+                              setSelectedStore({...selectedStore, meta_access_token: val} as any);
+                              // @ts-ignore
+                              await supabase.from('stores').update({meta_access_token: val}).eq('id', selectedStore.id);
+                            }}
+                            placeholder="EAACw..."
+                            className="w-full px-4 py-3 bg-white border border-purple-200 rounded-xl text-sm focus:ring-2 focus:ring-purple-500 font-medium text-gray-900"
+                          />
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-xs font-bold text-purple-800 uppercase tracking-wider mb-1.5">Phone Number ID</label>
+                            <input 
+                              type="text" 
+                              value={(selectedStore as any).meta_phone_number_id || ''}
+                              onChange={async (e) => {
+                                const val = e.target.value;
+                                setSelectedStore({...selectedStore, meta_phone_number_id: val} as any);
+                                // @ts-ignore
+                                await supabase.from('stores').update({meta_phone_number_id: val}).eq('id', selectedStore.id);
+                              }}
+                              placeholder="1234567890"
+                              className="w-full px-4 py-3 bg-white border border-purple-200 rounded-xl text-sm focus:ring-2 focus:ring-purple-500 font-medium text-gray-900"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-bold text-purple-800 uppercase tracking-wider mb-1.5">WhatsApp Business Account ID</label>
+                            <input 
+                              type="text" 
+                              value={(selectedStore as any).meta_waba_id || ''}
+                              onChange={async (e) => {
+                                const val = e.target.value;
+                                setSelectedStore({...selectedStore, meta_waba_id: val} as any);
+                                // @ts-ignore
+                                await supabase.from('stores').update({meta_waba_id: val}).eq('id', selectedStore.id);
+                              }}
+                              placeholder="0987654321"
+                              className="w-full px-4 py-3 bg-white border border-purple-200 rounded-xl text-sm focus:ring-2 focus:ring-purple-500 font-medium text-gray-900"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
                     <div className="col-span-1 md:col-span-2 bg-green-50 p-4 rounded-xl border border-green-100 mb-4">
                       <div className="flex justify-between items-center">
                         <div>

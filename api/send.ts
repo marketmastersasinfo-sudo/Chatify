@@ -24,10 +24,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const { data: lead } = await supabase.from('leads').select('phone, store_id').eq('id', leadId).single();
     if (!lead || !lead.phone) return res.status(404).json({ error: 'Lead not found or no phone' });
 
-    const { data: store } = await supabase.from('stores').select('twilio_phone_number').eq('id', lead.store_id).single();
-    if (!store || !store.twilio_phone_number) return res.status(400).json({ error: 'Store configuration missing Twilio Phone Number' });
+    const { data: store } = await supabase.from('stores').select('twilio_phone_number, meta_access_token, meta_phone_number_id').eq('id', lead.store_id).single();
+    if (!store) return res.status(400).json({ error: 'Store not found' });
+    
+    const useMetaApi = !!(store.meta_access_token && store.meta_phone_number_id);
 
-    const twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+    if (!useMetaApi && !store.twilio_phone_number) return res.status(400).json({ error: 'Store configuration missing Phone Number' });
+
+    const twilioClient = !useMetaApi ? twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN) : null;
 
     // Sanitize from number
     let fromNumber = store.twilio_phone_number.trim().replace(/ /g, '').replace('whatsapp:', '');
@@ -42,13 +46,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (action === 'message') {
       if (!message) return res.status(400).json({ error: 'Missing message' });
 
-      const messageResult = await twilioClient.messages.create({
-        from: fromNumber,
-        to: toNumber,
-        body: message,
-      });
+      let messageId = '';
+      if (useMetaApi) {
+        const { sendMetaText } = await import('./utils/_meta-whatsapp.js');
+        const metaRes = await sendMetaText({
+          phoneNumberId: store.meta_phone_number_id,
+          accessToken: store.meta_access_token,
+          to: lead.phone
+        }, message);
+        messageId = metaRes.messages?.[0]?.id || 'meta-msg-id';
+      } else {
+        const messageResult = await twilioClient!.messages.create({
+          from: fromNumber,
+          to: toNumber,
+          body: message,
+        });
+        messageId = messageResult.sid;
+      }
 
-      return res.status(200).json({ success: true, messageId: messageResult.sid });
+      return res.status(200).json({ success: true, messageId });
     }
 
     if (action === 'template') {
@@ -82,21 +98,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
       }
 
-      if (!template || !template.twilio_content_sid) return res.status(400).json({ error: 'Store has no template configured.' });
+      if (!template && !useMetaApi) return res.status(400).json({ error: 'Store has no template configured.' });
+      if (!template?.twilio_content_sid && !useMetaApi) return res.status(400).json({ error: 'Store has no twilio_content_sid configured.' });
 
       let rawText = '';
       let templateVariablesKeys: string[] = [];
       let types: any = {};
-      try {
-        const content = await twilioClient.content.v1.contents(template.twilio_content_sid).fetch();
-        types = content.types as any;
-        rawText = types['twilio/text']?.body || types['twilio/media']?.body || types['twilio/quick-reply']?.body || '';
-        const variableMatches = [...rawText.matchAll(/\{\{(\d+)\}\}/g)];
-        const variablesSet = new Set<string>();
-        variableMatches.forEach(match => variablesSet.add(match[1]));
-        if (content.variables) Object.keys(content.variables).forEach(k => variablesSet.add(k));
-        templateVariablesKeys = Array.from(variablesSet);
-      } catch (e) { console.error('Error fetching template', e); }
+      
+      if (!useMetaApi) {
+        try {
+          const content = await twilioClient!.content.v1.contents(template.twilio_content_sid).fetch();
+          types = content.types as any;
+          rawText = types['twilio/text']?.body || types['twilio/media']?.body || types['twilio/quick-reply']?.body || '';
+          const variableMatches = [...rawText.matchAll(/\{\{(\d+)\}\}/g)];
+          const variablesSet = new Set<string>();
+          variableMatches.forEach(match => variablesSet.add(match[1]));
+          if (content.variables) Object.keys(content.variables).forEach(k => variablesSet.add(k));
+          templateVariablesKeys = Array.from(variablesSet);
+        } catch (e) { console.error('Error fetching template', e); }
+      }
 
       const contentVariables: any = {};
       if (variables) {
@@ -145,12 +165,41 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         // bodyText += `\n\n(No buttons detected. Types: ${Object.keys(types).join(', ')})`;
       }
 
-      const messageResult = await twilioClient.messages.create({
-        from: fromNumber,
-        to: toNumber,
-        contentSid: template.twilio_content_sid,
-        contentVariables: Object.keys(contentVariables).length > 0 ? JSON.stringify(contentVariables) : undefined,
-      });
+      let messageId = '';
+      if (useMetaApi) {
+        // Enviar vía Meta API
+        const { sendMetaTemplate } = await import('./utils/_meta-whatsapp.js');
+        // Construir componentes (variables de body)
+        const components = [];
+        if (Object.keys(contentVariables).length > 0) {
+          const parameters = Object.keys(contentVariables).map(k => ({
+            type: 'text',
+            text: contentVariables[k]
+          }));
+          components.push({
+            type: 'body',
+            parameters
+          });
+        }
+        
+        // Asumimos que template.template_name coincide con el nombre de la plantilla en Meta
+        const tplName = template?.template_name || 'cart_recovery_1'; // fallback genérico
+        const metaRes = await sendMetaTemplate({
+          phoneNumberId: store.meta_phone_number_id,
+          accessToken: store.meta_access_token,
+          to: lead.phone
+        }, tplName, 'es', components);
+        
+        messageId = metaRes.messages?.[0]?.id || 'meta-tpl-id';
+      } else {
+        const messageResult = await twilioClient!.messages.create({
+          from: fromNumber,
+          to: toNumber,
+          contentSid: template.twilio_content_sid,
+          contentVariables: Object.keys(contentVariables).length > 0 ? JSON.stringify(contentVariables) : undefined,
+        });
+        messageId = messageResult.sid;
+      }
 
       // Log in messages table with the actual message content
       await supabase.from('messages').insert({
@@ -161,9 +210,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
 
       // Update sent count for analytics
-      await supabase.from('store_templates').update({ sent_count: (template.sent_count || 0) + 1 }).eq('id', template.id);
+      if (template) {
+        await supabase.from('store_templates').update({ sent_count: (template.sent_count || 0) + 1 }).eq('id', template.id);
+      }
 
-      return res.status(200).json({ success: true, messageId: messageResult.sid });
+      return res.status(200).json({ success: true, messageId });
     }
 
     return res.status(400).json({ error: 'Invalid action' });

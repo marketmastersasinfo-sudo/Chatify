@@ -65,11 +65,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           const text = message.text?.body || '';
 
           // A. Buscar a qué tienda le escribieron basándonos en el número receptor
-          let { data: store } = await supabase.from('stores').select('id').eq('waba_number', waba_number).single();
+          let { data: store } = await supabase.from('stores').select('*').eq('meta_phone_number_id', waba_number).single();
           
           // Fallback temporal si no encuentra la tienda exacta
           if (!store) {
-             const { data: firstStore } = await supabase.from('stores').select('id').limit(1);
+             const { data: firstStore } = await supabase.from('stores').select('*').limit(1);
              store = firstStore?.[0];
           }
 
@@ -128,6 +128,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 lead_id: lead.id,
                 sender_type: 'client',
                 content: text
+              });
+
+              // E. Invocar a la IA
+              let productInfo = null;
+              if (lead.product_name) {
+                const { data: prods } = await supabase.from('products').select('*').eq('store_id', store.id).ilike('name', `%${lead.product_name}%`).limit(1);
+                if (prods && prods.length > 0) productInfo = prods[0];
+              }
+
+              const { handleSophia } = await import('./twilio-webhook.js');
+              await handleSophia({
+                lead,
+                productInfo,
+                leadId: lead.id,
+                incomingText: text,
+                storeTwilioPhone: store.twilio_phone_number || store.meta_phone_number_id || '',
+                customerPhone: phone,
+                store,
+                supabase: supabase as any
               });
             }
           }
