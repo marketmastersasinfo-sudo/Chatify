@@ -103,6 +103,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // ── Helper: send a recovery WhatsApp template ─────────────────────────────
     async function sendRecoveryMessage(lead: any, touch: number, store: any) {
+      const template = getTemplate(store.id, touch);
       const useMetaApi = !!(store.meta_access_token && store.meta_phone_number_id);
 
       if (!template?.twilio_content_sid && !useMetaApi) {
