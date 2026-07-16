@@ -562,18 +562,35 @@ export function Stores() {
                       <div className="space-y-4">
                         <div>
                           <label className="block text-xs font-bold text-purple-800 uppercase tracking-wider mb-1.5">Meta Access Token (System User)</label>
-                          <input 
-                            type="password" 
-                            value={(selectedStore as any).meta_access_token || ''}
-                            onChange={async (e) => {
-                              const val = e.target.value;
-                              setSelectedStore({...selectedStore, meta_access_token: val} as any);
-                              // @ts-ignore
-                              await supabase.from('stores').update({meta_access_token: val}).eq('id', selectedStore.id);
-                            }}
-                            placeholder="EAACw..."
-                            className="w-full px-4 py-3 bg-white border border-purple-200 rounded-xl text-sm focus:ring-2 focus:ring-purple-500 font-medium text-gray-900"
-                          />
+                          <div className="relative flex gap-2">
+                            <input 
+                              type={(selectedStore as any)._showToken ? 'text' : 'password'}
+                              value={(selectedStore as any).meta_access_token || ''}
+                              onChange={async (e) => {
+                                const val = e.target.value;
+                                setSelectedStore({...selectedStore, meta_access_token: val} as any);
+                                // @ts-ignore
+                                await supabase.from('stores').update({meta_access_token: val}).eq('id', selectedStore.id);
+                              }}
+                              placeholder="EAACw..."
+                              className="flex-1 px-4 py-3 bg-white border border-purple-200 rounded-xl text-sm focus:ring-2 focus:ring-purple-500 font-medium text-gray-900"
+                            />
+                            <button
+                              onClick={() => setSelectedStore({...selectedStore, _showToken: !(selectedStore as any)._showToken} as any)}
+                              className="px-3 py-2 bg-purple-100 text-purple-700 rounded-xl text-xs font-bold hover:bg-purple-200 transition-colors whitespace-nowrap"
+                            >
+                              {(selectedStore as any)._showToken ? '🙈 Ocultar' : '👁️ Ver'}
+                            </button>
+                            <button
+                              onClick={() => {
+                                navigator.clipboard.writeText((selectedStore as any).meta_access_token || '');
+                                alert('Token copiado al portapapeles');
+                              }}
+                              className="px-3 py-2 bg-purple-600 text-white rounded-xl text-xs font-bold hover:bg-purple-700 transition-colors whitespace-nowrap"
+                            >
+                              📋 Copiar
+                            </button>
+                          </div>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div>
