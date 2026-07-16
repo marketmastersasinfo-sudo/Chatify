@@ -462,16 +462,65 @@ export function Stores() {
                     {/* Meta WhatsApp Cloud API (Beta) */}
                     <div className="col-span-1 md:col-span-2 bg-purple-50 p-4 rounded-xl border border-purple-100 mb-2">
                       <div className="flex justify-between items-center mb-4">
-                        <div>
-                          <h5 className="text-sm font-bold text-purple-900 flex items-center gap-2">
-                            <Smartphone className="w-4 h-4 text-purple-600" /> WhatsApp API Oficial (Beta)
-                          </h5>
-                          <p className="text-xs text-purple-700 mt-1">Configuración directa con Meta (Bypassea a Twilio). Ideal para pruebas.</p>
+                        <div className="flex items-center gap-3">
+                          <div>
+                            <h5 className="text-sm font-bold text-purple-900 flex items-center gap-2">
+                              <Smartphone className="w-4 h-4 text-purple-600" /> WhatsApp API Oficial (Meta Cloud API)
+                              {/* Connection indicator */}
+                              {(selectedStore as any).meta_access_token && (selectedStore as any).meta_phone_number_id ? (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-700 border border-green-200">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" /> Conectado
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-600 border border-red-200">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-red-500" /> Sin configurar
+                                </span>
+                              )}
+                            </h5>
+                            <p className="text-xs text-purple-700 mt-1">Conexión directa con Meta (sin Twilio). Producción real.</p>
+                          </div>
                         </div>
-                        <a href="https://developers.facebook.com" target="_blank" rel="noopener noreferrer" className="bg-purple-600 text-white px-4 py-1.5 rounded-lg text-xs font-bold hover:bg-purple-700 shadow-sm transition-colors">
-                          Meta Developers
-                        </a>
+                        <div className="flex items-center gap-3">
+                          {/* ON/OFF Toggle */}
+                          {(selectedStore as any).meta_access_token && (selectedStore as any).meta_phone_number_id && (
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px] font-bold text-purple-700 uppercase">
+                                {(selectedStore as any).meta_wa_active !== false ? '🟢 Activo' : '🔴 Pausado'}
+                              </span>
+                              <button
+                                onClick={async () => {
+                                  const newVal = (selectedStore as any).meta_wa_active === false ? true : false;
+                                  setSelectedStore({...selectedStore, meta_wa_active: newVal} as any);
+                                  // @ts-ignore
+                                  await supabase.from('stores').update({meta_wa_active: newVal}).eq('id', selectedStore.id);
+                                }}
+                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                                  (selectedStore as any).meta_wa_active !== false 
+                                    ? 'bg-green-500' 
+                                    : 'bg-gray-300'
+                                }`}
+                              >
+                                <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-md transition-transform ${
+                                  (selectedStore as any).meta_wa_active !== false ? 'translate-x-6' : 'translate-x-1'
+                                }`} />
+                              </button>
+                            </div>
+                          )}
+                          <a href="https://developers.facebook.com" target="_blank" rel="noopener noreferrer" className="bg-purple-600 text-white px-4 py-1.5 rounded-lg text-xs font-bold hover:bg-purple-700 shadow-sm transition-colors">
+                            Meta Developers
+                          </a>
+                        </div>
                       </div>
+
+                      {/* Warning when paused */}
+                      {(selectedStore as any).meta_wa_active === false && (
+                        <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2 mb-4 flex items-center gap-2">
+                          <span className="text-red-500 text-lg">⚠️</span>
+                          <p className="text-xs text-red-700 font-medium">
+                            El bot de WhatsApp está <strong>PAUSADO</strong>. Los mensajes entrantes NO serán procesados ni respondidos automáticamente. Activa el switch para reanudar.
+                          </p>
+                        </div>
+                      )}
 
                       <div className="space-y-4">
                         <div>
@@ -509,14 +558,14 @@ export function Stores() {
                             <label className="block text-xs font-bold text-purple-800 uppercase tracking-wider mb-1.5">WhatsApp Business Account ID</label>
                             <input 
                               type="text" 
-                              value={(selectedStore as any).meta_waba_id || ''}
+                              value={(selectedStore as any).waba_id || ''}
                               onChange={async (e) => {
                                 const val = e.target.value;
-                                setSelectedStore({...selectedStore, meta_waba_id: val} as any);
+                                setSelectedStore({...selectedStore, waba_id: val} as any);
                                 // @ts-ignore
-                                await supabase.from('stores').update({meta_waba_id: val}).eq('id', selectedStore.id);
+                                await supabase.from('stores').update({waba_id: val}).eq('id', selectedStore.id);
                               }}
-                              placeholder="0987654321"
+                              placeholder="2508397522873921"
                               className="w-full px-4 py-3 bg-white border border-purple-200 rounded-xl text-sm focus:ring-2 focus:ring-purple-500 font-medium text-gray-900"
                             />
                           </div>

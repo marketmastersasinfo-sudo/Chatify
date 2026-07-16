@@ -74,15 +74,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           }
 
           if (store) {
-            // B. Buscar si el Lead ya existe en ESA tienda
-            let { data: lead } = await supabase
+            // 🛑 KILL SWITCH: Si el número está pausado, no procesar
+            if (store.meta_wa_active === false) {
+              return res.status(200).send('EVENT_RECEIVED');
+            }
+
+            // B. Buscar si el Lead ya existe en ESA tienda (preferir sales_wa)
+            let { data: allLeads } = await supabase
               .from('leads')
               .select('*')
               .eq('phone', phone)
               .eq('store_id', store.id)
-              .single();
+              .order('created_at', { ascending: false });
 
-            // C. Si no existe, lo creamos
+            // Preferir lead de sales_wa sobre remarketing/logistics
+            let lead = allLeads?.find(l => l.board_type === 'sales_wa') || null;
+
+            // C. Si no existe lead de sales_wa, creamos uno nuevo
             if (!lead) {
               // Walink Smart Parser (Anti-Friction)
               let detectedProduct = null;
