@@ -522,6 +522,43 @@ export function Stores() {
                         </div>
                       )}
 
+                      {/* Display connected phone number */}
+                      {(selectedStore as any).meta_access_token && (selectedStore as any).meta_phone_number_id && (
+                        <div className="bg-white border border-purple-200 rounded-xl px-4 py-3 mb-4 flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
+                              <span className="text-xl">📱</span>
+                            </div>
+                            <div>
+                              <p className="text-[10px] font-bold text-purple-700 uppercase tracking-wider">Número de WhatsApp Conectado</p>
+                              <p className="text-lg font-bold text-gray-900" id="meta-phone-display">
+                                {(selectedStore as any).meta_phone_display || 'Cargando...'}
+                              </p>
+                            </div>
+                          </div>
+                          <button
+                            onClick={async () => {
+                              try {
+                                const token = (selectedStore as any).meta_access_token;
+                                const phoneId = (selectedStore as any).meta_phone_number_id;
+                                const res = await fetch(`https://graph.facebook.com/v25.0/${phoneId}?fields=display_phone_number,verified_name`, {
+                                  headers: { 'Authorization': `Bearer ${token}` }
+                                });
+                                const data = await res.json();
+                                if (data.display_phone_number) {
+                                  setSelectedStore({...selectedStore, meta_phone_display: `${data.display_phone_number} (${data.verified_name || ''})` } as any);
+                                }
+                              } catch (e) {
+                                console.error('Error fetching phone:', e);
+                              }
+                            }}
+                            className="text-purple-600 hover:text-purple-800 text-xs font-bold underline"
+                          >
+                            Verificar
+                          </button>
+                        </div>
+                      )}
+
                       <div className="space-y-4">
                         <div>
                           <label className="block text-xs font-bold text-purple-800 uppercase tracking-wider mb-1.5">Meta Access Token (System User)</label>
