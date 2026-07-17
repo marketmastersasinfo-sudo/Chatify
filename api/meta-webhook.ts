@@ -64,10 +64,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           const name = contact?.profile?.name || 'Cliente WhatsApp';
           const text = message.text?.body || '';
 
-          // A. Buscar a qué tienda le escribieron basándonos en el número receptor
-          let { data: store } = await supabase.from('stores').select('*').eq('meta_phone_number_id', waba_number).single();
+          // A. Buscar el número en el Pool de WhatsApp
+          let { data: waNumber } = await supabase.from('meta_whatsapp_numbers').select('*, store:stores(*)').eq('phone_number_id', waba_number).single();
+          let store = waNumber?.store;
           
-          // Fallback temporal si no encuentra la tienda exacta
+          // Si encontró la tienda a través del pool, inyectamos los datos para retrocompatibilidad
+          if (store && waNumber) {
+            store.meta_phone_number_id = waNumber.phone_number_id;
+            store.meta_access_token = waNumber.access_token;
+            store.waba_id = waNumber.waba_id;
+          }
+
+          // Fallback temporal: si no está en el pool, buscamos directamente en la tabla stores
+          if (!store) {
+             const { data: legacyStore } = await supabase.from('stores').select('*').eq('meta_phone_number_id', waba_number).single();
+             store = legacyStore;
+          }
+          
+          // Fallback de emergencia
           if (!store) {
              const { data: firstStore } = await supabase.from('stores').select('*').limit(1);
              store = firstStore?.[0];
