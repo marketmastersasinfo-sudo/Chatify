@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Store, Smartphone, Target, Plus, ShoppingBag, Loader2, Save, X, AlertTriangle, RefreshCw, RefreshCcw, CheckCircle2, FileText } from 'lucide-react';
+import { Store, Smartphone, Target, Plus, ShoppingBag, Loader2, Save, X, AlertTriangle, RefreshCw, RefreshCcw, CheckCircle2, FileText, Wifi, WifiOff, Phone, Shield, Zap } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 
@@ -9,6 +9,8 @@ export function Stores() {
   const [stores, setStores] = useState<any[]>([]);
   const [selectedStore, setSelectedStore] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [waNumber, setWaNumber] = useState<any>(null);
+  const [loadingWa, setLoadingWa] = useState(false);
   
   // Modal/Form State
   const [isAdding, setIsAdding] = useState(false);
@@ -25,6 +27,22 @@ export function Stores() {
   useEffect(() => {
     loadStores();
   }, [selectedCountry]);
+
+  // Cargar datos del pool de WhatsApp cuando cambia la tienda seleccionada
+  useEffect(() => {
+    if (!selectedStore?.id) { setWaNumber(null); return; }
+    setLoadingWa(true);
+    supabase
+      .from('whatsapp_numbers')
+      .select('*')
+      .eq('store_id', selectedStore.id)
+      .limit(1)
+      .maybeSingle()
+      .then(({ data }) => {
+        setWaNumber(data);
+        setLoadingWa(false);
+      });
+  }, [selectedStore?.id]);
 
   async function loadStores() {
     setLoading(true);
@@ -384,346 +402,151 @@ export function Stores() {
                 <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
                   <Store className="text-blue-600" /> Configuración: {selectedStore.name}
                 </h2>
-                <button 
-                  onClick={() => {
-                    navigator.clipboard.writeText(selectedStore.id);
-                    alert("¡ID copiado al portapapeles! Ahora pégalo en Make.com");
-                  }}
-                  className="bg-purple-100 text-purple-700 border border-purple-200 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-purple-200 flex items-center gap-2 transition-colors"
-                >
-                  <FileText className="w-3 h-3" /> Copiar ID para Make.com
-                </button>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* WhatsApp Config (BSP) */}
-                <div className="col-span-1 lg:col-span-3 p-5 bg-gray-50 rounded-xl border border-gray-100">
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2"><Smartphone className="w-4 h-4 text-green-600" /> WhatsApp & Integraciones</h3>
-                    <button className="text-xs font-bold text-blue-600 hover:text-blue-800">Editar</button>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-500 mb-1">Nombre de la Tienda</label>
-                      <input type="text" placeholder="Ej: Dropi Belleza" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white text-gray-600 focus:ring-1 focus:ring-blue-500" />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-500 mb-1">Logo (Sube una Imagen)</label>
-                      <input type="file" accept="image/*" className="w-full px-3 py-1.5 border border-gray-200 rounded-lg text-sm bg-white text-gray-600 focus:ring-1 focus:ring-blue-500 file:mr-4 file:py-1 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
-                    </div>
-                  </div>
-
-                  <h4 className="font-bold text-gray-900 mt-6 mb-3 border-b pb-2">Integraciones y APIs (Webhooks)</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="col-span-1 md:col-span-2 bg-blue-50 p-4 rounded-xl border border-blue-100 mb-2">
-                      <div className="flex justify-between items-center mb-4">
-                        <div>
-                          <h5 className="text-sm font-bold text-gray-900 flex items-center gap-2">
-                            <Smartphone className="w-4 h-4 text-blue-600" /> WhatsApp API (Twilio Partner)
-                          </h5>
-                          <p className="text-xs text-gray-500 mt-1">Ingresa el número telefónico que compraste y conectaste en la consola de Twilio.</p>
-                        </div>
-                        <a href="https://console.twilio.com" target="_blank" rel="noopener noreferrer" className="bg-red-500 text-white px-4 py-1.5 rounded-lg text-xs font-bold hover:bg-red-600 shadow-sm transition-colors">
-                          Abrir Consola Twilio
-                        </a>
+              {/* ═══ WHATSAPP CONNECTION CARD ═══ */}
+              <div className="rounded-2xl overflow-hidden mb-6" style={{background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%)'}}>
+                <div className="p-6">
+                  {/* Header */}
+                  <div className="flex items-center justify-between mb-5">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{background: 'linear-gradient(135deg, #22c55e, #16a34a)'}}>
+                        <Phone className="w-5 h-5 text-white" />
                       </div>
-
-                      <div className="space-y-4">
-                        <div>
-                          <label className="block text-xs font-bold text-blue-800 uppercase tracking-wider mb-1.5">Número Telefónico de Twilio</label>
-                          <input 
-                            type="text" 
-                            value={selectedStore.twilio_phone_number || ''}
-                            onChange={async (e) => {
-                              const val = e.target.value;
-                              setSelectedStore({...selectedStore, twilio_phone_number: val});
-                              // @ts-ignore
-                              await supabase.from('stores').update({twilio_phone_number: val}).eq('id', selectedStore.id);
-                            }}
-                            onBlur={() => {
-                              const el = document.getElementById('toast-success');
-                              if (el) {
-                                el.classList.remove('hidden');
-                                setTimeout(() => el.classList.add('hidden'), 3000);
-                              }
-                            }}
-                            placeholder="+18106666654"
-                            className="w-full px-4 py-3 bg-white border border-blue-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 font-medium text-gray-900"
-                          />
-                          <p className="text-[10px] text-gray-500 mt-1">Asegúrate de incluir el código de país (ej. +1 o +57).</p>
-                        </div>
-                      </div>
-                      
-                      <div id="toast-success" className="hidden mt-3 bg-green-50 border border-green-200 text-green-700 px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-all">
-                        <CheckCircle2 className="w-4 h-4" /> ¡Número guardado exitosamente en la base de datos!
-                      </div>
-                    </div>
-
-                    {/* Meta WhatsApp Cloud API (Beta) */}
-                    <div className="col-span-1 md:col-span-2 bg-purple-50 p-4 rounded-xl border border-purple-100 mb-2">
-                      <div className="flex justify-between items-center mb-4">
-                        <div className="flex items-center gap-3">
-                          <div>
-                            <h5 className="text-sm font-bold text-purple-900 flex items-center gap-2">
-                              <Smartphone className="w-4 h-4 text-purple-600" /> WhatsApp API Oficial (Meta Cloud API)
-                              {/* Connection indicator */}
-                              {(selectedStore as any).meta_access_token && (selectedStore as any).meta_phone_number_id ? (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-700 border border-green-200">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" /> Conectado
-                                </span>
-                              ) : (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-600 border border-red-200">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-red-500" /> Sin configurar
-                                </span>
-                              )}
-                            </h5>
-                            <p className="text-xs text-purple-700 mt-1">Conexión directa con Meta (sin Twilio). Producción real.</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          {/* ON/OFF Toggle */}
-                          {(selectedStore as any).meta_access_token && (selectedStore as any).meta_phone_number_id && (
-                            <div className="flex items-center gap-2">
-                              <span className="text-[10px] font-bold text-purple-700 uppercase">
-                                {(selectedStore as any).meta_wa_active !== false ? '🟢 Activo' : '🔴 Pausado'}
-                              </span>
-                              <button
-                                onClick={async () => {
-                                  const newVal = (selectedStore as any).meta_wa_active === false ? true : false;
-                                  setSelectedStore({...selectedStore, meta_wa_active: newVal} as any);
-                                  // @ts-ignore
-                                  await supabase.from('stores').update({meta_wa_active: newVal}).eq('id', selectedStore.id);
-                                }}
-                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                                  (selectedStore as any).meta_wa_active !== false 
-                                    ? 'bg-green-500' 
-                                    : 'bg-gray-300'
-                                }`}
-                              >
-                                <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-md transition-transform ${
-                                  (selectedStore as any).meta_wa_active !== false ? 'translate-x-6' : 'translate-x-1'
-                                }`} />
-                              </button>
-                            </div>
+                      <div>
+                        <h3 className="text-white font-bold text-sm flex items-center gap-2">
+                          WhatsApp Cloud API
+                          {loadingWa ? (
+                            <Loader2 className="w-3 h-3 text-gray-400 animate-spin" />
+                          ) : waNumber ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-500/20 text-green-400 border border-green-500/30">
+                              <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" /> Conectado
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-500/20 text-red-400 border border-red-500/30">
+                              <span className="w-1.5 h-1.5 rounded-full bg-red-400" /> Sin número
+                            </span>
                           )}
-                          <a href="https://developers.facebook.com" target="_blank" rel="noopener noreferrer" className="bg-purple-600 text-white px-4 py-1.5 rounded-lg text-xs font-bold hover:bg-purple-700 shadow-sm transition-colors">
-                            Meta Developers
-                          </a>
-                        </div>
-                      </div>
-
-                      {/* Warning when paused */}
-                      {(selectedStore as any).meta_wa_active === false && (
-                        <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2 mb-4 flex items-center gap-2">
-                          <span className="text-red-500 text-lg">⚠️</span>
-                          <p className="text-xs text-red-700 font-medium">
-                            El bot de WhatsApp está <strong>PAUSADO</strong>. Los mensajes entrantes NO serán procesados ni respondidos automáticamente. Activa el switch para reanudar.
-                          </p>
-                        </div>
-                      )}
-
-                      {/* Display connected phone number */}
-                      {(selectedStore as any).meta_access_token && (selectedStore as any).meta_phone_number_id && (
-                        <div className="bg-white border border-purple-200 rounded-xl px-4 py-3 mb-4 flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
-                              <span className="text-xl">📱</span>
-                            </div>
-                            <div>
-                              <p className="text-[10px] font-bold text-purple-700 uppercase tracking-wider">Número de WhatsApp Conectado</p>
-                              <p className="text-lg font-bold text-gray-900" id="meta-phone-display">
-                                {(selectedStore as any).meta_phone_display || 'Cargando...'}
-                              </p>
-                            </div>
-                          </div>
-                          <button
-                            onClick={async () => {
-                              try {
-                                const token = (selectedStore as any).meta_access_token;
-                                const phoneId = (selectedStore as any).meta_phone_number_id;
-                                const res = await fetch(`https://graph.facebook.com/v25.0/${phoneId}?fields=display_phone_number,verified_name`, {
-                                  headers: { 'Authorization': `Bearer ${token}` }
-                                });
-                                const data = await res.json();
-                                if (data.display_phone_number) {
-                                  setSelectedStore({...selectedStore, meta_phone_display: `${data.display_phone_number} (${data.verified_name || ''})` } as any);
-                                }
-                              } catch (e) {
-                                console.error('Error fetching phone:', e);
-                              }
-                            }}
-                            className="text-purple-600 hover:text-purple-800 text-xs font-bold underline"
-                          >
-                            Verificar
-                          </button>
-                        </div>
-                      )}
-
-                      <div className="space-y-4">
-                        <div>
-                          <label className="block text-xs font-bold text-purple-800 uppercase tracking-wider mb-1.5">Meta Access Token (System User)</label>
-                          <div className="relative flex gap-2">
-                            <input 
-                              type={(selectedStore as any)._showToken ? 'text' : 'password'}
-                              value={(selectedStore as any).meta_access_token || ''}
-                              onChange={async (e) => {
-                                const val = e.target.value;
-                                setSelectedStore({...selectedStore, meta_access_token: val} as any);
-                                // @ts-ignore
-                                await supabase.from('stores').update({meta_access_token: val}).eq('id', selectedStore.id);
-                              }}
-                              placeholder="EAACw..."
-                              className="flex-1 px-4 py-3 bg-white border border-purple-200 rounded-xl text-sm focus:ring-2 focus:ring-purple-500 font-medium text-gray-900"
-                            />
-                            <button
-                              onClick={() => setSelectedStore({...selectedStore, _showToken: !(selectedStore as any)._showToken} as any)}
-                              className="px-3 py-2 bg-purple-100 text-purple-700 rounded-xl text-xs font-bold hover:bg-purple-200 transition-colors whitespace-nowrap"
-                            >
-                              {(selectedStore as any)._showToken ? '🙈 Ocultar' : '👁️ Ver'}
-                            </button>
-                            <button
-                              onClick={() => {
-                                navigator.clipboard.writeText((selectedStore as any).meta_access_token || '');
-                                alert('Token copiado al portapapeles');
-                              }}
-                              className="px-3 py-2 bg-purple-600 text-white rounded-xl text-xs font-bold hover:bg-purple-700 transition-colors whitespace-nowrap"
-                            >
-                              📋 Copiar
-                            </button>
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div>
-                            <label className="block text-xs font-bold text-purple-800 uppercase tracking-wider mb-1.5">Phone Number ID</label>
-                            <input 
-                              type="text" 
-                              value={(selectedStore as any).meta_phone_number_id || ''}
-                              onChange={async (e) => {
-                                const val = e.target.value;
-                                setSelectedStore({...selectedStore, meta_phone_number_id: val} as any);
-                                // @ts-ignore
-                                await supabase.from('stores').update({meta_phone_number_id: val}).eq('id', selectedStore.id);
-                              }}
-                              placeholder="1234567890"
-                              className="w-full px-4 py-3 bg-white border border-purple-200 rounded-xl text-sm focus:ring-2 focus:ring-purple-500 font-medium text-gray-900"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-xs font-bold text-purple-800 uppercase tracking-wider mb-1.5">WhatsApp Business Account ID</label>
-                            <input 
-                              type="text" 
-                              value={(selectedStore as any).waba_id || ''}
-                              onChange={async (e) => {
-                                const val = e.target.value;
-                                setSelectedStore({...selectedStore, waba_id: val} as any);
-                                // @ts-ignore
-                                await supabase.from('stores').update({waba_id: val}).eq('id', selectedStore.id);
-                              }}
-                              placeholder="2508397522873921"
-                              className="w-full px-4 py-3 bg-white border border-purple-200 rounded-xl text-sm focus:ring-2 focus:ring-purple-500 font-medium text-gray-900"
-                            />
-                          </div>
-                        </div>
+                        </h3>
+                        <p className="text-gray-400 text-xs mt-0.5">Conexión directa vía Meta Business Platform</p>
                       </div>
                     </div>
-
-                    <div className="col-span-1 md:col-span-2 bg-green-50 p-4 rounded-xl border border-green-100 mb-4">
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <h5 className="font-bold text-green-900 flex items-center gap-2"><ShoppingBag className="w-4 h-4"/> Integración Webhook ShopyEasy</h5>
-                          <p className="text-xs text-green-700 mt-1">Copia esta URL y pégala en ShopyEasy para recibir pedidos y carritos abandonados automáticamente.</p>
-                        </div>
-                      </div>
-                      <div className="mt-3 flex gap-2">
-                        <input 
-                          type="text" 
-                          readOnly 
-                          value={`${window.location.origin}/api/webhooks/shopyeasy?storeId=${selectedStore.id}`} 
-                          className="flex-1 px-3 py-2 border border-green-200 rounded-lg text-sm bg-white text-gray-600 font-mono" 
-                        />
-                        <button 
-                          onClick={() => {
-                            navigator.clipboard.writeText(`${window.location.origin}/api/webhooks/shopyeasy?storeId=${selectedStore.id}`);
-                            alert('URL copiada al portapapeles');
+                    {/* Kill Switch Toggle */}
+                    {waNumber && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-bold uppercase" style={{color: waNumber.is_active ? '#4ade80' : '#f87171'}}>
+                          {waNumber.is_active ? '🟢 Activo' : '🔴 Pausado'}
+                        </span>
+                        <button
+                          onClick={async () => {
+                            const newVal = !waNumber.is_active;
+                            setWaNumber({...waNumber, is_active: newVal});
+                            await supabase.from('whatsapp_numbers').update({is_active: newVal}).eq('id', waNumber.id);
                           }}
-                          className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm hover:bg-green-700"
+                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                            waNumber.is_active ? 'bg-green-500' : 'bg-gray-600'
+                          }`}
                         >
-                          Copiar URL
+                          <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-md transition-transform ${
+                            waNumber.is_active ? 'translate-x-6' : 'translate-x-1'
+                          }`} />
                         </button>
                       </div>
-                    </div>
+                    )}
                   </div>
+
+                  {/* Warning when paused */}
+                  {waNumber && !waNumber.is_active && (
+                    <div className="bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 mb-5 flex items-center gap-3">
+                      <WifiOff className="w-5 h-5 text-red-400 flex-shrink-0" />
+                      <p className="text-xs text-red-300 font-medium">
+                        El bot de WhatsApp está <strong className="text-red-200">PAUSADO</strong>. Los mensajes se guardan en el CRM pero la IA no responde automáticamente.
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Phone Number Card */}
+                  {loadingWa ? (
+                    <div className="bg-white/5 rounded-xl p-4 flex items-center gap-3">
+                      <Loader2 className="w-5 h-5 text-gray-400 animate-spin" />
+                      <span className="text-gray-400 text-sm">Cargando número...</span>
+                    </div>
+                  ) : waNumber ? (
+                    <div className="bg-white/5 backdrop-blur rounded-xl p-4 flex items-center justify-between border border-white/10">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{background: 'linear-gradient(135deg, #22c55e, #15803d)'}}>
+                          <Wifi className="w-6 h-6 text-white" />
+                        </div>
+                        <div>
+                          <p className="text-gray-400 text-[10px] font-bold uppercase tracking-wider">Número Conectado</p>
+                          <p className="text-white text-lg font-bold tracking-wide">{waNumber.phone_number} <span className="text-gray-400 text-sm font-normal">({waNumber.display_name})</span></p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                          {waNumber.business_manager || 'Meta Business'}
+                        </span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="bg-white/5 rounded-xl p-4 flex items-center gap-3 border border-white/10">
+                      <WifiOff className="w-5 h-5 text-gray-500" />
+                      <span className="text-gray-400 text-sm">Esta tienda no tiene un número de WhatsApp asignado.</span>
+                    </div>
+                  )}
+
+                  {/* Technical Details (collapsed by default) */}
+                  {waNumber && (
+                    <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <div className="bg-white/5 rounded-lg p-3 border border-white/10">
+                        <p className="text-gray-500 text-[10px] font-bold uppercase tracking-wider mb-1">Phone Number ID</p>
+                        <p className="text-gray-300 text-xs font-mono">{waNumber.phone_number_id}</p>
+                      </div>
+                      <div className="bg-white/5 rounded-lg p-3 border border-white/10">
+                        <p className="text-gray-500 text-[10px] font-bold uppercase tracking-wider mb-1">WABA ID</p>
+                        <p className="text-gray-300 text-xs font-mono">{waNumber.waba_id}</p>
+                      </div>
+                      <div className="bg-white/5 rounded-lg p-3 border border-white/10">
+                        <p className="text-gray-500 text-[10px] font-bold uppercase tracking-wider mb-1">Access Token</p>
+                        <p className="text-gray-300 text-xs font-mono truncate">••••••••{waNumber.access_token?.slice(-8) || '---'}</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
-              {/* Conexión Redes Sociales (Make.com) */}
-              <div className="mt-8 border-t border-gray-200 pt-8">
-                <div className="flex justify-between items-center mb-6">
-                  <div>
-                    <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                      <Target className="w-5 h-5 text-blue-600" /> Redes Sociales (Para CRM Make.com)
-                    </h3>
-                    <p className="text-sm text-gray-500 mt-1">Vincula los IDs de Facebook e Instagram para que la IA responda comentarios automáticamente.</p>
+              {/* ═══ SHOPYEASY WEBHOOK ═══ */}
+              <div className="rounded-2xl p-5 bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200 mb-6">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center">
+                    <Zap className="w-4 h-4 text-emerald-600" />
                   </div>
+                  <div>
+                    <h5 className="font-bold text-emerald-900 text-sm">Webhook ShopyEasy</h5>
+                    <p className="text-xs text-emerald-600">Pega esta URL en ShopyEasy para recibir pedidos y carritos abandonados.</p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <input 
+                    type="text" 
+                    readOnly 
+                    value={`${window.location.origin}/api/webhooks/shopyeasy?storeId=${selectedStore.id}`} 
+                    className="flex-1 px-3 py-2 border border-emerald-200 rounded-lg text-sm bg-white text-gray-600 font-mono" 
+                  />
                   <button 
-                    onClick={async () => {
-                      if (!selectedStore) return;
-                      try {
-                        const { error } = await (supabase as any).from('stores').update({
-                          fb_page_id: selectedStore.fb_page_id,
-                          ig_account_id: selectedStore.ig_account_id,
-                        }).eq('id', selectedStore.id);
-                        if (error) throw error;
-                        alert('Redes Sociales guardadas exitosamente');
-                      } catch(e) {
-                        alert('Error al guardar Redes Sociales');
-                      }
+                    onClick={() => {
+                      navigator.clipboard.writeText(`${window.location.origin}/api/webhooks/shopyeasy?storeId=${selectedStore.id}`);
+                      alert('URL copiada al portapapeles');
                     }}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-colors"
+                    className="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm hover:bg-emerald-700 transition-colors"
                   >
-                    <Save className="w-4 h-4" /> Guardar Redes
+                    Copiar URL
                   </button>
                 </div>
-
-                <div className="p-6 bg-white border border-gray-100 shadow-sm rounded-2xl grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-2 mb-4">
-                      <div className="w-8 h-8 rounded bg-blue-100 flex items-center justify-center text-blue-600 font-bold">f</div>
-                      <h4 className="font-bold text-slate-700">Facebook Page ID</h4>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-slate-500 mb-1">ID de la Fan Page</label>
-                      <input 
-                        type="text" 
-                        value={selectedStore.fb_page_id || ''}
-                        onChange={(e) => setSelectedStore({...selectedStore, fb_page_id: e.target.value})}
-                        className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-600" 
-                        placeholder="1234567890" 
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-2 mb-4">
-                      <div className="w-8 h-8 rounded bg-pink-100 flex items-center justify-center text-pink-600 font-bold">ig</div>
-                      <h4 className="font-bold text-slate-700">Instagram Account ID</h4>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-slate-500 mb-1">ID de la Cuenta de Instagram</label>
-                      <input 
-                        type="text" 
-                        value={selectedStore.ig_account_id || ''}
-                        onChange={(e) => setSelectedStore({...selectedStore, ig_account_id: e.target.value})}
-                        className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-pink-600" 
-                        placeholder="0987654321" 
-                      />
-                    </div>
-                  </div>
-                </div>
               </div>
 
-              {/* Tracking Avanzado (API) */}
-              <div className="mt-8 border-t border-gray-200 pt-8">
+              {/* ═══ TRACKING AVANZADO ═══ */}
+              <div className="border-t border-gray-200 pt-6">
                 <div className="flex justify-between items-center mb-6">
                   <div>
                     <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
@@ -845,13 +668,10 @@ export function Stores() {
                         placeholder="AW-..." 
                       />
                     </div>
-                    <div className="pt-2 text-xs text-slate-500 leading-relaxed">
-                      Para Google Ads, requerimos el ID para conversiones offline. Asegúrate de configurar la captura de `gclid` en tus links.
-                    </div>
-                           {/* Fin Tracking Avanzado */}
-            </div>                </div>
                   </div>
+                </div>
               </div>
+            </div>
           ) : (
             <div className="flex flex-col items-center justify-center h-64 border-2 border-dashed border-gray-200 rounded-2xl bg-gray-50">
               <Store className="w-12 h-12 text-gray-300 mb-3" />
@@ -860,8 +680,7 @@ export function Stores() {
           )}
         </div>
       </div>
-
-
     </div>
   );
 }
+
