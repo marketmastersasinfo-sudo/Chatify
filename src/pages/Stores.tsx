@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Store, Smartphone, Target, Plus, ShoppingBag, Loader2, Save, X, AlertTriangle, RefreshCw, RefreshCcw, CheckCircle2, FileText, Wifi, WifiOff, Phone, Shield, Zap } from 'lucide-react';
+import { Store, Smartphone, Target, Plus, ShoppingBag, Loader2, Save, X, AlertTriangle, RefreshCw, RefreshCcw, Wifi, WifiOff, Phone, Zap } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 
@@ -441,7 +441,7 @@ export function Stores() {
                           onClick={async () => {
                             const newVal = !waNumber.is_active;
                             setWaNumber({...waNumber, is_active: newVal});
-                            await supabase.from('whatsapp_numbers').update({is_active: newVal}).eq('id', waNumber.id);
+                            await (supabase as any).from('whatsapp_numbers').update({is_active: newVal}).eq('id', waNumber.id);
                           }}
                           className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
                             waNumber.is_active ? 'bg-green-500' : 'bg-gray-600'
