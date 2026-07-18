@@ -116,8 +116,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // Send via Meta API
       const { sendMetaTemplate } = await import('./utils/_meta-whatsapp.js');
       const components = [];
-      if (Object.keys(contentVariables).length > 0) {
-        const parameters = Object.keys(contentVariables).map(k => ({
+      // Extract only numeric keys for Meta's positional parameters (1, 2, 3...)
+      const numericKeys = Object.keys(contentVariables)
+        .filter(k => !isNaN(Number(k)))
+        .sort((a, b) => Number(a) - Number(b));
+
+      if (numericKeys.length > 0) {
+        const parameters = numericKeys.map(k => ({
           type: 'text',
           text: contentVariables[k]
         }));
