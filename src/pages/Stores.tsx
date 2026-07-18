@@ -574,6 +574,22 @@ export function Stores() {
                     <p className="text-xs text-blue-700">{(billingInfo?.maps?.requests || 0).toLocaleString()} fotos ($200 gratis/mes)</p>
                   </div>
                 </div>
+
+                {billingInfo?.meta?.error && (
+                  <div className="mt-4 bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3">
+                    <AlertTriangle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <h4 className="text-sm font-bold text-red-800 mb-1">Alerta de Conexión Meta</h4>
+                      <p className="text-xs text-red-700">
+                        Detectamos un error con los permisos de esta línea de WhatsApp: <br/>
+                        <code className="bg-white/50 px-1 py-0.5 rounded font-mono text-red-900 mt-1 block">{billingInfo.meta.error}</code>
+                      </p>
+                      <p className="text-xs text-red-600 mt-2 font-medium">
+                        Solución: Ve a Meta, genera un nuevo Token Permanente asegurándote de seleccionar TODOS los permisos (incluyendo whatsapp_business_management), y pégalo en esta tienda.
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* ═══ SHOPYEASY WEBHOOK ═══ */}

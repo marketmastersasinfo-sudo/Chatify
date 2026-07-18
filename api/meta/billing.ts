@@ -35,14 +35,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     
     // First, try to get basic currency and account info
     let metaBilling = null;
+    let metaError = null;
     try {
       const metaRes = await fetch(`https://graph.facebook.com/v19.0/${wabaId}?fields=currency,account_review_status,message_template_namespace`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
+      const data = await metaRes.json();
       if (metaRes.ok) {
-        metaBilling = await metaRes.json();
+        metaBilling = data;
+      } else {
+        metaError = data.error?.message || 'Error desconocido de Meta';
       }
-    } catch(e) {
+    } catch(e: any) {
+      metaError = e.message;
       console.error('Meta API error:', e);
     }
 
@@ -85,6 +90,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       meta: {
         currency: metaBilling?.currency || 'USD',
         status: metaBilling?.account_review_status || 'UNKNOWN',
+        error: metaError,
         // We can't get credit card info directly from WABA node without business_management permissions
         // and querying the ad account/payment node, which requires the ad account ID.
         // For now, we return what we can access with whatsapp_business_messaging scope.
