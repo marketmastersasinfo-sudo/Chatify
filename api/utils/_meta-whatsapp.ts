@@ -61,7 +61,7 @@ export async function sendMetaTemplate(
   templateName: string, 
   languageCode: string = 'es',
   components: any[] = []
-) {
+): Promise<any> {
   const { phoneNumberId, accessToken, to } = options;
   const cleanTo = to.replace(/\D/g, '');
 
@@ -79,7 +79,28 @@ export async function sendMetaTemplate(
     }
   };
 
-  return await fetchMetaApi(phoneNumberId, accessToken, payload);
+  try {
+    return await fetchMetaApi(phoneNumberId, accessToken, payload);
+  } catch (error: any) {
+    // If it's a parameter mismatch error (#132000) and we have body parameters, try reducing them
+    if (error.message && error.message.includes('132000')) {
+      const bodyComponent = components.find(c => c.type === 'body');
+      if (bodyComponent && bodyComponent.parameters && bodyComponent.parameters.length > 0) {
+        console.warn(`Template ${templateName} parameter mismatch. Retrying with 1 less parameter...`);
+        // Drop the last parameter
+        const newComponents = components.map(c => {
+          if (c.type === 'body') {
+            return { ...c, parameters: c.parameters.slice(0, -1) };
+          }
+          return c;
+        });
+        // If parameters array is empty, we completely remove the component
+        const finalComponents = newComponents.filter(c => c.type !== 'body' || c.parameters.length > 0);
+        return await sendMetaTemplate(options, templateName, languageCode, finalComponents);
+      }
+    }
+    throw error;
+  }
 }
 
 /**

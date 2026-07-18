@@ -117,12 +117,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // 4. Revisar si el lead ya existe para esta tienda
-    const { data: existingLead } = await supabase
+    const { data: existingLeads } = await supabase
       .from('leads')
       .select('*')
       .eq('store_id', store.id)
       .eq('phone', formattedPhone)
-      .maybeSingle();
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    const existingLead = existingLeads?.[0];
 
     let leadId = existingLead?.id;
 
