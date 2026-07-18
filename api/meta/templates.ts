@@ -1,12 +1,18 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
-import twilio from 'twilio';
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL;
-const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY;
+const supabaseKey = process.env.VITE_SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
 const supabase = createClient(supabaseUrl!, supabaseKey!);
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  // CORS
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+  res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
+  if (req.method === 'OPTIONS') return res.status(200).end();
+
   const { storeId } = req.query;
 
   if (!storeId) {
@@ -14,31 +20,30 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    // 1. Verificar tienda (solo por validación, usamos Twilio global)
-    const { data: store, error: storeError } = await supabase
-      .from('stores')
-      .select('id')
-      .eq('id', storeId as string)
+    // Get Meta credentials from whatsapp_numbers
+    const { data: waNumber } = await supabase
+      .from('whatsapp_numbers')
+      .select('waba_id, access_token, phone_number_id, display_name')
+      .eq('store_id', storeId as string)
+      .limit(1)
       .single();
 
-    if (storeError || !store) {
-      return res.status(400).json({ error: 'Tienda no encontrada.' });
-    }
-
-    const twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
-
     // ==========================================
-    // GET: Obtener analíticas o todas las plantillas
+    // GET: Fetch templates
     // ==========================================
     if (req.method === 'GET') {
       const { action, startDate, endDate } = req.query;
 
       // --- ANALYTICS MODE ---
       if (action === 'analytics') {
-        const { data: templates } = await supabase.from('store_templates').select('id, template_name, template_type, is_active').eq('store_id', storeId as string);
+        const { data: templates } = await supabase.from('store_templates')
+          .select('id, template_name, template_type, is_active')
+          .eq('store_id', storeId as string);
         if (!templates || templates.length === 0) return res.status(200).json({ success: true, data: [] });
 
-        let query = supabase.from('messages').select('template_id, is_conversion, created_at, converted_at').in('template_id', templates.map(t => t.id));
+        let query = supabase.from('messages')
+          .select('template_id, is_conversion, created_at, converted_at')
+          .in('template_id', templates.map(t => t.id));
         if (startDate) query = query.gte('created_at', startDate as string);
         if (endDate) query = query.lte('created_at', endDate as string);
 
@@ -65,121 +70,101 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
 
       // --- NORMAL TEMPLATE FETCH MODE ---
-      const contents = await twilioClient.content.v1.contents.list({ limit: 100 });
-      
-      // Fetch our local templates to get the proper names and categories
+      // Get local templates from DB
       const { data: localTemplates } = await supabase
         .from('store_templates')
         .select('*')
         .eq('store_id', storeId as string);
 
-      // Auto-register: If this store is missing templates that exist in Twilio,
-      // copy the name from other stores' records or use Twilio's friendlyName
-      const missingTemplates = contents.filter(c => 
-        !localTemplates?.find(l => l.twilio_content_sid === c.sid)
-      );
-
-      if (missingTemplates.length > 0) {
-        // Fetch ALL store_templates to find names from other stores
-        const allSids = missingTemplates.map(c => c.sid);
-        const { data: otherStoreRecords } = await supabase
-          .from('store_templates')
-          .select('twilio_content_sid, template_name, template_type')
-          .in('twilio_content_sid', allSids);
-
-        const newRecords = missingTemplates.map(c => {
-          // Try to get name from another store's record
-          const otherRecord = otherStoreRecords?.find(r => r.twilio_content_sid === c.sid);
-          return {
-            store_id: storeId as string,
-            template_name: otherRecord?.template_name || c.friendlyName || 'Sin Nombre',
-            twilio_content_sid: c.sid,
-            twilio_approval_status: 'received', // Will be updated by sync below
-            template_type: otherRecord?.template_type || 'custom'
-          };
-        });
-
-        // Insert all missing records for this store
-        const { data: inserted } = await supabase
-          .from('store_templates')
-          .insert(newRecords)
-          .select();
-
-        // Add newly inserted records to localTemplates for the rest of the logic
-        if (inserted) {
-          localTemplates?.push(...inserted);
-        }
-      }
-
-      // Sincronizar estado real de aprobación con Twilio para TODAS las plantillas
-      const approvalDetails: Record<string, any> = {};
-      if (localTemplates) {
-        for (const local of localTemplates) {
-          if (!local.twilio_content_sid) continue;
-          try {
-            const approval = await twilioClient.content.v1.contents(local.twilio_content_sid).approvalFetch().fetch() as any;
-            // Status is nested inside whatsapp object, NOT at top level
-            const whatsappData = approval.whatsapp || {};
-            const realStatus = whatsappData.status || approval.status || 'unknown';
-            // Store full approval details for frontend
-            approvalDetails[local.twilio_content_sid] = {
-              status: realStatus,
-              rejectionReason: whatsappData.rejection_reason || approval.rejectionReason || null,
-              category: whatsappData.category || null,
-              contentType: whatsappData.content_type || null,
-              whatsapp: whatsappData,
-              raw: JSON.stringify(approval).substring(0, 500)
-            };
-            if (realStatus !== local.twilio_approval_status) {
-              await supabase.from('store_templates')
-                .update({ twilio_approval_status: realStatus })
-                .eq('id', local.id);
-              local.twilio_approval_status = realStatus;
+      // If we have Meta credentials, also fetch live status from Meta
+      let metaTemplatesMap: Record<string, any> = {};
+      if (waNumber?.waba_id && waNumber?.access_token) {
+        try {
+          let allMetaTemplates: any[] = [];
+          let url = `https://graph.facebook.com/v25.0/${waNumber.waba_id}/message_templates?limit=100&fields=name,status,language,category,components`;
+          
+          while (url) {
+            const metaRes = await fetch(url, {
+              headers: { 'Authorization': `Bearer ${waNumber.access_token}` }
+            });
+            const metaData = await metaRes.json();
+            if (metaData.error) {
+              console.error('Meta templates fetch error:', metaData.error.message);
+              break;
             }
-          } catch (err) {
-            console.error('Error fetching approval status for', local.twilio_content_sid, err);
+            allMetaTemplates = allMetaTemplates.concat(metaData.data || []);
+            url = metaData.paging?.next || '';
           }
+
+          // Build a lookup map by name
+          for (const mt of allMetaTemplates) {
+            metaTemplatesMap[mt.name] = mt;
+          }
+
+          // Auto-import: If Meta has templates not in our DB, add them
+          const localNames = new Set((localTemplates || []).map(t => t.template_name));
+          const newMetaTemplates = allMetaTemplates.filter(mt => 
+            mt.status === 'APPROVED' && !localNames.has(mt.name)
+          );
+
+          if (newMetaTemplates.length > 0) {
+            const newRecords = newMetaTemplates.map(mt => ({
+              store_id: storeId as string,
+              template_name: mt.name,
+              template_type: classifyTemplate(mt.name, mt.category),
+              is_active: true,
+              sent_count: 0,
+              conversion_count: 0
+            }));
+
+            const { data: inserted } = await supabase
+              .from('store_templates')
+              .insert(newRecords)
+              .select();
+
+            if (inserted) {
+              localTemplates?.push(...inserted);
+            }
+          }
+        } catch (metaErr: any) {
+          console.error('Meta API error (non-fatal):', metaErr.message);
         }
       }
 
-      // Formatear para que el frontend no se rompa tanto
-      const formattedData = contents.map(c => {
-        const local = localTemplates?.find(l => l.twilio_content_sid === c.sid);
-        const types = c.types as any;
-        const components: any[] = [
-          {
-            type: 'BODY',
-            text: types['twilio/text']?.body || types['twilio/media']?.body || types['twilio/quick-reply']?.body || ''
-          }
-        ];
+      // Format for frontend
+      const formattedData = (localTemplates || []).map(local => {
+        const metaInfo = metaTemplatesMap[local.template_name];
+        const components = metaInfo?.components || [];
+        const bodyComp = components.find((c: any) => c.type === 'BODY');
+        const buttonComp = components.find((c: any) => c.type === 'BUTTONS');
 
-        // Add buttons if quick-reply type exists
-        const quickReply = types['twilio/quick-reply'];
-        if (quickReply?.actions && quickReply.actions.length > 0) {
-          components.push({
+        const formattedComponents: any[] = [];
+        if (bodyComp) {
+          formattedComponents.push({ type: 'BODY', text: bodyComp.text || '' });
+        }
+        if (buttonComp?.buttons) {
+          formattedComponents.push({
             type: 'BUTTONS',
-            buttons: quickReply.actions.map((a: any) => ({
-              type: 'QUICK_REPLY',
-              text: a.title
+            buttons: buttonComp.buttons.map((b: any) => ({
+              type: b.type || 'QUICK_REPLY',
+              text: b.text
             }))
           });
         }
 
-        const approval = approvalDetails[c.sid] || {};
-
         return {
-          id: c.sid,
-          db_id: local?.id,
-          name: local?.template_name || c.friendlyName || 'Sin Nombre',
-          category: approval.category || (local?.template_type === 'custom' ? 'UTILITY' : 'MARKETING'),
-          language: c.language,
-          status: local?.twilio_approval_status || 'APPROVED', 
-          created_at: local?.created_at || (c as any).dateCreated || null,
-          is_active: local?.is_active ?? true,
-          sent_count: local?.sent_count || 0,
-          conversion_count: local?.conversion_count || 0,
-          components,
-          approvalDetails: approval
+          id: local.id,
+          db_id: local.id,
+          name: local.template_name,
+          category: metaInfo?.category || local.template_type?.toUpperCase() || 'UTILITY',
+          language: metaInfo?.language || 'es',
+          status: metaInfo?.status || 'APPROVED',
+          created_at: local.created_at,
+          is_active: local.is_active ?? true,
+          sent_count: local.sent_count || 0,
+          conversion_count: local.conversion_count || 0,
+          components: formattedComponents,
+          source: metaInfo ? 'meta' : 'local_only'
         };
       });
 
@@ -187,7 +172,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // ==========================================
-    // PATCH: Toggle is_active status of a template
+    // PATCH: Toggle is_active status
     // ==========================================
     if (req.method === 'PATCH') {
       const { templateId, is_active } = req.body;
@@ -204,197 +189,196 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // ==========================================
-    // POST: Crear una nueva plantilla en Twilio Content API y enviarla a WhatsApp
+    // POST: Create a new template via Meta Cloud API
     // ==========================================
     if (req.method === 'POST') {
+      if (!waNumber?.waba_id || !waNumber?.access_token) {
+        return res.status(400).json({ error: 'Esta tienda no tiene credenciales de Meta configuradas. Configura un número de WhatsApp primero.' });
+      }
+
       const payload = req.body;
-      
-      let bodyText = '';
-      const variables: any = {};
-      
-      const bodyComponent = payload.components?.find((c: any) => c.type === 'BODY');
-      if (bodyComponent) {
-        bodyText = bodyComponent.text;
-        const regex = /{{(\d+)}}/g;
-        let match;
-        while ((match = regex.exec(bodyText)) !== null) {
-          // Use real examples from the form instead of generic "Var1"
-          const exampleValue = payload.variableExamples?.[match[1]] || `Ejemplo${match[1]}`;
-          variables[match[1]] = exampleValue;
+
+      // Build Meta template components
+      const components: any[] = [];
+
+      // Header (optional)
+      const headerComp = payload.components?.find((c: any) => c.type === 'HEADER');
+      if (headerComp) {
+        if (headerComp.format === 'IMAGE') {
+          components.push({
+            type: 'HEADER',
+            format: 'IMAGE',
+            example: headerComp.example ? { header_handle: headerComp.example.header_handle } : undefined
+          });
+        } else if (headerComp.format === 'TEXT') {
+          components.push({ type: 'HEADER', format: 'TEXT', text: headerComp.text });
         }
       }
 
-      const buttonsComponent = payload.components?.find((c: any) => c.type === 'BUTTONS');
+      // Body (required)
+      const bodyComp = payload.components?.find((c: any) => c.type === 'BODY');
+      if (bodyComp) {
+        const bodyData: any = { type: 'BODY', text: bodyComp.text };
+        // Add examples if variables exist
+        const varMatches = bodyComp.text.match(/\{\{(\d+)\}\}/g);
+        if (varMatches && payload.variableExamples) {
+          bodyData.example = {
+            body_text: [varMatches.map((m: string) => {
+              const num = m.replace(/[{}]/g, '');
+              return payload.variableExamples[num] || `Ejemplo${num}`;
+            })]
+          };
+        }
+        components.push(bodyData);
+      }
 
-      const twilioContentPayload: any = {
-        friendlyName: payload.name,
-        language: payload.language || 'es',
-        types: {}
-      };
-
-      if (buttonsComponent && buttonsComponent.buttons && buttonsComponent.buttons.length > 0) {
-        twilioContentPayload.types['twilio/quick-reply'] = {
-          body: bodyText || 'Plantilla vacía',
-          actions: buttonsComponent.buttons.map((b: any, index: number) => ({
-            id: `btn_${index}`,
-            title: b.text
+      // Buttons (optional)
+      const buttonsComp = payload.components?.find((c: any) => c.type === 'BUTTONS');
+      if (buttonsComp?.buttons && buttonsComp.buttons.length > 0) {
+        components.push({
+          type: 'BUTTONS',
+          buttons: buttonsComp.buttons.map((b: any) => ({
+            type: b.type || 'QUICK_REPLY',
+            text: b.text
           }))
-        };
-      } else {
-        twilioContentPayload.types['twilio/text'] = {
-          body: bodyText || 'Plantilla vacía'
-        };
-      }
-
-      if (Object.keys(variables).length > 0) {
-        twilioContentPayload.variables = variables;
-      }
-
-      // Crear contenido
-      const content = await twilioClient.content.v1.contents.create(twilioContentPayload);
-
-      // 2. Enviar a aprobación de WhatsApp con el nombre en formato válido para Meta
-      const approvalName = (payload.name || 'template').toLowerCase().replace(/[^a-z0-9_]/g, '_');
-      const approval = await twilioClient.content.v1.contents(content.sid).approvalCreate.create({
-        category: payload.category || 'UTILITY',
-        name: approvalName
-      }) as any;
-
-      // Guardar el SID en nuestra BD
-      try {
-        await supabase.from('store_templates').insert({
-          store_id: storeId,
-          template_name: payload.name,
-          twilio_content_sid: content.sid,
-          twilio_approval_status: approval.status,
-          template_type: 'custom'
         });
-      } catch (dbErr) {
-        console.error('Error insertando en store_templates:', dbErr);
       }
 
-      return res.status(200).json({ success: true, data: { id: content.sid, status: approval.status } });
+      // Template name must be lowercase, underscore-only
+      const templateName = (payload.name || 'template').toLowerCase().replace(/[^a-z0-9_]/g, '_');
+
+      // Create template via Meta API
+      const metaRes = await fetch(`https://graph.facebook.com/v25.0/${waNumber.waba_id}/message_templates`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${waNumber.access_token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          name: templateName,
+          category: payload.category || 'UTILITY',
+          language: payload.language || 'es',
+          components
+        })
+      });
+
+      const metaData = await metaRes.json();
+
+      if (metaData.error) {
+        return res.status(400).json({
+          error: 'Error de Meta al crear la plantilla',
+          details: metaData.error
+        });
+      }
+
+      // Save to DB
+      const { data: newTemplate } = await supabase.from('store_templates').insert({
+        store_id: storeId as string,
+        template_name: templateName,
+        template_type: 'custom',
+        is_active: false // Will become active when Meta approves
+      }).select().single();
+
+      return res.status(200).json({
+        success: true,
+        data: {
+          id: newTemplate?.id || metaData.id,
+          meta_id: metaData.id,
+          status: metaData.status || 'PENDING',
+          name: templateName
+        }
+      });
     }
 
     // ==========================================
-    // PUT: Sincronizar nombres desde Chatify → Twilio (fix unnamed templates)
+    // PUT: Sync templates from Meta → Supabase
     // ==========================================
     if (req.method === 'PUT') {
-      const { action } = req.body || {};
+      if (!waNumber?.waba_id || !waNumber?.access_token) {
+        return res.status(400).json({ error: 'Sin credenciales Meta. Configura un número de WhatsApp primero.' });
+      }
+
+      // Fetch ALL templates from Meta
+      let allMeta: any[] = [];
+      let url = `https://graph.facebook.com/v25.0/${waNumber.waba_id}/message_templates?limit=100&fields=name,status,language,category,components`;
       
-      if (action !== 'sync-names') {
-        return res.status(400).json({ error: 'Acción no reconocida. Usa action: "sync-names"' });
+      while (url) {
+        const metaRes = await fetch(url, {
+          headers: { 'Authorization': `Bearer ${waNumber.access_token}` }
+        });
+        const metaData = await metaRes.json();
+        if (metaData.error) throw new Error(metaData.error.message);
+        allMeta = allMeta.concat(metaData.data || []);
+        url = metaData.paging?.next || '';
       }
 
-      // Load store_templates with valid names and SIDs
-      const { data: localTemplates, error: dbErr } = await supabase
+      // Get local templates
+      const { data: localTemplates } = await supabase
         .from('store_templates')
-        .select('id, template_name, twilio_content_sid, twilio_approval_status')
-        .eq('store_id', storeId as string)
-        .not('twilio_content_sid', 'is', null)
-        .not('template_name', 'is', null)
-        .neq('template_name', '');
+        .select('*')
+        .eq('store_id', storeId as string);
 
-      if (dbErr) throw new Error('Error leyendo store_templates: ' + dbErr.message);
+      const localNames = new Set((localTemplates || []).map(t => t.template_name));
+      const approved = allMeta.filter(t => t.status === 'APPROVED');
+      const newToAdd = approved.filter(t => !localNames.has(t.name));
 
-      const results: any[] = [];
-      const accountSid = process.env.TWILIO_ACCOUNT_SID!;
-      const authToken = process.env.TWILIO_AUTH_TOKEN!;
-      const base64Auth = Buffer.from(`${accountSid}:${authToken}`).toString('base64');
+      let addedCount = 0;
+      if (newToAdd.length > 0) {
+        const records = newToAdd.map(t => ({
+          store_id: storeId as string,
+          template_name: t.name,
+          template_type: classifyTemplate(t.name, t.category),
+          is_active: true,
+          sent_count: 0,
+          conversion_count: 0
+        }));
 
-      for (const tmpl of (localTemplates || [])) {
-        const sid = tmpl.twilio_content_sid?.trim();
-        const name = tmpl.template_name?.trim();
-        if (!sid || !name) continue;
-
-        const result: any = { id: tmpl.id, name, sid, actions: [] };
-
-        try {
-          // Fetch current friendlyName
-          const content = await twilioClient.content.v1.contents(sid).fetch();
-          const currentFriendlyName = content.friendlyName;
-
-          if (!currentFriendlyName || currentFriendlyName !== name) {
-            // Update via Twilio REST API (SDK doesn't expose update for Content Templates)
-            const updateRes = await fetch(`https://content.twilio.com/v1/Content/${sid}`, {
-              method: 'POST',
-              headers: {
-                'Authorization': `Basic ${base64Auth}`,
-                'Content-Type': 'application/x-www-form-urlencoded',
-              },
-              body: new URLSearchParams({ FriendlyName: name }).toString(),
-            });
-
-            if (updateRes.ok) {
-              result.actions.push(`✅ Renombrado a "${name}" en Twilio`);
-            } else {
-              const errBody = await updateRes.text();
-              result.actions.push(`⚠️ No se pudo renombrar (${updateRes.status}): ${errBody.substring(0, 120)}`);
-            }
-          } else {
-            result.actions.push(`ℹ️ Ya tenía el nombre correcto: "${currentFriendlyName}"`);
-          }
-
-          // Sync approval status back to Supabase
-          try {
-            const approval = await twilioClient.content.v1.contents(sid).approvalFetch().fetch() as any;
-            const realStatus = approval.status || 'approved';
-            if (realStatus !== tmpl.twilio_approval_status) {
-              await supabase.from('store_templates').update({ twilio_approval_status: realStatus }).eq('id', tmpl.id);
-              result.actions.push(`🔄 Estado actualizado: ${tmpl.twilio_approval_status} → ${realStatus}`);
-            } else {
-              result.actions.push(`✅ Estado correcto: ${realStatus}`);
-            }
-          } catch (approvalErr: any) {
-            result.actions.push(`⚠️ No se pudo verificar estado: ${approvalErr.message}`);
-          }
-
-        } catch (twilioErr: any) {
-          result.actions.push(`❌ Error Twilio: ${twilioErr.message}`);
-        }
-
-        results.push(result);
+        const { data: inserted } = await supabase.from('store_templates').insert(records).select();
+        addedCount = inserted?.length || 0;
       }
 
-      return res.status(200).json({ success: true, synced: results.length, results });
+      return res.status(200).json({
+        success: true,
+        synced: addedCount,
+        total_meta: allMeta.length,
+        total_approved: approved.length,
+        total_local: (localTemplates?.length || 0) + addedCount,
+        results: newToAdd.map(t => ({ name: t.name, status: t.status, actions: ['✅ Importada desde Meta'] }))
+      });
     }
 
     // ==========================================
-    // DELETE: Eliminar una plantilla de Twilio
+    // DELETE: Delete a template (local only — Meta templates persist)
     // ==========================================
     if (req.method === 'DELETE') {
-      const sid = req.query.sid as string;
-      if (!sid) return res.status(400).json({ error: 'Falta el SID de la plantilla' });
-
-      // Delete from Twilio
-      await twilioClient.content.v1.contents(sid).remove();
-
-      // Also delete from store_templates if it exists
-      await supabase.from('store_templates').delete().eq('twilio_content_sid', sid);
-
-      return res.status(200).json({ success: true, message: `Plantilla ${sid} eliminada de Twilio y Chatify.` });
-    }
-
-    // ==========================================
-    // PATCH: Activar o desactivar una plantilla
-    // ==========================================
-    if (req.method === 'PATCH') {
-      const { templateId, is_active } = req.body || {};
+      const { templateId } = req.query;
       if (!templateId) return res.status(400).json({ error: 'Falta templateId' });
 
-      const { error } = await supabase
-        .from('store_templates')
-        .update({ is_active })
-        .eq('id', templateId);
-
-      if (error) throw error;
-      return res.status(200).json({ success: true, message: `Plantilla actualizada a ${is_active}` });
+      await supabase.from('store_templates').delete().eq('id', templateId as string);
+      return res.status(200).json({ success: true, message: 'Plantilla eliminada de Chatify.' });
     }
 
     return res.status(405).json({ error: 'Method not allowed' });
 
   } catch (error: any) {
-    console.error('Twilio Content API Error:', error);
-    return res.status(500).json({ error: error.message });
+    console.error('Meta Templates API Error:', error);
+    return res.status(500).json({ error: error.message, details: error });
   }
+}
+
+// Helper to classify template names into types
+function classifyTemplate(name: string, category: string): string {
+  const n = name.toLowerCase();
+  if (n.includes('carrito') || n.includes('cart') || n.includes('abandonad')) {
+    if (n.includes('final') || n.includes('_3')) return 'recuperar_carrito_t3';
+    if (n.includes('recordatorio') || n.includes('_2')) return 'recuperar_carrito_t2';
+    return 'recuperar_carrito_t1';
+  }
+  if (n.includes('confirmacion') || n.includes('confirmaciones')) {
+    if (n.includes('recordatorio') || n.includes('seguimiento')) return 'confirmation_reminder';
+    return 'order_confirmation';
+  }
+  if (n.includes('seguimiento') || n.includes('tracking')) return 'tracking';
+  if (n.includes('novedad')) return 'issue_delivery';
+  return 'custom';
 }

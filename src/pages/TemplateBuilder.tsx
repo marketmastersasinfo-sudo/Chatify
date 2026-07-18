@@ -208,7 +208,7 @@ export function TemplateBuilder() {
       const res = await fetch(`/api/meta/templates?storeId=${selectedStore.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'sync-names' })
+        body: JSON.stringify({ action: 'sync' })
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Error sincronizando');
@@ -220,18 +220,18 @@ export function TemplateBuilder() {
     setSyncing(false);
   }
 
-  async function handleDeleteTemplate(templateSid: string, templateName: string) {
+  async function handleDeleteTemplate(templateId: string, templateName: string) {
     if (!selectedStore) return;
-    if (!confirm(`¿Eliminar la plantilla "${templateName}" de Twilio?\n\nEsta acción no se puede deshacer.`)) return;
-    setDeletingTemplate(templateSid);
+    if (!confirm(`¿Eliminar la plantilla "${templateName}" de Chatify?\n\nEsta acción no se puede deshacer.`)) return;
+    setDeletingTemplate(templateId);
     try {
-      const res = await fetch(`/api/meta/templates?storeId=${selectedStore.id}&sid=${templateSid}`, {
+      const res = await fetch(`/api/meta/templates?storeId=${selectedStore.id}&templateId=${templateId}`, {
         method: 'DELETE'
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Error eliminando');
       // Remove from local state
-      setTemplates(prev => prev.filter(t => t.id !== templateSid));
+      setTemplates(prev => prev.filter(t => t.id !== templateId));
     } catch (err: any) {
       setError(err.message);
     }
@@ -410,7 +410,7 @@ export function TemplateBuilder() {
               className="text-sm font-bold text-blue-600 border-none focus:ring-0 bg-transparent cursor-pointer"
             >
               {stores.map(s => (
-                <option key={s.id} value={s.id}>{s.name} (Twilio: {s.twilio_phone_number ? 'Conectado' : 'Falta Número'})</option>
+                <option key={s.id} value={s.id}>{s.name}</option>
               ))}
             </select>
           </div>
@@ -423,7 +423,7 @@ export function TemplateBuilder() {
           <div className="flex items-center justify-between mb-3">
             <h3 className="font-bold text-gray-900 text-sm flex items-center gap-2">
               <Link2 className="w-4 h-4 text-blue-600"/>
-              Resultado de Sincronización de Nombres en Twilio
+              Resultado de Sincronización con Meta
             </h3>
             <button onClick={() => setSyncResults(null)} className="text-gray-400 hover:text-gray-600">
               <X className="w-4 h-4"/>
@@ -836,10 +836,10 @@ export function TemplateBuilder() {
               onClick={handleSyncNames}
               disabled={syncing || !selectedStore}
               className="text-purple-600 hover:text-purple-800 font-semibold text-sm flex items-center gap-1.5 transition-colors border border-purple-200 bg-purple-50 hover:bg-purple-100 px-3 py-1.5 rounded-lg"
-              title="Actualiza el nombre de todas las plantillas en Twilio para que coincidan con el nombre configurado en Chatify"
+              title="Importa plantillas nuevas desde Meta que aún no estén en Chatify"
             >
               {syncing ? <Loader2 className="w-4 h-4 animate-spin"/> : <Link2 className="w-4 h-4"/>}
-              {syncing ? 'Sincronizando...' : 'Nombres → Twilio'}
+              {syncing ? 'Sincronizando...' : 'Importar de Meta'}
             </button>
             <button 
               onClick={() => setIsCreating(true)}
@@ -905,7 +905,7 @@ export function TemplateBuilder() {
                           onClick={(e) => { e.stopPropagation(); handleDeleteTemplate(tpl.id, tpl.name); }}
                           disabled={deletingTemplate === tpl.id}
                           className="text-red-400 hover:text-red-600 transition-colors"
-                          title="Eliminar plantilla de Twilio"
+                          title="Eliminar plantilla de Chatify"
                         >
                           {deletingTemplate === tpl.id
                             ? <Loader2 className="w-4 h-4 animate-spin"/>
