@@ -317,6 +317,52 @@ export function LeadChatPanel({
 
                   // Extraer archivos multimedia incrustados [IMG:url], [VID:url], [SND:url], [DOC:url], [GIF:url]
                   let finalContent = cleanContent;
+                  
+                  if (finalContent.startsWith('[Plantilla Meta:')) {
+                    const match = finalContent.match(/\[Plantilla Meta:\s*(.+?)\](.*)/);
+                    if (match) {
+                      const templateName = match[1];
+                      const varsRaw = match[2];
+                      const varRegex = /\{\{(.+?)\}\}=([^\{]*)/g;
+                      const variables = [];
+                      let vMatch;
+                      while ((vMatch = varRegex.exec(varsRaw)) !== null) {
+                        variables.push({ key: vMatch[1].trim(), value: vMatch[2].trim() });
+                      }
+                      
+                      return (
+                        <div key={msg.id} className="flex flex-col items-end">
+                          <div className="bg-orange-50 border border-orange-200 text-orange-900 rounded-2xl p-4 shadow-sm max-w-[85%] min-w-[240px] relative rounded-tr-none">
+                            <div className="flex items-center gap-2 mb-2">
+                              <FileText className="w-4 h-4 text-orange-600" />
+                              <span className="font-bold text-[13px] uppercase tracking-wider text-orange-700">Plantilla Automática</span>
+                            </div>
+                            <div className="bg-white rounded-xl p-3 border border-orange-100 mb-2 shadow-sm">
+                              <span className="text-[13px] font-mono text-gray-600 font-bold">{templateName}</span>
+                            </div>
+                            {variables.length > 0 && (
+                              <div className="flex flex-col gap-1.5 mt-3 mb-4">
+                                <span className="text-[10px] font-bold text-orange-400 uppercase tracking-wider">Variables Inyectadas</span>
+                                <div className="grid grid-cols-1 gap-1">
+                                  {variables.map((v, idx) => (
+                                    <div key={idx} className="flex flex-col bg-orange-100/50 rounded-lg p-2 border border-orange-100/50">
+                                      <span className="text-[10px] text-orange-500 font-bold">{"{{"}{v.key}{"}}"}</span>
+                                      <span className="text-[13px] font-medium text-gray-800 break-words">{v.value}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            <span className="absolute bottom-2 right-3 text-[10px] opacity-70">
+                              {msg.created_at ? new Date(msg.created_at).toLocaleDateString('es-ES', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}
+                            </span>
+                          </div>
+                          <span className="text-[10px] font-medium text-gray-400 mt-1 px-1">⚙️ Sistema Webhook</span>
+                        </div>
+                      );
+                    }
+                  }
+
                   const embeddedMedia: { type: string, url: string }[] = [];
                   const mediaRegex = /\[(IMG|VID|SND|DOC|GIF):(.+?)\]/g;
                   let m;

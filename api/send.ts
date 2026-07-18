@@ -148,6 +148,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         template_id: template.id
       });
 
+      if (lead.board_type === 'logistics' && lead.status === 'nuevo') {
+        await supabase.from('leads').update({ status: 'confirmation_sent' }).eq('id', leadId);
+      }
+
       // Update sent count
       if (template) {
         await supabase.from('store_templates').update({ sent_count: (template.sent_count || 0) + 1 }).eq('id', template.id);

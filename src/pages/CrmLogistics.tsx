@@ -30,6 +30,34 @@ export function CrmLogistics() {
     } else {
       setLeads([]);
     }
+
+    const channel = supabase
+      .channel('logistics_leads')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'leads',
+          filter: 'board_type=eq.logistics'
+        },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            setLeads((prev) => [payload.new as any, ...prev]);
+          } else if (payload.eventType === 'UPDATE') {
+            setLeads((prev) =>
+              prev.map((lead) => (lead.id === payload.new.id ? { ...lead, ...payload.new } : lead))
+            );
+          } else if (payload.eventType === 'DELETE') {
+            setLeads((prev) => prev.filter((lead) => lead.id !== payload.old.id));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [filters]);
 
   async function loadLeads(f: CrmFilterState) {
