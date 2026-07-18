@@ -332,22 +332,22 @@ export function LeadChatPanel({
                       
                       return (
                         <div key={msg.id} className="flex flex-col items-end">
-                          <div className="bg-orange-50 border border-orange-200 text-orange-900 rounded-2xl p-4 shadow-sm max-w-[85%] min-w-[240px] relative rounded-tr-none">
+                          <div className="bg-orange-50 border border-orange-200 text-orange-900 p-3 shadow-sm max-w-[85%] w-fit relative rounded-2xl rounded-tr-none">
                             <div className="flex items-center gap-2 mb-2">
                               <FileText className="w-4 h-4 text-orange-600" />
-                              <span className="font-bold text-[13px] uppercase tracking-wider text-orange-700">Plantilla Automática</span>
+                              <span className="font-bold text-[11px] uppercase tracking-wider text-orange-700">Plantilla Automática</span>
                             </div>
-                            <div className="bg-white rounded-xl p-3 border border-orange-100 mb-2 shadow-sm">
-                              <span className="text-[13px] font-mono text-gray-600 font-bold">{templateName}</span>
+                            <div className="bg-white rounded-lg p-2 border border-orange-100 shadow-sm flex flex-col gap-1">
+                              <span className="text-[12px] font-mono text-gray-600 font-bold">{templateName}</span>
                             </div>
                             {variables.length > 0 && (
-                              <div className="flex flex-col gap-1.5 mt-3 mb-4">
-                                <span className="text-[10px] font-bold text-orange-400 uppercase tracking-wider">Variables Inyectadas</span>
-                                <div className="grid grid-cols-1 gap-1">
+                              <div className="flex flex-col mt-2 border-t border-orange-100 pt-2 w-full">
+                                <span className="text-[9px] font-bold text-orange-400 uppercase tracking-wider mb-1">Variables Inyectadas</span>
+                                <div className="flex flex-wrap gap-1">
                                   {variables.map((v, idx) => (
-                                    <div key={idx} className="flex flex-col bg-orange-100/50 rounded-lg p-2 border border-orange-100/50">
-                                      <span className="text-[10px] text-orange-500 font-bold">{"{{"}{v.key}{"}}"}</span>
-                                      <span className="text-[13px] font-medium text-gray-800 break-words">{v.value}</span>
+                                    <div key={idx} className="flex items-center gap-1 bg-orange-100/50 rounded px-1.5 py-0.5 border border-orange-100/50 text-[10px]">
+                                      <span className="text-orange-500 font-bold">{"{{"}{v.key}{"}}"}</span>
+                                      <span className="font-medium text-gray-800 truncate max-w-[150px]">{v.value}</span>
                                     </div>
                                   ))}
                                 </div>
