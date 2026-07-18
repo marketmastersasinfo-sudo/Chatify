@@ -111,3 +111,35 @@ async function fetchMetaApi(phoneNumberId: string, accessToken: string, payload:
     throw error;
   }
 }
+
+/**
+ * Get the download URL for a media file from WhatsApp Cloud API
+ */
+export async function getMediaUrl(mediaId: string, accessToken: string): Promise<{ url: string; mime_type: string }> {
+  const res = await fetch(`https://graph.facebook.com/v19.0/${mediaId}`, {
+    headers: { 'Authorization': `Bearer ${accessToken}` }
+  });
+  const data = await res.json();
+  if (data.error) throw new Error(data.error.message);
+  return { url: data.url, mime_type: data.mime_type || 'application/octet-stream' };
+}
+
+/**
+ * Download media binary from WhatsApp Cloud API
+ * Returns the raw buffer + mime type
+ */
+export async function downloadMetaMedia(mediaId: string, accessToken: string): Promise<{ buffer: Buffer; mimeType: string }> {
+  // Step 1: Get the download URL
+  const { url, mime_type } = await getMediaUrl(mediaId, accessToken);
+  
+  // Step 2: Download the actual file
+  const res = await fetch(url, {
+    headers: { 'Authorization': `Bearer ${accessToken}` }
+  });
+  
+  if (!res.ok) throw new Error(`Failed to download media: ${res.status}`);
+  
+  const arrayBuffer = await res.arrayBuffer();
+  return { buffer: Buffer.from(arrayBuffer), mimeType: mime_type };
+}
+

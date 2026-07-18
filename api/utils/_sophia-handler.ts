@@ -33,7 +33,7 @@ export async function handleSophia({ lead, productInfo, leadId, incomingText, st
   lead: any; productInfo: any; leadId: string; incomingText: string;
   storeTwilioPhone: string; customerPhone: string; store: any; supabase: any;
 }) {
-  if (!process.env.OPENAI_API_KEY) return;
+  // AI keys are now managed by the cascade router — no single-key check needed
 
   // Fetch last 12 messages for context (excluding system messages)
   const { data: recentMessages } = await sb
@@ -95,7 +95,9 @@ export async function handleSophia({ lead, productInfo, leadId, incomingText, st
       module: 'whatsapp',
       systemPrompt,
       messages: aiMessages,
-      requireJson: true
+      requireJson: true,
+      storeId: store?.id,
+      leadId
     });
 
     let cleanedOutput = aiOutput.trim() || '{}';
@@ -209,7 +211,22 @@ export async function handleSophia({ lead, productInfo, leadId, incomingText, st
         
         // Send via Meta API (text + image in one message)
         await sendMetaImage(metaOpts, streetViewUrl, aiReply);
-        await sb.from('messages').insert({ lead_id: leadId, sender_type: 'ai', content: `[Automated Street View] ${aiReply}\nImage: ${streetViewUrl}` });
+        await sb.from('messages').insert({ lead_id: leadId, sender_type: 'ai', content: `[IMG:${streetViewUrl}] ${aiReply}` });
+        
+        // Log Street View usage
+        try {
+          const month = new Date().toISOString().substring(0, 7); // YYYY-MM
+          await (sb as any).rpc('increment_api_usage', {
+            p_org_id: store.organization_id,
+            p_store_id: store.id,
+            p_api_name: 'google_street_view',
+            p_month: month,
+            p_cost: 0.007 // $7 per 1000 = $0.007 each
+          });
+        } catch(e) {
+          // Ignore if RPC doesn't exist
+        }
+        
         return;
       }
 

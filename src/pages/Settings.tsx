@@ -8,6 +8,7 @@ export function Settings() {
   const [showMapsKey, setShowMapsKey] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [globalCosts, setGlobalCosts] = useState<any>(null);
 
   // Global Tracking Pixels
   const [metaPixelId, setMetaPixelId] = useState('');
@@ -29,11 +30,11 @@ export function Settings() {
     deepseek: { model: 'deepseek-reasoner', key: '' }
   });
   const [showAiKeys, setShowAiKeys] = useState<Record<string, boolean>>({});
-  const [aiRouting, setAiRouting] = useState<Record<string, string>>({
-    whatsapp: 'openai',
-    social_media: 'anthropic',
-    templates: 'openai',
-    nlp: 'openai'
+  const [aiRouting, setAiRouting] = useState<Record<string, string[]>>({
+    whatsapp: ['openai'],
+    social_media: ['anthropic'],
+    templates: ['openai'],
+    nlp: ['openai']
   });
 
   const updateAiSetting = (provider: string, field: 'model' | 'key', value: string) => {
@@ -81,10 +82,35 @@ export function Settings() {
             return newSettings;
           });
           if (data[0].ai_settings.routing) {
-            setAiRouting((prev) => ({ ...prev, ...data[0].ai_settings.routing }));
+            const routingData = data[0].ai_settings.routing;
+            const parsedRouting: Record<string, string[]> = {};
+            for (const key in routingData) {
+              if (typeof routingData[key] === 'string') {
+                parsedRouting[key] = [routingData[key]];
+              } else if (Array.isArray(routingData[key])) {
+                parsedRouting[key] = routingData[key];
+              }
+            }
+            setAiRouting((prev) => ({ ...prev, ...parsedRouting }));
           }
         }
       }
+
+      // Load global costs
+      const currentMonth = new Date().toISOString().substring(0, 7);
+      const startDate = `${currentMonth}-01T00:00:00Z`;
+      
+      const [aiLogsRes, apiLogsRes] = await Promise.all([
+        (supabase as any).from('ai_usage_log').select('estimated_cost_usd').gte('created_at', startDate),
+        (supabase as any).from('api_usage_counters').select('estimated_cost_usd, api_name').eq('month', currentMonth)
+      ]);
+      
+      const totalAi = aiLogsRes.data?.reduce((sum: number, log: any) => sum + (Number(log.estimated_cost_usd) || 0), 0) || 0;
+      const totalMaps = apiLogsRes.data?.filter((l: any) => l.api_name === 'google_street_view')
+                                       .reduce((sum: number, log: any) => sum + (Number(log.estimated_cost_usd) || 0), 0) || 0;
+                                       
+      setGlobalCosts({ ai: totalAi, maps: totalMaps, month: currentMonth });
+      
     } catch (e) {
       console.error("Catch error:", e);
     }
@@ -163,6 +189,41 @@ export function Settings() {
 
       <div className="grid grid-cols-1 gap-6">
         
+        {/* Panel de Costos Globales */}
+        {globalCosts && (
+          <div className="glass-card rounded-2xl p-6 mb-2 border-t-4 border-t-emerald-500">
+            <div className="flex items-center gap-3 mb-5">
+              <div className="p-2 bg-emerald-50 rounded-lg">
+                <span className="text-xl">💰</span>
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">Costos Globales ({globalCosts.month})</h2>
+                <p className="text-sm text-gray-500">Sumatoria de gastos de IA y APIs de todas tus tiendas.</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="bg-purple-50 rounded-xl p-4 border border-purple-100 flex justify-between items-center">
+                <div>
+                  <p className="text-xs font-bold text-purple-600 uppercase tracking-wide">Inteligencia Artificial</p>
+                  <p className="text-2xl font-black text-purple-900">${globalCosts.ai.toFixed(4)} <span className="text-sm font-normal text-purple-600">USD</span></p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs text-purple-700">Todas las tiendas</p>
+                </div>
+              </div>
+              <div className="bg-blue-50 rounded-xl p-4 border border-blue-100 flex justify-between items-center">
+                <div>
+                  <p className="text-xs font-bold text-blue-600 uppercase tracking-wide">Google Maps (Street View)</p>
+                  <p className="text-2xl font-black text-blue-900">${globalCosts.maps.toFixed(4)} <span className="text-sm font-normal text-blue-600">USD</span></p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs text-blue-700">Primeros $200/mes gratis</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Motores de IA */}
         <div className="glass-card rounded-2xl p-6">
           <div className="flex items-center gap-3 mb-2">
@@ -421,54 +482,81 @@ export function Settings() {
             </div>
             <div>
               <h2 className="text-xl font-bold text-gray-900">Reglas de Enrutamiento (Cascada)</h2>
-              <p className="text-sm text-gray-500">Selecciona qué motor se hará cargo de cada tarea de tu empresa.</p>
+              <p className="text-sm text-gray-500">Selecciona el motor principal y sus respaldos por si falla.</p>
             </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="p-4 bg-gray-50 rounded-xl border border-purple-100 shadow-sm">
-              <label className="block text-sm font-bold text-purple-900 mb-2">Bot WhatsApp</label>
-              <select className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-purple-500" value={aiRouting.whatsapp} onChange={(e) => setAiRouting({...aiRouting, whatsapp: e.target.value})}>
-                <option value="openai">OpenAI (Usa modelo elegido arriba)</option>
-                <option value="anthropic">Anthropic (Usa modelo elegido arriba)</option>
-                <option value="google">Google Gemini (Usa modelo elegido arriba)</option>
-                <option value="llama">Meta Llama (Groq)</option>
-                <option value="grok">xAI Grok (Usa modelo elegido arriba)</option>
-                <option value="deepseek">Deepseek (Usa modelo elegido arriba)</option>
-              </select>
-            </div>
-            <div className="p-4 bg-gray-50 rounded-xl border border-gray-200">
-              <label className="block text-sm font-semibold text-gray-900 mb-2">Bot Redes Sociales</label>
-              <select className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-purple-500" value={aiRouting.social_media} onChange={(e) => setAiRouting({...aiRouting, social_media: e.target.value})}>
-                <option value="openai">OpenAI (Usa modelo elegido arriba)</option>
-                <option value="anthropic">Anthropic (Usa modelo elegido arriba)</option>
-                <option value="google">Google Gemini (Usa modelo elegido arriba)</option>
-                <option value="llama">Meta Llama (Groq)</option>
-                <option value="grok">xAI Grok (Usa modelo elegido arriba)</option>
-                <option value="deepseek">Deepseek (Usa modelo elegido arriba)</option>
-              </select>
-            </div>
-            <div className="p-4 bg-gray-50 rounded-xl border border-gray-200">
-              <label className="block text-sm font-semibold text-gray-900 mb-2">Plantillas (Ads)</label>
-              <select className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-purple-500" value={aiRouting.templates} onChange={(e) => setAiRouting({...aiRouting, templates: e.target.value})}>
-                <option value="openai">OpenAI (Usa modelo elegido arriba)</option>
-                <option value="anthropic">Anthropic (Usa modelo elegido arriba)</option>
-                <option value="google">Google Gemini (Usa modelo elegido arriba)</option>
-                <option value="llama">Meta Llama (Groq)</option>
-                <option value="grok">xAI Grok (Usa modelo elegido arriba)</option>
-                <option value="deepseek">Deepseek (Usa modelo elegido arriba)</option>
-              </select>
-            </div>
-            <div className="p-4 bg-gray-50 rounded-xl border border-gray-200">
-              <label className="block text-sm font-semibold text-gray-900 mb-2">Reportes (NLP)</label>
-              <select className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-purple-500" value={aiRouting.nlp} onChange={(e) => setAiRouting({...aiRouting, nlp: e.target.value})}>
-                <option value="openai">OpenAI (Usa modelo elegido arriba)</option>
-                <option value="anthropic">Anthropic (Usa modelo elegido arriba)</option>
-                <option value="google">Google Gemini (Usa modelo elegido arriba)</option>
-                <option value="llama">Meta Llama (Groq)</option>
-                <option value="grok">xAI Grok (Usa modelo elegido arriba)</option>
-                <option value="deepseek">Deepseek (Usa modelo elegido arriba)</option>
-              </select>
-            </div>
+            {[
+              { id: 'whatsapp', label: 'Bot WhatsApp', color: 'purple' },
+              { id: 'social_media', label: 'Bot Redes Sociales', color: 'gray' },
+              { id: 'templates', label: 'Plantillas (Ads)', color: 'gray' },
+              { id: 'nlp', label: 'Reportes (NLP)', color: 'gray' }
+            ].map(mod => {
+              const providers = aiRouting[mod.id] || ['openai'];
+              return (
+                <div key={mod.id} className={`p-4 bg-gray-50 rounded-xl border ${mod.color === 'purple' ? 'border-purple-200 shadow-sm bg-purple-50/30' : 'border-gray-200'}`}>
+                  <label className={`block text-sm font-bold mb-3 ${mod.color === 'purple' ? 'text-purple-900' : 'text-gray-900'}`}>{mod.label}</label>
+                  <div className="space-y-2">
+                    <div>
+                      <p className="text-[10px] uppercase font-bold text-gray-500 mb-1 ml-1">Primario</p>
+                      <select 
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:ring-purple-500"
+                        value={providers[0] || 'openai'}
+                        onChange={(e) => {
+                          const newProviders = [e.target.value, providers[1], providers[2]].filter(Boolean);
+                          setAiRouting({...aiRouting, [mod.id]: newProviders});
+                        }}
+                      >
+                        <option value="openai">OpenAI (GPT-4o Mini)</option>
+                        <option value="anthropic">Anthropic (Claude 3)</option>
+                        <option value="google">Google Gemini</option>
+                        <option value="llama">Meta Llama (Groq)</option>
+                        <option value="grok">xAI Grok</option>
+                        <option value="deepseek">Deepseek (Razonamiento)</option>
+                      </select>
+                    </div>
+                    <div>
+                      <p className="text-[10px] uppercase font-bold text-gray-500 mb-1 ml-1">Respaldo 1</p>
+                      <select 
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:ring-purple-500"
+                        value={providers[1] || ''}
+                        onChange={(e) => {
+                          const newProviders = [providers[0], e.target.value, providers[2]].filter(Boolean);
+                          setAiRouting({...aiRouting, [mod.id]: newProviders});
+                        }}
+                      >
+                        <option value="">-- Sin respaldo --</option>
+                        <option value="openai">OpenAI (GPT-4o Mini)</option>
+                        <option value="anthropic">Anthropic (Claude 3)</option>
+                        <option value="google">Google Gemini</option>
+                        <option value="llama">Meta Llama (Groq)</option>
+                        <option value="grok">xAI Grok</option>
+                        <option value="deepseek">Deepseek (Razonamiento)</option>
+                      </select>
+                    </div>
+                    <div>
+                      <p className="text-[10px] uppercase font-bold text-gray-500 mb-1 ml-1">Respaldo 2</p>
+                      <select 
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:ring-purple-500 opacity-70 hover:opacity-100"
+                        value={providers[2] || ''}
+                        onChange={(e) => {
+                          const newProviders = [providers[0], providers[1], e.target.value].filter(Boolean);
+                          setAiRouting({...aiRouting, [mod.id]: newProviders});
+                        }}
+                      >
+                        <option value="">-- Sin respaldo --</option>
+                        <option value="openai">OpenAI (GPT-4o Mini)</option>
+                        <option value="anthropic">Anthropic (Claude 3)</option>
+                        <option value="google">Google Gemini</option>
+                        <option value="llama">Meta Llama (Groq)</option>
+                        <option value="grok">xAI Grok</option>
+                        <option value="deepseek">Deepseek (Razonamiento)</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
 

@@ -11,6 +11,8 @@ export function Stores() {
   const [loading, setLoading] = useState(true);
   const [waNumber, setWaNumber] = useState<any>(null);
   const [loadingWa, setLoadingWa] = useState(false);
+  const [billingInfo, setBillingInfo] = useState<any>(null);
+  const [loadingBilling, setLoadingBilling] = useState(false);
   
   // Modal/Form State
   const [isAdding, setIsAdding] = useState(false);
@@ -30,8 +32,10 @@ export function Stores() {
 
   // Cargar datos del pool de WhatsApp cuando cambia la tienda seleccionada
   useEffect(() => {
-    if (!selectedStore?.id) { setWaNumber(null); return; }
+    if (!selectedStore?.id) { setWaNumber(null); setBillingInfo(null); return; }
     setLoadingWa(true);
+    setLoadingBilling(true);
+    
     supabase
       .from('whatsapp_numbers')
       .select('*')
@@ -42,6 +46,16 @@ export function Stores() {
         setWaNumber(data);
         setLoadingWa(false);
       });
+
+    // Fetch billing stats
+    fetch(`/api/meta/billing?store_id=${selectedStore.id}`)
+      .then(res => res.json())
+      .then(data => {
+        if (!data.error) setBillingInfo(data);
+        setLoadingBilling(false);
+      })
+      .catch(() => setLoadingBilling(false));
+
   }, [selectedStore?.id]);
 
   async function loadStores() {
@@ -512,6 +526,53 @@ export function Stores() {
                       </div>
                     </div>
                   )}
+                </div>
+              </div>
+
+              {/* ═══ PANEL DE COSTOS & BILLING ═══ */}
+              <div className="rounded-2xl p-6 bg-white border border-gray-200 shadow-sm mb-6">
+                <div className="flex items-center justify-between mb-5">
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                      <span className="text-xl">💰</span> Gastos del Mes ({billingInfo?.month || new Date().toISOString().substring(0,7)})
+                    </h3>
+                    <p className="text-sm text-gray-500 mt-1">Control de costos de APIs y motores de IA para esta tienda.</p>
+                  </div>
+                  {loadingBilling && <Loader2 className="w-5 h-5 text-gray-400 animate-spin" />}
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Costos IA */}
+                  <div className="bg-purple-50 rounded-xl p-4 border border-purple-100">
+                    <div className="flex justify-between items-start mb-2">
+                      <p className="text-xs font-bold text-purple-600 uppercase tracking-wide">Inteligencia Artificial</p>
+                      <span className="bg-purple-200 text-purple-800 text-[10px] font-bold px-2 py-0.5 rounded-full">Router v2</span>
+                    </div>
+                    <p className="text-3xl font-black text-purple-900 mb-1">${(billingInfo?.ai?.total_cost_usd || 0).toFixed(4)} <span className="text-sm font-normal text-purple-600">USD</span></p>
+                    <p className="text-xs text-purple-700">{(billingInfo?.ai?.total_tokens || 0).toLocaleString()} tokens consumidos</p>
+                  </div>
+
+                  {/* Costos Meta */}
+                  <div className="bg-green-50 rounded-xl p-4 border border-green-100">
+                    <div className="flex justify-between items-start mb-2">
+                      <p className="text-xs font-bold text-green-600 uppercase tracking-wide">WhatsApp Meta</p>
+                      <span className="bg-green-200 text-green-800 text-[10px] font-bold px-2 py-0.5 rounded-full">Cloud API</span>
+                    </div>
+                    <p className="text-3xl font-black text-green-900 mb-1">
+                      {billingInfo?.meta?.status === 'APPROVED' ? <span className="text-sm">Activo</span> : <span className="text-sm">Cons. WABA</span>}
+                    </p>
+                    <p className="text-xs text-green-700">Moneda: {billingInfo?.meta?.currency || 'USD'}</p>
+                  </div>
+
+                  {/* Costos Google Maps */}
+                  <div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
+                    <div className="flex justify-between items-start mb-2">
+                      <p className="text-xs font-bold text-blue-600 uppercase tracking-wide">Google Maps</p>
+                      <span className="bg-blue-200 text-blue-800 text-[10px] font-bold px-2 py-0.5 rounded-full">Street View</span>
+                    </div>
+                    <p className="text-3xl font-black text-blue-900 mb-1">${(billingInfo?.maps?.total_cost_usd || 0).toFixed(4)} <span className="text-sm font-normal text-blue-600">USD</span></p>
+                    <p className="text-xs text-blue-700">{(billingInfo?.maps?.requests || 0).toLocaleString()} fotos ($200 gratis/mes)</p>
+                  </div>
                 </div>
               </div>
 

@@ -77,7 +77,7 @@ async function handleWhatsApp(body: any, req: VercelRequest, res: VercelResponse
   const contact = value.contacts?.[0];
   const phone = message.from;
   const name = contact?.profile?.name || 'Cliente WhatsApp';
-  const text = message.text?.body || '';
+  let text = message.text?.body || '';
 
   // ── A. Buscar el número en el Pool (whatsapp_numbers) ──
   const { data: waNumber } = await supabase
@@ -96,6 +96,54 @@ async function handleWhatsApp(body: any, req: VercelRequest, res: VercelResponse
   // 🛑 KILL SWITCH: Si el número está apagado, NO enviar respuestas automáticas.
   // Pero SÍ guardamos el mensaje entrante para que aparezca en el CRM.
   const killSwitchActive = waNumber.is_active === false;
+
+  // ── A2. Extraer Media (Fotos, Audios, Docs) ──
+  const msgType = message.type;
+  if (msgType && msgType !== 'text') {
+    const mediaObj = message[msgType]; // message.image, message.audio, etc.
+    if (mediaObj && mediaObj.id) {
+      try {
+        const { downloadMetaMedia } = await import('./utils/_meta-whatsapp.js');
+        const { buffer, mimeType } = await downloadMetaMedia(mediaObj.id, waNumber.access_token);
+        
+        // Upload to Supabase Storage
+        const ext = mimeType.split('/')[1]?.split(';')[0] || 'bin';
+        const fileName = `media_${store.id}_${Date.now()}.${ext}`;
+        
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('chatify_media')
+          .upload(fileName, buffer, { contentType: mimeType });
+          
+        if (!uploadError && uploadData) {
+          const { data: { publicUrl } } = supabase.storage
+            .from('chatify_media')
+            .getPublicUrl(uploadData.path);
+            
+          let tag = 'DOC';
+          if (msgType === 'image') tag = 'IMG';
+          if (msgType === 'video') tag = 'VID';
+          if (msgType === 'audio') tag = 'SND';
+          
+          text = `[${tag}:${publicUrl}] ${text}`;
+          
+          // Transcribir audio si es SND
+          if (tag === 'SND') {
+            try {
+              const { transcribeAudio } = await import('./utils/ai-router.js');
+              const transcription = await transcribeAudio(buffer, mimeType, store.organization_id, store.id);
+              if (transcription) {
+                text += `\n\n🎤 Transcripción:\n"${transcription}"`;
+              }
+            } catch (e: any) {
+              console.error('Audio transcription failed:', e.message);
+            }
+          }
+        }
+      } catch (e: any) {
+        console.error(`Media download failed for ${msgType}:`, e.message);
+      }
+    }
+  }
 
   // ── B. Buscar o crear Lead ──
   const { data: allLeads } = await supabase
