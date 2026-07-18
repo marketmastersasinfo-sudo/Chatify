@@ -89,16 +89,32 @@ export async function handleSophia({ lead, productInfo, leadId, incomingText, st
     });
   }
 
+  // ── PRE-PROCESAMIENTO RÁPIDO PARA BOTONES Y ATAJOS (Bypass IA parcial) ──
+  const cleanIncoming = incomingText.trim().replace(/^(•\t|- )/, '').trim().toLowerCase();
+  let preParsedOutput = null;
+
+  if (lead?.board_type === 'logistics' && (cleanIncoming === 'todo está correcto' || cleanIncoming === 'todo correcto' || cleanIncoming === 'si' || cleanIncoming === 'sí')) {
+    preParsedOutput = {
+      reply: '¡Excelente! Tengo toda la información para tu pedido.',
+      intent: 'OrderConfirmed'
+    };
+  }
+
+  let aiOutput = '';
   try {
-    const aiOutput = await routeAIRequest({
-      organizationId: store?.organization_id || '',
-      module: 'whatsapp',
-      systemPrompt,
-      messages: aiMessages,
-      requireJson: true,
-      storeId: store?.id,
-      leadId
-    });
+    if (preParsedOutput) {
+      aiOutput = JSON.stringify(preParsedOutput);
+    } else {
+      aiOutput = await routeAIRequest({
+        organizationId: store?.organization_id || '',
+        module: 'whatsapp',
+        systemPrompt,
+        messages: aiMessages,
+        requireJson: true,
+        storeId: store?.id,
+        leadId
+      });
+    }
 
     let cleanedOutput = aiOutput.trim() || '{}';
     if (cleanedOutput.startsWith('```')) {
@@ -200,7 +216,8 @@ export async function handleSophia({ lead, productInfo, leadId, incomingText, st
     if (parsed.intent === 'Purchase' || parsed.intent === 'OrderConfirmed') {
       
       // INTERCEPTAR PARA STREET VIEW (Solo si tenemos dirección y ciudad y no estamos verificando ya)
-      if (lead?.status !== 'verifying_address' && newAddress && newCity) {
+      const isAlreadyProcessed = ['verifying_address', 'confirmado', 'closed', 'recovered'].includes(lead?.status);
+      if (!isAlreadyProcessed && newAddress && newCity) {
         await sb.from('leads').update({ status: 'verifying_address' }).eq('id', leadId);
         const { data: orgData } = await sb.from('organizations').select('google_maps_api_key').eq('id', store.organization_id);
         const apiKey = (orgData as any)?.[0]?.google_maps_api_key || 'AIzaSyD3amxq4t9GA892zO4C70nbnPGqnG4Ct-A';

@@ -78,6 +78,11 @@ async function handleWhatsApp(body: any, req: VercelRequest, res: VercelResponse
   const phone = message.from;
   const name = contact?.profile?.name || 'Cliente WhatsApp';
   let text = message.text?.body || '';
+  if (message.type === 'button') {
+    text = message.button?.text || message.button?.payload || '';
+  } else if (message.type === 'interactive') {
+    text = message.interactive?.button_reply?.title || message.interactive?.list_reply?.title || '';
+  }
 
   // ── A. Buscar el número en el Pool (whatsapp_numbers) ──
   const { data: waNumber } = await supabase
