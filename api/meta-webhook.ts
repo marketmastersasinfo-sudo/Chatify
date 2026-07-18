@@ -175,7 +175,7 @@ async function handleWhatsApp(body: any, req: VercelRequest, res: VercelResponse
   store.meta_access_token = waNumber.access_token;
   store.meta_phone_number_id = waNumber.phone_number_id;
 
-  const { handleSophia } = await import('./twilio-webhook.js');
+  const { handleSophia } = await import('./utils/_sophia-handler.js');
   await handleSophia({
     lead,
     productInfo,

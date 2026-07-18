@@ -1,6 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
-import twilio from 'twilio';
 
 export const maxDuration = 60; // Vercel Pro limit
 
@@ -12,8 +11,8 @@ const supabase = createClient(
 /**
  * GET /api/cart-recovery
  * 
- * Cron endpoint — called by cron-job.org every 30 minutes (FREE, no Vercel Pro needed).
- * Checks abandoned cart leads and sends WhatsApp recovery messages via Twilio.
+ * Cron endpoint — called by cron-job.org every 30 minutes.
+ * Checks abandoned cart leads and sends WhatsApp recovery messages via Meta Cloud API.
  * 
  * Sequence:
  *   Touch 1 → 30 minutes after abandonment
@@ -33,7 +32,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(400).json({ error: 'Faltan campos: storeId, name, phone' });
       }
 
-      // Clean phone number
       let cleanPhone = phone.replace(/[^\d+]/g, '');
       if (cleanPhone.startsWith('+')) cleanPhone = cleanPhone.substring(1);
       if (cleanPhone.length === 10) cleanPhone = `57${cleanPhone}`;
@@ -60,7 +58,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
-  // Security: only authorized callers (cron-job.org with secret header) — skip for force-send
+  // Security: only authorized callers
   const forceSendLeadId = req.query.leadId as string | undefined;
   const secret = req.headers['x-cron-secret'];
   if (!forceSendLeadId && process.env.CRON_SECRET && secret !== process.env.CRON_SECRET) {
@@ -72,21 +70,35 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const hr4ago    = new Date(now.getTime() - 4 * 60 * 60 * 1000);
   const hr24ago   = new Date(now.getTime() - 24 * 60 * 60 * 1000);
   const hr48ago   = new Date(now.getTime() - 48 * 60 * 60 * 1000);
-  const hr25ago   = new Date(now.getTime() - 25 * 60 * 60 * 1000); // safety window
+  const hr25ago   = new Date(now.getTime() - 25 * 60 * 60 * 1000);
 
   let processed = 0;
   const log: string[] = [];
 
   try {
-    // ── Load stores with their Twilio numbers and template SIDs ──────────────
-    const { data: stores } = await supabase
-      .from('stores')
-      .select('id, twilio_phone_number, organization_id, meta_access_token, meta_phone_number_id');
+    // ── Load WhatsApp numbers (Meta credentials) per store ──
+    const { data: waNumbers } = await (supabase as any)
+      .from('whatsapp_numbers')
+      .select('store_id, phone_number_id, access_token, is_active');
 
-    // Load recovery templates per store (or global fallback)
+    // Build store → Meta credentials map
+    const storeMetaMap: Record<string, { phoneNumberId: string, accessToken: string }> = {};
+    for (const wn of (waNumbers || [])) {
+      if (wn.store_id && wn.phone_number_id && wn.access_token) {
+        // Prefer active numbers, but use any if none active
+        if (!storeMetaMap[wn.store_id] || wn.is_active) {
+          storeMetaMap[wn.store_id] = {
+            phoneNumberId: wn.phone_number_id,
+            accessToken: wn.access_token
+          };
+        }
+      }
+    }
+
+    // Load recovery templates per store
     const { data: allTemplates } = await supabase
       .from('store_templates')
-      .select('id, store_id, template_type, twilio_content_sid, sent_count, template_name')
+      .select('id, store_id, template_type, template_name, sent_count')
       .in('template_type', ['recuperar_carrito_t1', 'recuperar_carrito_t2', 'recuperar_carrito_t3', 'abandoned_cart'])
       .eq('is_active', true);
 
@@ -99,25 +111,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return null;
     };
 
-    const twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+    // ── Helper: send a recovery WhatsApp template via Meta ──
+    async function sendRecoveryMessage(lead: any, touch: number, storeId: string) {
+      const template = getTemplate(storeId, touch);
+      const metaCreds = storeMetaMap[storeId];
 
-    // ── Helper: send a recovery WhatsApp template ─────────────────────────────
-    async function sendRecoveryMessage(lead: any, touch: number, store: any) {
-      const template = getTemplate(store.id, touch);
-      const useMetaApi = !!(store.meta_access_token && store.meta_phone_number_id);
-
-      if (!template?.twilio_content_sid && !useMetaApi) {
-        log.push(`[T${touch}] SKIP lead ${lead.id} — no template configured for store ${store.id}`);
+      if (!template?.template_name || !metaCreds) {
+        log.push(`[T${touch}] SKIP lead ${lead.id} — no template or no Meta credentials for store ${storeId}`);
         return false;
       }
 
-      const fromNumber = store.twilio_phone_number?.startsWith('whatsapp:')
-        ? store.twilio_phone_number
-        : `whatsapp:+${store.twilio_phone_number?.replace('+', '')}`;
-
-      const toNumber = `whatsapp:+${lead.phone}`;
-
-      // Build variables for Meta: {{1}}=name, {{2}}=product, {{3}}=price, {{4}}=address, {{5}}=city, {{6}}=phone
+      // Build variables: {{1}}=name, {{2}}=product, {{3}}=price, {{4}}=address, {{5}}=city
       const contentVariables: Record<string, string> = {
         '1': lead.name?.split(' ')[0] || 'Amigo',
         '2': lead.product_name || 'tu pedido',
@@ -127,79 +131,32 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         '6': lead.phone || ''
       };
 
-      // Filter empty variables
       const filtered = Object.fromEntries(
         Object.entries(contentVariables).filter(([, v]) => v.trim() !== '')
       );
 
       try {
-        if (useMetaApi) {
-          const { sendMetaTemplate } = await import('./utils/_meta-whatsapp.js');
-          const components = [];
-          if (Object.keys(filtered).length > 0) {
-            const parameters = Object.keys(filtered).map(k => ({
-              type: 'text',
-              text: filtered[k]
-            }));
-            components.push({
-              type: 'body',
-              parameters
-            });
-          }
-          
-          const tplName = template?.template_name || `recuperar_carrito_t${touch}`;
-          await sendMetaTemplate({
-            phoneNumberId: store.meta_phone_number_id,
-            accessToken: store.meta_access_token,
-            to: lead.phone
-          }, tplName, 'es', components);
-          
-        } else {
-          await twilioClient.messages.create({
-            from: fromNumber,
-            to: toNumber,
-            contentSid: template.twilio_content_sid,
-            contentVariables: JSON.stringify(filtered),
-          } as any);
+        const { sendMetaTemplate } = await import('./utils/_meta-whatsapp.js');
+        const components = [];
+        if (Object.keys(filtered).length > 0) {
+          const parameters = Object.keys(filtered).map(k => ({
+            type: 'text',
+            text: filtered[k]
+          }));
+          components.push({
+            type: 'body',
+            parameters
+          });
         }
+        
+        await sendMetaTemplate({
+          phoneNumberId: metaCreds.phoneNumberId,
+          accessToken: metaCreds.accessToken,
+          to: lead.phone
+        }, template.template_name, 'es', components);
 
-        // Fetch actual template body to log the real message content
+        // Log the message
         let bodyText = `[Bot Carrito T${touch}] Plantilla "${template.template_name}"`;
-        try {
-          if (!useMetaApi) {
-            const content = await twilioClient.content.v1.contents(template.twilio_content_sid).fetch();
-            const types = content.types as any;
-            const rawBody = types['twilio/text']?.body || types['twilio/media']?.body || types['twilio/quick-reply']?.body || '';
-            if (rawBody) {
-              bodyText = rawBody;
-              // Replace variables with actual values
-              for (const [key, val] of Object.entries(filtered)) {
-                bodyText = bodyText.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), val);
-              }
-              // Extraer botones interactivos
-              const buttons: string[] = [];
-              const extractActions = (actions: any[]) => {
-                if (!actions || !Array.isArray(actions)) return;
-                for (const action of actions) {
-                  buttons.push(action.title || action.body || action.url || action.id || JSON.stringify(action));
-                }
-              };
-              if (types['twilio/quick-reply']?.actions) extractActions(types['twilio/quick-reply'].actions);
-              if (types['twilio/call-to-action']?.actions) extractActions(types['twilio/call-to-action'].actions);
-              if (types['whatsapp/card']?.actions) extractActions(types['whatsapp/card'].actions);
-              if (buttons.length === 0) {
-                for (const typeKey of Object.keys(types)) {
-                  if (types[typeKey]?.actions) extractActions(types[typeKey].actions);
-                }
-              }
-              if (buttons.length > 0) {
-                bodyText += '\n\n' + buttons.map(b => `[BOTÓN] ${b}`).join('\n');
-              }
-            }
-          }
-        } catch { /* ignore - use fallback text */ }
-
-        // Log in messages table with the actual message content
         await supabase.from('messages').insert({
           lead_id: lead.id,
           sender_type: 'human',
@@ -207,19 +164,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           template_id: template.id
         });
 
-        // Update sent count for analytics
+        // Update sent count
         await supabase.from('store_templates').update({ sent_count: (template.sent_count || 0) + 1 }).eq('id', template.id);
 
         return true;
       } catch (e: any) {
         log.push(`[T${touch}] ERROR lead ${lead.id}: ${e.message}`);
-        // 🛑 OPTIMIZACIÓN: Marcar como no entregable para que NUNCA se reintente
-        // Twilio cobra aunque el mensaje falle, así que evitamos reintentos inútiles
+        // Mark as undeliverable
         await supabase.from('leads').update({ 
           status: 'undeliverable',
-          recovery_touch: -1 // -1 = marcado como fallido permanente
+          recovery_touch: -1
         }).eq('id', lead.id);
-        log.push(`[T${touch}] 🚫 Lead ${lead.id} marcado como NO ENTREGABLE (no se reintentará)`);
+        log.push(`[T${touch}] 🚫 Lead ${lead.id} marcado como NO ENTREGABLE`);
         return false;
       }
     }
@@ -236,14 +192,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       if (!lead) return res.status(404).json({ error: 'Lead not found' });
 
-      const store = stores?.find(s => s.id === lead.store_id);
-      if (!store?.twilio_phone_number) {
-        return res.status(400).json({ error: 'Store has no Twilio phone number' });
+      if (!storeMetaMap[lead.store_id]) {
+        return res.status(400).json({ error: 'No WhatsApp number configured for this store' });
       }
 
-      // Send NEXT touch (current + 1, max 3)
       const nextTouch = Math.min((lead.recovery_touch || 0) + 1, 3);
-      const sent = await sendRecoveryMessage(lead, nextTouch, store);
+      const sent = await sendRecoveryMessage(lead, nextTouch, lead.store_id);
 
       if (sent) {
         await supabase.from('leads').update({
@@ -272,13 +226,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .eq('status', 'abandoned')
       .eq('recovery_touch', 0)
       .lte('created_at', min30ago.toISOString())
-      .gte('created_at', hr25ago.toISOString()); // safety window
+      .gte('created_at', hr25ago.toISOString());
 
     for (const lead of (t1Leads || [])) {
-      const store = stores?.find(s => s.id === lead.store_id);
-      if (!store) continue;
-
-      const sent = await sendRecoveryMessage(lead, 1, store);
+      if (!storeMetaMap[lead.store_id]) continue;
+      const sent = await sendRecoveryMessage(lead, 1, lead.store_id);
       if (sent) {
         await supabase.from('leads').update({
           status: 'bot_sent',
@@ -302,10 +254,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .lte('recovery_last_sent_at', hr4ago.toISOString());
 
     for (const lead of (t2Leads || [])) {
-      const store = stores?.find(s => s.id === lead.store_id);
-      if (!store) continue;
-
-      const sent = await sendRecoveryMessage(lead, 2, store);
+      if (!storeMetaMap[lead.store_id]) continue;
+      const sent = await sendRecoveryMessage(lead, 2, lead.store_id);
       if (sent) {
         await supabase.from('leads').update({
           recovery_touch: 2,
@@ -328,10 +278,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .lte('recovery_last_sent_at', hr24ago.toISOString());
 
     for (const lead of (t3Leads || [])) {
-      const store = stores?.find(s => s.id === lead.store_id);
-      if (!store) continue;
-
-      const sent = await sendRecoveryMessage(lead, 3, store);
+      if (!storeMetaMap[lead.store_id]) continue;
+      const sent = await sendRecoveryMessage(lead, 3, lead.store_id);
       if (sent) {
         await supabase.from('leads').update({
           recovery_touch: 3,
