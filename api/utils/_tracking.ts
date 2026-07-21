@@ -141,7 +141,7 @@ export async function firePixelEvent(
         event: eventName === 'Purchase' ? 'CompletePayment' : eventName,
         event_time: eventTime,
         context: {
-          ad: { callback: lead?.ctwa_clid },
+          ...(lead?.ctwa_clid ? { ad: { callback: lead.ctwa_clid } } : {}),
           user: { phone_number: hashedPhone }
         },
         properties: {
