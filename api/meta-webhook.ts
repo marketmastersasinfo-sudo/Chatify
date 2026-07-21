@@ -373,7 +373,7 @@ async function handleFacebookPage(body: any, req: VercelRequest, res: VercelResp
 
       // 4. Encolar para respuesta IA (solo si NO es hater)
       if (!isDeleted) {
-        const processAfter = new Date(Date.now() + 2 * 60 * 1000).toISOString();
+        const processAfter = new Date(Date.now() + 10 * 1000).toISOString();
         await supabase.from('pending_comments').insert({
           page_id: pageId,
           post_id: postId,
