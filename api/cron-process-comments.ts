@@ -107,7 +107,33 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           }
         }
 
-        // Si encontramos producto por hashtag, armar catálogo CON OFERTAS
+        // Fallback para anuncios sin #hashtag: Emparejamiento semántico por coincidencia de texto
+        if (!matchedProduct && postContext && postContext !== 'Contexto del post desconocido.') {
+          const { data: allProds } = await supabase.from('products').select('*').limit(50);
+          if (allProds && allProds.length > 0) {
+            const lowerPost = postContext.toLowerCase();
+            for (const prod of allProds) {
+              const prodName = prod.name ? prod.name.toLowerCase() : '';
+              const firstWord = prodName.split(' ')[0];
+              if (prodName && lowerPost.includes(prodName)) {
+                matchedProduct = prod;
+                storeId = prod.store_id;
+                break;
+              } else if (firstWord.length > 3 && lowerPost.includes(firstWord)) {
+                matchedProduct = prod;
+                storeId = prod.store_id;
+                break;
+              }
+            }
+            if (!matchedProduct) {
+              // Asignar el producto más reciente como fallback
+              matchedProduct = allProds[0];
+              storeId = matchedProduct.store_id;
+            }
+          }
+        }
+
+        // Si encontramos producto (por hashtag o emparejamiento semántico), armar catálogo CON OFERTAS
         if (matchedProduct) {
           let offersText = '';
           try {
@@ -122,8 +148,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           const linkText = matchedProduct.product_link ? `\nLINK DE WHATSAPP: ${matchedProduct.product_link}` : '';
           catalogText = `Producto: ${matchedProduct.name}\nPrecio Base: $${matchedProduct.price}${offersText}${linkText}\nDetalles: ${matchedProduct.master_prompt || 'N/A'}`;
         } else {
-          // Sin hashtag = respuesta genérica (no crashear)
-          console.log(`⚠️ No se encontró hashtag válido en el post ${comment.post_id}. Respondiendo genéricamente.`);
+          // Sin producto = respuesta genérica
+          console.log(`⚠️ No se encontró producto para el post ${comment.post_id}. Respondiendo genéricamente.`);
         }
 
         // 3. LLAMADA A LA IA (SOPHIA) PARA EVITAR ALUCINACIONES

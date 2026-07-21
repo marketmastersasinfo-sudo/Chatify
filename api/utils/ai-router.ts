@@ -57,7 +57,7 @@ export async function routeAIRequest(req: AIRequest): Promise<string> {
   let providerChain: string[];
   
   if (req.providerOverride) {
-    providerChain = [req.providerOverride];
+    providerChain = [req.providerOverride, 'google', 'openai', 'deepseek'];
   } else {
     const moduleRouting = routing[req.module];
     if (Array.isArray(moduleRouting)) {
@@ -65,7 +65,15 @@ export async function routeAIRequest(req: AIRequest): Promise<string> {
     } else if (typeof moduleRouting === 'string') {
       providerChain = [moduleRouting];
     } else {
-      providerChain = ['openai']; // Default fallback
+      providerChain = ['openai'];
+    }
+  }
+
+  // Asegurar proveedores de respaldo en la cadena para evitar caídas de servicio
+  const defaultFallbacks = ['openai', 'google', 'deepseek'];
+  for (const fallback of defaultFallbacks) {
+    if (!providerChain.includes(fallback)) {
+      providerChain.push(fallback);
     }
   }
 

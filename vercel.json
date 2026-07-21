@@ -7,6 +7,10 @@
   ],
   "rewrites": [
     {
+      "source": "/r/(.*)",
+      "destination": "/api/redirect?store=$1"
+    },
+    {
       "source": "/api/(.*)",
       "destination": "/api/$1"
     },

@@ -10,8 +10,9 @@ import { TrafficBadge } from '../components/TrafficBadge';
 const columns = [
   { id: 'comentario', title: 'Comentario Público', color: 'border-blue-500', bg: 'bg-blue-50' },
   { id: 'dm_enviado', title: 'DM Enviado', color: 'border-purple-500', bg: 'bg-purple-50' },
-  { id: 'charla_dm', title: 'Conversación en DM', color: 'border-orange-500', bg: 'bg-orange-50' },
-  { id: 'verifying_address', title: 'Verificando Dirección', color: 'border-pink-500', bg: 'bg-pink-50' },
+  { id: 'charla_dm', title: 'Conversación en DM', color: 'border-indigo-500', bg: 'bg-indigo-50' },
+  { id: 'oferta_enviada', title: 'Oferta Enviada', color: 'border-amber-500', bg: 'bg-amber-50' },
+  { id: 'verifying_address', title: 'Datos de Entrega', color: 'border-pink-500', bg: 'bg-pink-50' },
   { id: 'venta_dm', title: 'Venta Directa DM', color: 'border-green-500', bg: 'bg-green-50' },
   { id: 'derivado', title: 'Derivado a WA', color: 'border-teal-500', bg: 'bg-teal-50' },
   { id: 'moderado', title: '🛑 Moderado / Humano', color: 'border-red-500', bg: 'bg-red-50' },
@@ -30,6 +31,34 @@ export function CrmSocial() {
     } else {
       setLeads([]);
     }
+
+    const channel = supabase
+      .channel('social_leads')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'leads',
+          filter: 'board_type=eq.social_media'
+        },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            setLeads((prev) => [payload.new as any, ...prev]);
+          } else if (payload.eventType === 'UPDATE') {
+            setLeads((prev) =>
+              prev.map((lead) => (lead.id === payload.new.id ? { ...lead, ...payload.new } : lead))
+            );
+          } else if (payload.eventType === 'DELETE') {
+            setLeads((prev) => prev.filter((lead) => lead.id !== payload.old.id));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [filters]);
 
   async function loadLeads(f: CrmFilterState) {
@@ -87,15 +116,17 @@ export function CrmSocial() {
         .update({ status: targetStatus })
         .eq('id', draggedLeadId);
 
-      // TRACKING: Disparar evento al soltar la tarjeta
+      // TRACKING: Disparar evento al soltar la tarjeta según la matriz exacta
       const lead = leads.find(l => l.id === draggedLeadId);
       if (lead) {
         let eventName = '';
         if (targetStatus === 'comentario') eventName = 'ViewContent';
         else if (targetStatus === 'dm_enviado') eventName = 'Contact';
-        else if (targetStatus === 'charla_dm') eventName = 'AddToCart';
-        else if (targetStatus === 'derivado') eventName = 'Lead';
+        else if (targetStatus === 'charla_dm') eventName = 'PageView';
+        else if (targetStatus === 'oferta_enviada') eventName = 'AddToCart';
+        else if (targetStatus === 'verifying_address') eventName = 'InitiateCheckout';
         else if (targetStatus === 'venta_dm') eventName = 'Purchase';
+        else if (targetStatus === 'derivado') eventName = 'Lead';
 
         if (eventName) {
           fetch('/api/tracking/fire-event', {

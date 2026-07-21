@@ -251,6 +251,56 @@ async function handleFacebookPage(body: any, req: VercelRequest, res: VercelResp
   for (const entry of body.entry || []) {
     const pageId = entry.id;
 
+    // A. Manejo de DMs de Messenger (entry.messaging)
+    for (const msgEvent of entry.messaging || []) {
+      const senderId = msgEvent.sender?.id;
+      const text = msgEvent.message?.text || '';
+      if (!senderId || senderId === pageId || !text) continue;
+
+      let { data: existingLead } = await supabase
+        .from('leads')
+        .select('*')
+        .eq('social_platform', 'facebook')
+        .eq('board_type', 'social_media')
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      let leadObj = existingLead?.[0];
+
+      if (!leadObj) {
+        const { data: pageData } = await supabase.from('connected_pages').select('store_id').eq('page_id', pageId).maybeSingle();
+        const { data: created } = await supabase.from('leads').insert({
+          store_id: pageData?.store_id || null,
+          name: `Cliente Messenger (${senderId.slice(-4)})`,
+          traffic_source: 'Facebook Messenger',
+          board_type: 'social_media',
+          status: 'charla_dm',
+          social_platform: 'facebook'
+        }).select().single();
+        leadObj = created;
+      } else {
+        if (['comentario', 'dm_enviado'].includes(leadObj.status)) {
+          await supabase.from('leads').update({ status: 'charla_dm' }).eq('id', leadObj.id);
+        }
+      }
+
+      if (leadObj) {
+        await supabase.from('messages').insert({
+          lead_id: leadObj.id,
+          sender_type: 'client',
+          content: text
+        });
+
+        // Disparar evento de tracking PageView para conversación en DM
+        fetch(`https://${req.headers.host || 'localhost'}/api/tracking/fire-event`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ leadId: leadObj.id, eventName: 'PageView', currency: 'COP' })
+        }).catch(console.error);
+      }
+    }
+
+    // B. Manejo de Comentarios en Facebook
     for (const change of entry.changes || []) {
       const value = change.value;
 
@@ -333,6 +383,60 @@ async function handleInstagram(body: any, req: VercelRequest, res: VercelRespons
   for (const entry of body.entry || []) {
     const igAccountId = entry.id;
 
+    // A. DMs de Instagram Direct (entry.messaging)
+    for (const msgEvent of entry.messaging || []) {
+      const senderId = msgEvent.sender?.id;
+      const text = msgEvent.message?.text || '';
+      if (!senderId || senderId === igAccountId || !text) continue;
+
+      let { data: existingLead } = await supabase
+        .from('leads')
+        .select('*')
+        .eq('social_platform', 'instagram')
+        .eq('board_type', 'social_media')
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      let leadObj = existingLead?.[0];
+
+      if (!leadObj) {
+        const { data: pageData } = await supabase
+          .from('connected_pages')
+          .select('store_id')
+          .eq('instagram_account_id', igAccountId)
+          .maybeSingle();
+
+        const { data: created } = await supabase.from('leads').insert({
+          store_id: pageData?.store_id || null,
+          name: `Cliente Instagram Direct`,
+          traffic_source: 'Instagram Direct',
+          board_type: 'social_media',
+          status: 'charla_dm',
+          social_platform: 'instagram'
+        }).select().single();
+        leadObj = created;
+      } else {
+        if (['comentario', 'dm_enviado'].includes(leadObj.status)) {
+          await supabase.from('leads').update({ status: 'charla_dm' }).eq('id', leadObj.id);
+        }
+      }
+
+      if (leadObj) {
+        await supabase.from('messages').insert({
+          lead_id: leadObj.id,
+          sender_type: 'client',
+          content: text
+        });
+
+        fetch(`https://${req.headers.host || 'localhost'}/api/tracking/fire-event`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ leadId: leadObj.id, eventName: 'PageView', currency: 'COP' })
+        }).catch(console.error);
+      }
+    }
+
+    // B. Comentarios en Instagram
     for (const change of entry.changes || []) {
       if (change.field !== 'comments') continue;
 
