@@ -52,12 +52,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     let targetPhone = '';
     if (waNumbers && waNumbers.length > 0) {
-      // Seleccionar un número activo (rotación aleatoria si hay múltiples)
+      // Seleccionar un número activo
       const randomWa = waNumbers[Math.floor(Math.random() * waNumbers.length)];
-      targetPhone = randomWa.display_phone_number || randomWa.phone_number_id;
-    } else {
-      // Fallback al teléfono de la tienda o un número por defecto
-      targetPhone = storeData.phone || storeData.meta_phone_number_id || '573000000000';
+      // Usar display_phone_number solo si es un número telefónico real (longitud estándar < 15) y no un ID de Meta (longitud >= 15)
+      const disp = (randomWa.display_phone_number || '').replace(/\D/g, '');
+      if (disp && disp.length < 15) {
+        targetPhone = disp;
+      }
+    }
+
+    // Fallback al teléfono de la tienda en stores.phone o whatsapp_numbers.phone
+    if (!targetPhone) {
+      targetPhone = storeData.phone || storeData.meta_phone_number || '573000000000';
     }
 
     // Limpiar el número de teléfono (solo dígitos)
