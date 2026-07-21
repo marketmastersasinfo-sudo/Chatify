@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, MessageSquare, MapPin, Settings, Truck, ThumbsUp, Database, Megaphone, RefreshCcw, ShoppingCart, Search, Users, ShoppingBag, GitMerge } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, MapPin, Settings, Truck, ThumbsUp, Database, Megaphone, RefreshCcw, ShoppingCart, Search, Users, ShoppingBag, GitMerge, ShieldAlert } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { useAuth } from '../../lib/auth';
 
@@ -8,6 +8,7 @@ const navigation = [
   { name: '🔍 Buscador Global', href: '/search', icon: Search },
   { name: 'CRM Ventas WA', href: '/crm-sales', icon: MessageSquare },
   { name: 'CRM Redes Sociales', href: '/crm-social', icon: ThumbsUp },
+  { name: '🤖 Moderación & Fan Pages', href: '/comments', icon: ShieldAlert },
   { name: 'Logística ShopyEasy', href: '/crm-logistics', icon: Truck },
   { name: 'Remarketing (Carritos)', href: '/crm-remarketing-carts', icon: ShoppingCart },
   { name: 'Remarketing (Chats WA)', href: '/crm-remarketing-wa', icon: RefreshCcw },

@@ -31,7 +31,16 @@ export function Comments() {
     setLoading(true);
     try {
       const { data: pageData } = await (supabase.from('connected_pages') as any).select('*, stores(name)').order('created_at', { ascending: false });
-      setPages(pageData || []);
+      const { data: waNums } = await (supabase.from('whatsapp_numbers') as any).select('*');
+      
+      const enrichedPages = (pageData || []).map((p: any) => {
+        const match = (waNums || []).find((w: any) => w.display_name === p.page_name || w.phone_number_id === p.page_id);
+        return {
+          ...p,
+          business_manager: match?.business_manager || p.business_manager || 'Business Manager Oficial'
+        };
+      });
+      setPages(enrichedPages);
 
       const { data: storeData } = await supabase.from('stores').select('id, name').order('name');
       setStores(storeData || []);
@@ -210,6 +219,10 @@ export function Comments() {
                 </div>
 
                 <div className="space-y-3 bg-gray-50 rounded-xl p-3 border border-gray-100 text-xs text-gray-600">
+                  <p className="flex justify-between">
+                    <span className="font-semibold text-gray-500">Facebook / Business Manager:</span>
+                    <span className="font-semibold text-purple-600">{page.business_manager}</span>
+                  </p>
                   <p className="flex justify-between">
                     <span className="font-semibold text-gray-500">Page ID:</span>
                     <span className="font-mono text-gray-900">{page.page_id}</span>
