@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react';
-import { MessageCircle, Settings, ToggleRight, ToggleLeft, Plus, ShieldAlert, Trash2, CheckCircle2, Store, RefreshCw, Loader2, Link as LinkIcon } from 'lucide-react';
+import { MessageCircle, ToggleRight, ToggleLeft, Plus, ShieldAlert, Trash2, RefreshCw, Loader2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 export function Comments() {
   const [pages, setPages] = useState<any[]>([]);
   const [stores, setStores] = useState<any[]>([]);
-  const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Modal State
@@ -31,28 +30,27 @@ export function Comments() {
   async function loadData() {
     setLoading(true);
     try {
-      const { data: pageData } = await supabase.from('connected_pages').select('*, stores(name)').order('created_at', { ascending: false });
+      const { data: pageData } = await (supabase.from('connected_pages') as any).select('*, stores(name)').order('created_at', { ascending: false });
       setPages(pageData || []);
 
       const { data: storeData } = await supabase.from('stores').select('id, name').order('name');
       setStores(storeData || []);
-
-      const { data: prodData } = await supabase.from('products').select('id, name, ad_hashtag, price').order('name');
-      setProducts(prodData || []);
     } catch (e) {
       console.error(e);
     }
     setLoading(false);
+  }
+
   async function handleAutoSync() {
     setSyncing(true);
     try {
-      const { data: waNums } = await supabase.from('whatsapp_numbers').select('*');
+      const { data: waNums } = await (supabase.from('whatsapp_numbers') as any).select('*');
       if (waNums && waNums.length > 0) {
         let imported = 0;
-        for (const wa of waNums) {
-          const { data: existing } = await supabase.from('connected_pages').select('id').eq('page_name', wa.display_name).maybeSingle();
+        for (const wa of (waNums as any[])) {
+          const { data: existing } = await (supabase.from('connected_pages') as any).select('id').eq('page_name', wa.display_name).maybeSingle();
           if (!existing && wa.access_token) {
-            await supabase.from('connected_pages').insert({
+            await (supabase.from('connected_pages') as any).insert({
               page_name: wa.display_name || wa.business_manager || 'Fan Page',
               page_id: wa.phone_number_id,
               access_token: wa.access_token,
@@ -82,7 +80,7 @@ export function Comments() {
 
     setSaving(true);
     try {
-      const { error } = await supabase.from('connected_pages').insert({
+      const { error } = await (supabase.from('connected_pages') as any).insert({
         page_name: pageName,
         page_id: pageId,
         instagram_account_id: igAccountId || null,
@@ -110,7 +108,7 @@ export function Comments() {
   async function togglePageActive(page: any) {
     try {
       const newStatus = !page.is_active;
-      await supabase.from('connected_pages').update({ is_active: newStatus }).eq('id', page.id);
+      await (supabase.from('connected_pages') as any).update({ is_active: newStatus }).eq('id', page.id);
       setPages(prev => prev.map(p => p.id === page.id ? { ...p, is_active: newStatus } : p));
     } catch (e) {
       console.error(e);
