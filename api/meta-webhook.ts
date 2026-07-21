@@ -199,6 +199,22 @@ async function handleWhatsApp(body: any, req: VercelRequest, res: VercelResponse
     return res.status(200).send('EVENT_RECEIVED');
   }
 
+  // Reactivar lead existente si vuelve a escribir hoy (actualizar fecha a HOY y estado a Interesado)
+  const leadUpdates: any = {
+    created_at: new Date().toISOString()
+  };
+  if (['closed', 'lost'].includes(lead.status)) {
+    leadUpdates.status = 'inquiry';
+  }
+  if (text.toLowerCase().includes('interesado en')) {
+    const parts = text.split(/interesado en/i);
+    if (parts.length > 1) {
+      leadUpdates.product_name = parts[1].trim().replace(/[\.,!¡¿\?]+$/, '');
+    }
+  }
+  await supabase.from('leads').update(leadUpdates).eq('id', lead.id);
+  lead = { ...lead, ...leadUpdates };
+
   // ── C. Guardar el mensaje entrante (SIEMPRE, aunque Kill Switch esté activo) ──
   await supabase.from('messages').insert({
     lead_id: lead.id,
