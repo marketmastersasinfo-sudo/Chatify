@@ -16,6 +16,7 @@ export function Comments() {
   const [accessToken, setAccessToken] = useState('');
   const [selectedStoreId, setSelectedStoreId] = useState('');
   const [saving, setSaving] = useState(false);
+  const [syncing, setSyncing] = useState(false);
 
   // Anti-Hater Keywords State
   const [badWords, setBadWords] = useState<string[]>([
@@ -42,6 +43,34 @@ export function Comments() {
       console.error(e);
     }
     setLoading(false);
+  async function handleAutoSync() {
+    setSyncing(true);
+    try {
+      const { data: waNums } = await supabase.from('whatsapp_numbers').select('*');
+      if (waNums && waNums.length > 0) {
+        let imported = 0;
+        for (const wa of waNums) {
+          const { data: existing } = await supabase.from('connected_pages').select('id').eq('page_name', wa.display_name).maybeSingle();
+          if (!existing && wa.access_token) {
+            await supabase.from('connected_pages').insert({
+              page_name: wa.display_name || wa.business_manager || 'Fan Page',
+              page_id: wa.phone_number_id,
+              access_token: wa.access_token,
+              store_id: wa.store_id,
+              is_active: true
+            });
+            imported++;
+          }
+        }
+        alert(`Sincronización completada. Se importaron ${imported} Fan Pages automáticamente.`);
+        loadData();
+      } else {
+        alert('No se encontraron credenciales guardadas para sincronizar.');
+      }
+    } catch (e: any) {
+      alert('Error en sincronización: ' + e.message);
+    }
+    setSyncing(false);
   }
 
   async function handleAddPage(e: React.FormEvent) {
@@ -122,11 +151,19 @@ export function Comments() {
         </div>
         <div className="mt-4 sm:mt-0 flex gap-3">
           <button 
+            onClick={handleAutoSync}
+            disabled={syncing}
+            className="inline-flex items-center gap-2 rounded-xl bg-purple-600 px-4 py-2 text-sm font-semibold text-white shadow-soft hover:bg-purple-500 transition-all"
+          >
+            {syncing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+            Sincronizar Fan Pages Guardadas
+          </button>
+          <button 
             onClick={() => setShowAddModal(true)}
             className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-soft hover:bg-blue-500 transition-all"
           >
             <Plus className="h-4 w-4" />
-            Conectar Fan Page / Instagram
+            Conectar Nueva Fan Page
           </button>
         </div>
       </div>
