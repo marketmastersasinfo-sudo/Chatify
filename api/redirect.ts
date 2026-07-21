@@ -52,18 +52,39 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     let targetPhone = '';
     if (waNumbers && waNumbers.length > 0) {
-      // Seleccionar un número activo
       const randomWa = waNumbers[Math.floor(Math.random() * waNumbers.length)];
-      // Usar display_phone_number solo si es un número telefónico real (longitud estándar < 15) y no un ID de Meta (longitud >= 15)
-      const disp = (randomWa.display_phone_number || '').replace(/\D/g, '');
-      if (disp && disp.length < 15) {
-        targetPhone = disp;
+      const candidates = [
+        randomWa.display_phone_number,
+        randomWa.phone_number,
+        randomWa.phone,
+        randomWa.name
+      ];
+      for (const cand of candidates) {
+        const cleaned = (cand || '').replace(/\D/g, '');
+        if (cleaned && cleaned.length >= 8 && cleaned.length < 15) {
+          targetPhone = cleaned;
+          break;
+        }
       }
     }
 
-    // Fallback al teléfono de la tienda en stores.phone o whatsapp_numbers.phone
     if (!targetPhone) {
-      targetPhone = storeData.phone || storeData.meta_phone_number || '573000000000';
+      const storeCandidates = [
+        storeData.phone,
+        storeData.waba_number,
+        storeData.meta_phone_number
+      ];
+      for (const cand of storeCandidates) {
+        const cleaned = (cand || '').replace(/\D/g, '');
+        if (cleaned && cleaned.length >= 8 && cleaned.length < 15) {
+          targetPhone = cleaned;
+          break;
+        }
+      }
+    }
+
+    if (!targetPhone) {
+      return res.status(400).send(`La tienda '${storeData.name}' no tiene un número telefónico de WhatsApp configurado en Chatify.`);
     }
 
     // Limpiar el número de teléfono (solo dígitos)
