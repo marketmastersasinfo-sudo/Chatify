@@ -70,7 +70,7 @@ export function CrmSocial() {
         .eq('board_type', 'social_media');
         
       if (f.storeIds && f.storeIds.length > 0) {
-        query = query.in('store_id', f.storeIds);
+        query = query.or(`store_id.in.(${f.storeIds.join(',')}),store_id.is.null`);
       } else if (f.storeIds && f.storeIds.length === 0) {
         query = query.eq('store_id', '00000000-0000-0000-0000-000000000000');
       }
