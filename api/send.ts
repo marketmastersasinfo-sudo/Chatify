@@ -20,7 +20,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!leadId) return res.status(400).json({ error: 'Missing leadId' });
 
   try {
-    const { data: lead } = await supabase.from('leads').select('phone, store_id').eq('id', leadId).single();
+    const { data: lead } = await supabase.from('leads').select('phone, store_id, board_type, status').eq('id', leadId).single();
     if (!lead || !lead.phone) return res.status(404).json({ error: 'Lead not found or no phone' });
 
     // Get Meta credentials from whatsapp_numbers (not from stores)

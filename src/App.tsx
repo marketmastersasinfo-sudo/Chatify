@@ -1,4 +1,5 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { useEffect } from 'react';
 import { AppLayout } from './components/layout/AppLayout';
 import { Dashboard } from './pages/Dashboard';
 import { Settings } from './pages/Settings';
@@ -19,7 +20,6 @@ import { UsersManagement } from './pages/UsersManagement';
 import { Products } from './pages/Products';
 import { Funnels } from './pages/Funnels';
 import { AuthProvider, useAuth } from './lib/auth';
-import { Navigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -39,7 +39,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   
   return <>{children}</>;
 }
-import { useEffect } from 'react';
+
 
 function App() {
   useEffect(() => {

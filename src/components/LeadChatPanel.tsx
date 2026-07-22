@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { X, Send, User, MapPin, Mail, AlignLeft, Phone, Building2, Ban, Trash2, CheckCircle2, FileText, Loader2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
@@ -53,6 +53,18 @@ export function LeadChatPanel({
   const [previewTemplate, setPreviewTemplate] = useState<{ id: string, name: string, body: string, variables: string[], values: Record<string, string> } | null>(null);
   const [fetchingTemplate, setFetchingTemplate] = useState<string | null>(null);
 
+  // Auto-scroll ref
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Memoizar estado de IA pausada (evita re-iterar mensajes en cada render)
+  const isPaused = useMemo(() => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].content === '[SISTEMA] PAUSAR_IA') return true;
+      if (messages[i].content === '[SISTEMA] REANUDAR_IA') return false;
+    }
+    return false;
+  }, [messages]);
+
   useEffect(() => {
     if (lead) {
       loadMessages();
@@ -95,6 +107,11 @@ export function LeadChatPanel({
       }).subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [lead]);
+
+  // Auto-scroll al último mensaje
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
   async function loadMessages() {
     setLoading(true);
@@ -250,28 +267,19 @@ export function LeadChatPanel({
             </div>
              <div className="flex gap-2">
                {/* AI Toggle */}
-               {(() => {
-                 let isPaused = false;
-                 for (let i = messages.length - 1; i >= 0; i--) {
-                   if (messages[i].content === '[SISTEMA] PAUSAR_IA') { isPaused = true; break; }
-                   if (messages[i].content === '[SISTEMA] REANUDAR_IA') { isPaused = false; break; }
-                 }
-                 return (
-                   <button 
-                     onClick={async () => {
-                       const command = isPaused ? '[SISTEMA] REANUDAR_IA' : '[SISTEMA] PAUSAR_IA';
-                       const { data } = await (supabase as any).from('messages').insert({
-                         lead_id: lead.id, sender_type: 'ai', content: command
-                       }).select().single();
-                       if (data) setMessages([...messages, data]);
-                     }}
-                     className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors flex items-center gap-1 ${isPaused ? 'bg-red-100 text-red-700 hover:bg-red-200' : 'bg-purple-100 text-purple-700 hover:bg-purple-200'}`}
-                     title={isPaused ? "Reanudar Sophia AI" : "Pausar Sophia AI"}
-                   >
-                     {isPaused ? '🤖 IA Pausada' : '🤖 IA Activa'}
-                   </button>
-                 );
-               })()}
+               <button 
+                 onClick={async () => {
+                   const command = isPaused ? '[SISTEMA] REANUDAR_IA' : '[SISTEMA] PAUSAR_IA';
+                   const { data } = await (supabase as any).from('messages').insert({
+                     lead_id: lead.id, sender_type: 'ai', content: command
+                   }).select().single();
+                   if (data) setMessages([...messages, data]);
+                 }}
+                 className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors flex items-center gap-1 ${isPaused ? 'bg-red-100 text-red-700 hover:bg-red-200' : 'bg-purple-100 text-purple-700 hover:bg-purple-200'}`}
+                 title={isPaused ? "Reanudar Sophia AI" : "Pausar Sophia AI"}
+               >
+                 {isPaused ? '🤖 IA Pausada' : '🤖 IA Activa'}
+               </button>
 
                <button onClick={() => onBan(lead.id, lead.is_banned)} className={`p-2 rounded-lg transition-colors ${lead.is_banned ? 'bg-red-100 text-red-600 hover:bg-red-200' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`} title={lead.is_banned ? "Quitar Baneo" : "Banear Cliente"}>
                  <Ban className="w-5 h-5"/>
@@ -492,6 +500,7 @@ export function LeadChatPanel({
                  );
                });
               })()}
+              <div ref={messagesEndRef} />
            </div>
 
           {/* Input Area */}

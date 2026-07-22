@@ -8,6 +8,8 @@ const supabaseUrl = process.env.VITE_SUPABASE_URL;
 const supabaseKey = process.env.VITE_SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
 const supabase = createClient(supabaseUrl || '', supabaseKey || '');
 
+const TWILIO_EMPTY_RESPONSE = '<?xml version="1.0" encoding="UTF-8"?><Response></Response>';
+
 // ─────────────────────────────────────────
 // HELPERS
 // ─────────────────────────────────────────
@@ -67,7 +69,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const { From, To, Body, ProfileName, ButtonPayload, ButtonText, MediaUrl0, Latitude, ReferralHeadline, ReferralBody } = bodyObj || {};
 
     if (!From || !To) {
-      return res.status(200).send('<?xml version="1.0" encoding="UTF-8"?><Response></Response>');
+      return res.status(200).send(TWILIO_EMPTY_RESPONSE);
     }
 
     const customerPhone = From.replace('whatsapp:', '').replace('+', '');
@@ -110,11 +112,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (!lead) {
       // Walink Smart Parser (Anti-Friction)
-      const incomingBody = Body || '';
+      const rawBodyForParsing = Body || '';
       let detectedProduct = null;
       let detectedSource = 'whatsapp_direct';
       
-      const lowerText = incomingBody.toLowerCase();
+      const lowerText = rawBodyForParsing.toLowerCase();
       
       // 1. Detectar Fuente de Tráfico
       if (lowerText.includes('facebook') || lowerText.includes(' fb ') || lowerText.includes('meta')) {
@@ -128,8 +130,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
       
       // 2. Detectar Nombre del Producto
-      if (incomingBody.includes(':')) {
-        const parts = incomingBody.split(':');
+      if (rawBodyForParsing.includes(':')) {
+        const parts = rawBodyForParsing.split(':');
         if (parts.length > 1) {
           detectedProduct = parts[1].trim().replace(/[\.,!¡¿\?]+$/, '');
         }
@@ -154,7 +156,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     if (!leadId) {
-      return res.status(200).send('<?xml version="1.0" encoding="UTF-8"?><Response></Response>');
+      return res.status(200).send(TWILIO_EMPTY_RESPONSE);
     }
 
     const incomingText = incomingBody;
@@ -199,7 +201,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         to: `whatsapp:+${customerPhone}`,
         body: resetMsg
       });
-      return res.status(200).send('<?xml version="1.0" encoding="UTF-8"?><Response></Response>');
+      return res.status(200).send(TWILIO_EMPTY_RESPONSE);
     }
 
     // ── DEBUG COMMAND: CHECK_DB ────────────────────────
@@ -212,7 +214,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         to: `whatsapp:+${customerPhone}`,
         body: debugMsg.substring(0, 1500)
       });
-      return res.status(200).send('<?xml version="1.0" encoding="UTF-8"?><Response></Response>');
+      return res.status(200).send(TWILIO_EMPTY_RESPONSE);
     }
 
     // ── DEBUG COMMAND: CHECK_SCHEMA ────────────────────────
@@ -225,7 +227,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         to: `whatsapp:+${customerPhone}`,
         body: debugMsg.substring(0, 1500)
       });
-      return res.status(200).send('<?xml version="1.0" encoding="UTF-8"?><Response></Response>');
+      return res.status(200).send(TWILIO_EMPTY_RESPONSE);
     }
 
     // ─────────────────────────────────────────────────
@@ -306,7 +308,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           const productInfo = await fetchProductInfo(lead, store.id);
           await handleSophia({ lead, productInfo, leadId, incomingText, storeTwilioPhone, customerPhone, store, supabase: supabase as any });
         }
-        return res.status(200).send('<?xml version="1.0" encoding="UTF-8"?><Response></Response>');
+        return res.status(200).send(TWILIO_EMPTY_RESPONSE);
       }
 
       // ── STATE 2: 'address_confirming' — Waiting for address/fachada confirmation ──
@@ -333,13 +335,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           const productInfo = await fetchProductInfo(lead, store.id);
           await handleSophia({ lead, productInfo, leadId, incomingText, storeTwilioPhone, customerPhone, store, supabase: supabase as any });
         }
-        return res.status(200).send('<?xml version="1.0" encoding="UTF-8"?><Response></Response>');
+        return res.status(200).send(TWILIO_EMPTY_RESPONSE);
       }
 
       // ── STATE 3: 'confirmado' or other ── Sophia handles all follow-up questions ──
       const productInfo = await fetchProductInfo(lead, store.id);
       await handleSophia({ lead, productInfo, leadId, incomingText, storeTwilioPhone, customerPhone, store, supabase: supabase as any });
-      return res.status(200).send('<?xml version="1.0" encoding="UTF-8"?><Response></Response>');
+      return res.status(200).send(TWILIO_EMPTY_RESPONSE);
     }
 
     // ─────────────────────────────────────────────────
@@ -365,7 +367,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           body: byeMsg
         });
         await supabase.from('messages').insert({ lead_id: leadId, sender_type: 'ai', content: byeMsg });
-        return res.status(200).send('<?xml version="1.0" encoding="UTF-8"?><Response></Response>');
+        return res.status(200).send(TWILIO_EMPTY_RESPONSE);
       }
 
       // STATE: bot_sent / abandoned / client_replied — waiting for any interaction
@@ -415,7 +417,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           const productInfo = await fetchProductInfo(lead, store.id);
           await handleSophia({ lead, productInfo, leadId, incomingText, storeTwilioPhone, customerPhone, store, supabase: supabase as any });
         }
-        return res.status(200).send('<?xml version="1.0" encoding="UTF-8"?><Response></Response>');
+        return res.status(200).send(TWILIO_EMPTY_RESPONSE);
       }
 
       // STATE: verifying_address — waiting for fachada confirmation
@@ -437,13 +439,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           const productInfo = await fetchProductInfo(lead, store.id);
           await handleSophia({ lead, productInfo, leadId, incomingText, storeTwilioPhone, customerPhone, store, supabase: supabase as any });
         }
-        return res.status(200).send('<?xml version="1.0" encoding="UTF-8"?><Response></Response>');
+        return res.status(200).send(TWILIO_EMPTY_RESPONSE);
       }
 
       // STATE: recovered — Sophia handles follow-up questions
       const productInfo2 = await fetchProductInfo(lead, store.id);
       await handleSophia({ lead, productInfo: productInfo2, leadId, incomingText, storeTwilioPhone, customerPhone, store, supabase: supabase as any });
-      return res.status(200).send('<?xml version="1.0" encoding="UTF-8"?><Response></Response>');
+      return res.status(200).send(TWILIO_EMPTY_RESPONSE);
     }
 
     // ── Non-logistics leads: always Sophia ─────────────
@@ -453,11 +455,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     res.setHeader('Content-Type', 'text/xml');
-    return res.status(200).send('<?xml version="1.0" encoding="UTF-8"?><Response></Response>');
+    return res.status(200).send(TWILIO_EMPTY_RESPONSE);
 
   } catch (error: any) {
     console.error('Twilio Webhook Error:', error);
-    return res.status(200).send('<?xml version="1.0" encoding="UTF-8"?><Response></Response>');
+    return res.status(200).send(TWILIO_EMPTY_RESPONSE);
   }
 }
 
@@ -481,7 +483,7 @@ async function fetchProductInfo(lead: any, storeId: string): Promise<any> {
       .eq('id', product.flow_template_id)
       .single();
     if (template) {
-      product.flow_template = template.interactions;
+      (product as any).flow_template = template.interactions;
     }
   }
   return product;
@@ -629,7 +631,8 @@ export async function handleSophia({ lead, productInfo, leadId, incomingText, st
       }
     }
 
-    const isTwilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+    // Reusar la instancia global de Twilio (evitar doble instanciación)
+    const isTwilioClient = twilio(process.env.TWILIO_ACCOUNT_SID!, process.env.TWILIO_AUTH_TOKEN!);
 
     // ══════════════════════════════════════════════════════
     // MOVER LEAD AUTOMÁTICAMENTE o INTERCEPTAR STREET VIEW

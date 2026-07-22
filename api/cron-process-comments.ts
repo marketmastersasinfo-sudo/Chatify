@@ -93,11 +93,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         let catalogText = 'Sin productos registrados.';
         let matchedProduct: any = null;
         let storeId: string | null = null;
+        let storePhone: string | null = null;
 
         if (extractedHashtags.length > 0) {
           const { data: hashProducts } = await supabase
             .from('products')
-            .select('*')
+            .select('id, name, price, offers, master_prompt, ad_hashtag, product_link, store_id')
             .in('ad_hashtag', extractedHashtags)
             .limit(1);
           
@@ -109,7 +110,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         // Fallback para anuncios sin #hashtag: Emparejamiento semántico por coincidencia de texto
         if (!matchedProduct && postContext && postContext !== 'Contexto del post desconocido.') {
-          const { data: allProds } = await supabase.from('products').select('*').limit(50);
+          const { data: allProds } = await supabase.from('products').select('id, name, price, offers, master_prompt, product_link, store_id').limit(50);
           if (allProds && allProds.length > 0) {
             const lowerPost = postContext.toLowerCase();
             for (const prod of allProds) {
@@ -194,7 +195,11 @@ Devuelve EXCLUSIVAMENTE un JSON válido con estas dos llaves: {"public_reply": "
           }
         }
 
-        // Garantizar que SIEMPRE lleve enlace corto de WhatsApp para compra directa
+        // Obtener teléfono de la tienda para el link de WhatsApp
+        if (storeId && !storePhone) {
+          const { data: storeRow } = await supabase.from('stores').select('twilio_phone_number').eq('id', storeId).maybeSingle();
+          storePhone = storeRow?.twilio_phone_number?.replace(/\D/g, '') || null;
+        }
         const cleanPhone = (storePhone || '573224092420').replace(/\D/g, '');
         const waLink = matchedProduct?.product_link || `https://wa.me/${cleanPhone}`;
 

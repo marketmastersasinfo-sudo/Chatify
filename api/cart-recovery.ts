@@ -76,22 +76,47 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const log: string[] = [];
 
   try {
-    // ── Load WhatsApp numbers (Meta credentials) per store ──
+    // ── Load WhatsApp numbers (Meta credentials) and countries per store ──
     const { data: waNumbers } = await (supabase as any)
       .from('whatsapp_numbers')
-      .select('store_id, phone_number_id, access_token, is_active');
+      .select('store_id, phone_number_id, access_token, is_active, stores(country)');
 
     // Build store → Meta credentials map
-    const storeMetaMap: Record<string, { phoneNumberId: string, accessToken: string }> = {};
+    const storeMetaMap: Record<string, { phoneNumberId: string, accessToken: string, country: string }> = {};
     for (const wn of (waNumbers || [])) {
       if (wn.store_id && wn.phone_number_id && wn.access_token) {
         // Prefer active numbers, but use any if none active
         if (!storeMetaMap[wn.store_id] || wn.is_active) {
+          const storeCountry = (wn.stores && Array.isArray(wn.stores) ? wn.stores[0]?.country : wn.stores?.country) || 'Colombia';
           storeMetaMap[wn.store_id] = {
             phoneNumberId: wn.phone_number_id,
-            accessToken: wn.access_token
+            accessToken: wn.access_token,
+            country: storeCountry
           };
         }
+      }
+    }
+
+    // ── Helper: Check working hours ──
+    function isWithinWorkingHours(country: string): boolean {
+      const timezones: Record<string, string> = {
+        'Colombia': 'America/Bogota',
+        'Ecuador': 'America/Guayaquil',
+        'Perú': 'America/Lima',
+        'Venezuela': 'America/Caracas',
+        'Costa Rica': 'America/Costa_Rica',
+        'Guatemala': 'America/Guatemala',
+        'Argentina': 'America/Argentina/Buenos_Aires',
+        'Chile': 'America/Santiago',
+        'México': 'America/Mexico_City'
+      };
+      const tz = timezones[country] || 'America/Bogota';
+      try {
+        const hourFormatter = new Intl.DateTimeFormat('en-US', { hour: 'numeric', hour12: false, timeZone: tz });
+        const currentHour = parseInt(hourFormatter.format(new Date()));
+        return currentHour >= 8 && currentHour < 21; // 8:00 AM to 8:59 PM
+      } catch (e) {
+        return true; // Fallback just in case
       }
     }
 
@@ -226,10 +251,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .eq('status', 'abandoned')
       .eq('recovery_touch', 0)
       .lte('created_at', min30ago.toISOString())
-      .gte('created_at', hr25ago.toISOString());
+      .gte('created_at', hr25ago.toISOString())
+      .limit(2); // Anti-burst limit
 
     for (const lead of (t1Leads || [])) {
-      if (!storeMetaMap[lead.store_id]) continue;
+      const metaCreds = storeMetaMap[lead.store_id];
+      if (!metaCreds) continue;
+      
+      // Enforce working hours
+      if (!isWithinWorkingHours(metaCreds.country)) {
+        log.push(`[T1] ⏰ Fuera de horario para ${lead.name} (${metaCreds.country})`);
+        continue;
+      }
+
       const sent = await sendRecoveryMessage(lead, 1, lead.store_id);
       if (sent) {
         await supabase.from('leads').update({
@@ -251,10 +285,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .eq('board_type', 'remarketing_carts')
       .eq('status', 'bot_sent')
       .eq('recovery_touch', 1)
-      .lte('recovery_last_sent_at', hr4ago.toISOString());
+      .lte('recovery_last_sent_at', hr4ago.toISOString())
+      .limit(2); // Anti-burst limit
 
     for (const lead of (t2Leads || [])) {
-      if (!storeMetaMap[lead.store_id]) continue;
+      const metaCreds = storeMetaMap[lead.store_id];
+      if (!metaCreds) continue;
+      
+      if (!isWithinWorkingHours(metaCreds.country)) {
+        log.push(`[T2] ⏰ Fuera de horario para ${lead.name} (${metaCreds.country})`);
+        continue;
+      }
+
       const sent = await sendRecoveryMessage(lead, 2, lead.store_id);
       if (sent) {
         await supabase.from('leads').update({
@@ -275,10 +317,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .eq('board_type', 'remarketing_carts')
       .eq('status', 'bot_sent')
       .eq('recovery_touch', 2)
-      .lte('recovery_last_sent_at', hr24ago.toISOString());
+      .lte('recovery_last_sent_at', hr24ago.toISOString())
+      .limit(2); // Anti-burst limit
 
     for (const lead of (t3Leads || [])) {
-      if (!storeMetaMap[lead.store_id]) continue;
+      const metaCreds = storeMetaMap[lead.store_id];
+      if (!metaCreds) continue;
+      
+      if (!isWithinWorkingHours(metaCreds.country)) {
+        log.push(`[T3] ⏰ Fuera de horario para ${lead.name} (${metaCreds.country})`);
+        continue;
+      }
+
       const sent = await sendRecoveryMessage(lead, 3, lead.store_id);
       if (sent) {
         await supabase.from('leads').update({

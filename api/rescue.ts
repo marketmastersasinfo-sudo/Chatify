@@ -26,15 +26,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const hasRealMessage = msgs && msgs.some(m => m.content && m.content.trim() !== '');
 
     if (!hasRealMessage) {
+      let fallbackMsg: string;
+
       if (lead.board_type === 'social_media') {
-        const commentMsg = (lead as any).comment_content || 'Consulta sobre anuncio en redes sociales';
+        fallbackMsg = (lead as any).comment_content || 'Consulta sobre anuncio en redes sociales';
         await supabase.from('messages').insert({
           lead_id: lead.id,
           sender_type: 'customer',
-          content: commentMsg
+          content: fallbackMsg
         });
       } else {
-        const fallbackMsg = "[El cliente contactó desde un anuncio solicitando información]";
+        fallbackMsg = "[El cliente contactó desde un anuncio solicitando información]";
         await supabase.from('messages').delete().eq('lead_id', lead.id).eq('content', '   ');
         await supabase.from('messages').insert({
           lead_id: lead.id,

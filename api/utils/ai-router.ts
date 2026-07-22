@@ -271,7 +271,7 @@ export async function transcribeAudio(audioBuffer: Buffer, mimeType: string, org
   const ext = mimeType.includes('ogg') ? 'ogg' : mimeType.includes('mp4') ? 'mp4' : mimeType.includes('mpeg') ? 'mp3' : 'ogg';
   
   const formData = new FormData();
-  const blob = new Blob([audioBuffer], { type: mimeType });
+  const blob = new Blob([new Uint8Array(audioBuffer)], { type: mimeType });
   formData.append('file', blob, `audio.${ext}`);
   formData.append('model', 'whisper-1');
   formData.append('language', 'es');

@@ -10,6 +10,9 @@ const supabaseUrl = process.env.VITE_SUPABASE_URL;
 const supabaseKey = process.env.VITE_SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
 const supabase = createClient(supabaseUrl || '', supabaseKey || '');
 
+// Lista centralizada de palabras ofensivas para moderación automática (FB + IG)
+const BAD_WORDS = ['estafa', 'fraude', 'ladrón', 'ladrones', 'puta', 'mierda', 'estafadores', 'robo', 'basura', 'malo', 'mala', 'pésimo', 'pesimo', 'horrible', 'asco'];
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // ═══════════════════════════════════════
   // 1. VERIFICACIÓN DE META (GET)
@@ -153,7 +156,7 @@ async function handleWhatsApp(body: any, req: VercelRequest, res: VercelResponse
   // ── B. Buscar o crear Lead ──
   const { data: allLeads } = await supabase
     .from('leads')
-    .select('*')
+    .select('id, name, phone, store_id, status, board_type, address, city, product_name, total_price, notes, document_id, email, recovery_touch, last_name, department, sector, postal_code, comment_content, comment_status, social_platform, traffic_source')
     .eq('phone', phone)
     .eq('store_id', store.id)
     .order('created_at', { ascending: false });
@@ -316,35 +319,51 @@ async function handleFacebookPage(body: any, req: VercelRequest, res: VercelResp
       }
     }
 
-    // B. Manejo de Comentarios en Facebook
+    // B. Manejo de Comentarios y Publicaciones del Muro (Menciones) en Facebook
     for (const change of entry.changes || []) {
       const value = change.value;
 
-      if (value?.item !== 'comment' || value?.verb !== 'add') continue;
+      // Soportar tanto comentarios de posts como publicaciones directas en el muro/menciones
+      const validItems = ['comment', 'post', 'status', 'share', 'mention'];
+      if (!validItems.includes(value?.item) || value?.verb !== 'add') {
+        // Log al CRM para depuración si no es un item esperado
+        await supabase.from('leads').insert({
+          name: 'Webhook Debug',
+          traffic_source: 'Webhook Debug',
+          board_type: 'social_media',
+          status: 'comentario',
+          social_platform: 'facebook',
+          comment_content: JSON.stringify({ item: value?.item, verb: value?.verb, sender: value?.from?.name, msg: value?.message }),
+          comment_status: 'active'
+        });
+        continue;
+      }
 
-      const postId = value.post_id;
-      const commentId = value.comment_id;
+      const postId = value.post_id || value.target_id || value.story_id;
+      const commentId = value.comment_id || value.post_id;
       const senderId = value.from?.id;
-      const senderName = value.from?.name || 'Usuario';
-      const messageText = value.message || '';
+      const senderName = value.from?.name || 'Usuario Facebook';
+      const messageText = value.message || value.story || '';
 
-      // Ignorar comentarios propios
-      if (!senderId || senderId === pageId) continue;
+      // Ignorar contenido propio de la página
+      if (!senderId || senderId === pageId || !messageText.trim()) continue;
 
-      // 1. Filtro Anti-Haters
-      const badWords = ['estafa', 'fraude', 'ladrón', 'ladrones', 'puta', 'mierda', 'estafadores', 'robo', 'basura', 'malo', 'mala', 'pésimo', 'pesimo', 'horrible', 'asco'];
-      const isHater = badWords.some(word => messageText.toLowerCase().includes(word));
+      // 1. Filtro Anti-Haters (Comentarios y Publicaciones del Muro)
+      const isHater = BAD_WORDS.some(word => messageText.toLowerCase().includes(word));
 
       let isDeleted = false;
       if (isHater) {
         const { data: pageData } = await supabase.from('connected_pages').select('access_token').eq('page_id', pageId).single();
         if (pageData?.access_token) {
-          await fetch(`https://graph.facebook.com/v19.0/${commentId}`, {
-            method: 'DELETE',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ access_token: pageData.access_token })
-          });
-          isDeleted = true;
+          const deleteTarget = commentId || postId;
+          if (deleteTarget) {
+            await fetch(`https://graph.facebook.com/v19.0/${deleteTarget}`, {
+              method: 'DELETE',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ access_token: pageData.access_token })
+            });
+            isDeleted = true;
+          }
         }
       }
 
@@ -378,11 +397,11 @@ async function handleFacebookPage(body: any, req: VercelRequest, res: VercelResp
       }
 
       // 4. Encolar para respuesta IA (solo si NO es hater)
-      if (!isDeleted) {
-        const processAfter = new Date(Date.now() + 10 * 1000).toISOString();
+      if (!isDeleted && commentId) {
+        const processAfter = new Date(Date.now() + 5 * 1000).toISOString();
         await supabase.from('pending_comments').insert({
           page_id: pageId,
-          post_id: postId,
+          post_id: postId || 'wall_post',
           comment_id: commentId,
           sender_id: senderId,
           sender_name: senderName,
@@ -480,8 +499,7 @@ async function handleInstagram(body: any, req: VercelRequest, res: VercelRespons
       if (!pageData?.access_token) continue;
 
       // 1. Filtro Anti-Haters
-      const badWords = ['estafa', 'fraude', 'ladrón', 'ladrones', 'puta', 'mierda', 'estafadores', 'robo', 'basura', 'malo', 'mala', 'pésimo', 'pesimo', 'horrible', 'asco'];
-      const isHater = badWords.some(word => commentText.toLowerCase().includes(word));
+      const isHater = BAD_WORDS.some(word => commentText.toLowerCase().includes(word));
 
       let isDeleted = false;
       if (isHater) {
