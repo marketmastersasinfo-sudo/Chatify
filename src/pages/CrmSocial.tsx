@@ -160,7 +160,16 @@ export function CrmSocial() {
       <div className="flex-1 overflow-x-auto pb-4 flex gap-6">
         <div className="flex gap-6 min-w-max h-full flex-1">
           {columns.map(col => {
-            const columnLeads = leads.filter(l => l.status === col.id);
+            const columnLeads = leads.filter(l => {
+              const isDeleted = l.comment_status === 'deleted' || l.status === 'moderado';
+              if (col.id === 'moderado') {
+                return isDeleted;
+              }
+              if (isDeleted) {
+                return false;
+              }
+              return l.status === col.id;
+            });
             return (
               <div 
                 key={col.id} 

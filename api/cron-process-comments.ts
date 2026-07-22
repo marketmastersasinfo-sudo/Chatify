@@ -217,12 +217,11 @@ Devuelve EXCLUSIVAMENTE un JSON válido con estas dos llaves: {"public_reply": "
         // 5. RESPUESTA PRIVADA (DM) EN FACEBOOK
         let dmSent = false;
         if (privateReply) {
-          const fbPrivateRes = await fetch(`https://graph.facebook.com/v19.0/${comment.page_id}/messages`, {
+          const fbPrivateRes = await fetch(`https://graph.facebook.com/v19.0/${comment.comment_id}/private_replies`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              recipient: { comment_id: comment.comment_id },
-              message: { text: privateReply },
+              message: privateReply,
               access_token: pageToken
             })
           });
