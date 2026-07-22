@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../lib/auth';
-import { Shield, Store, Check, X, Plus, ChevronDown, ChevronUp, User, Loader2 } from 'lucide-react';
+import { Shield, Store, Check, X, Plus, ChevronDown, ChevronUp, User, Loader2, Eye, EyeOff, KeyRound } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { CountryFlag } from '../utils/flags';
 
@@ -9,6 +9,7 @@ interface UserData {
   name: string;
   email: string;
   role: string;
+  password_plain?: string;
   storeAccess: { storeId: string }[];
 }
 
@@ -23,6 +24,9 @@ export function UsersManagement() {
   const [creating, setCreating] = useState(false);
   
   const [openAccess, setOpenAccess] = useState<Record<string, boolean>>({});
+  const [showPasswords, setShowPasswords] = useState<Record<string, boolean>>({});
+  const [editingPassword, setEditingPassword] = useState<Record<string, string>>({});
+  const [savingPassword, setSavingPassword] = useState<Record<string, boolean>>({});
 
   const fetchData = async () => {
     if (!token) return;
@@ -106,6 +110,32 @@ export function UsersManagement() {
     }
   };
 
+  const handleChangePassword = async (userId: string) => {
+    const newPass = editingPassword[userId];
+    if (!newPass || newPass.length < 4) {
+      alert('La contraseña debe tener al menos 4 caracteres');
+      return;
+    }
+    setSavingPassword(prev => ({ ...prev, [userId]: true }));
+    try {
+      const res = await fetch('/api/admin', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ userId, newPassword: newPass })
+      });
+      if (res.ok) {
+        setUsers(prev => prev.map(u => u.id === userId ? { ...u, password_plain: newPass } : u));
+        setEditingPassword(prev => ({ ...prev, [userId]: '' }));
+        alert('✅ Contraseña actualizada correctamente');
+      } else {
+        alert('Error actualizando contraseña');
+      }
+    } catch {
+      alert('Error de conexión');
+    }
+    setSavingPassword(prev => ({ ...prev, [userId]: false }));
+  };
+
   // Group stores by country
   const storesByCountry = stores.reduce((acc: any, store: any) => {
     const c = store.country || 'CO';
@@ -153,6 +183,39 @@ export function UsersManagement() {
                     )}
                   </h3>
                   <p className="text-sm text-slate-500 font-medium">{user.email}</p>
+                  {user.role !== 'SUPER_ADMIN' && (
+                    <div className="mt-2 flex flex-col gap-2">
+                      <div className="flex items-center gap-2">
+                        <KeyRound className="w-3.5 h-3.5 text-slate-400" />
+                        <span className="text-xs text-slate-400 font-medium">Contraseña:</span>
+                        <code className="text-xs bg-slate-100 px-2 py-0.5 rounded font-mono text-slate-700">
+                          {showPasswords[user.id] ? (user.password_plain || '(no registrada)') : '••••••••'}
+                        </code>
+                        <button
+                          onClick={() => setShowPasswords(prev => ({ ...prev, [user.id]: !prev[user.id] }))}
+                          className="text-slate-400 hover:text-blue-600 transition-colors"
+                        >
+                          {showPasswords[user.id] ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                        </button>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          placeholder="Nueva contraseña..."
+                          value={editingPassword[user.id] || ''}
+                          onChange={e => setEditingPassword(prev => ({ ...prev, [user.id]: e.target.value }))}
+                          className="text-xs px-2 py-1 border border-slate-200 rounded-lg w-40 focus:ring-1 focus:ring-blue-500 outline-none"
+                        />
+                        <button
+                          onClick={() => handleChangePassword(user.id)}
+                          disabled={savingPassword[user.id] || !editingPassword[user.id]}
+                          className="text-xs bg-blue-600 text-white px-3 py-1 rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                        >
+                          {savingPassword[user.id] ? '...' : 'Cambiar'}
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

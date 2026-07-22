@@ -32,7 +32,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // Get all users
       const { data: users, error: usersError } = await supabase
         .from('chatify_users')
-        .select('id, email, name, role, created_at');
+        .select('id, email, name, role, created_at, password_plain');
 
       if (usersError) throw usersError;
 
@@ -82,10 +82,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           .insert({
             email: email.toLowerCase().trim(),
             password_hash: hash,
+            password_plain: password,
             name,
             role: role || 'COLLABORATOR'
           })
-          .select('id, email, name, role, created_at')
+          .select('id, email, name, role, created_at, password_plain')
           .single();
 
         if (error) throw error;
@@ -95,6 +96,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     } else {
       return res.status(400).json({ error: 'Invalid parameters' });
+    }
+  }
+
+  if (req.method === 'PATCH') {
+    const { userId, newPassword } = req.body;
+    if (!userId || !newPassword) {
+      return res.status(400).json({ error: 'Missing userId or newPassword' });
+    }
+    try {
+      const hash = await bcrypt.hash(newPassword, 10);
+      const { error } = await supabase
+        .from('chatify_users')
+        .update({ password_hash: hash, password_plain: newPassword })
+        .eq('id', userId);
+      if (error) throw error;
+      return res.status(200).json({ success: true });
+    } catch (e) {
+      return res.status(500).json({ error: 'Failed to update password' });
     }
   }
 
