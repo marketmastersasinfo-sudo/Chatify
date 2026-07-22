@@ -194,6 +194,18 @@ Devuelve EXCLUSIVAMENTE un JSON válido con estas dos llaves: {"public_reply": "
           }
         }
 
+        // Garantizar que SIEMPRE lleve enlace de WhatsApp para compra directa
+        const targetPhone = storePhone || '573224092420';
+        const waLink = matchedProduct?.product_link || `https://wa.me/${targetPhone}?text=${encodeURIComponent('Hola, me interesa pedir el ' + (matchedProduct?.name || 'producto'))}`;
+
+        if (!publicReply.includes('http://') && !publicReply.includes('https://') && !publicReply.includes('wa.me')) {
+          publicReply += `\n📲 Escríbenos a WhatsApp aquí: ${waLink}`;
+        }
+
+        if (privateReply && !privateReply.includes('http://') && !privateReply.includes('https://') && !privateReply.includes('wa.me')) {
+          privateReply += `\n\n👉 Haz tu pedido por WhatsApp aquí: ${waLink}`;
+        }
+
         // 4. RESPUESTA PÚBLICA (Facebook o Instagram)
         let publicRes;
         if (isInstagram) {
