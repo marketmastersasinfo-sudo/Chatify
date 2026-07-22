@@ -194,9 +194,9 @@ Devuelve EXCLUSIVAMENTE un JSON válido con estas dos llaves: {"public_reply": "
           }
         }
 
-        // Garantizar que SIEMPRE lleve enlace de WhatsApp para compra directa
-        const targetPhone = storePhone || '573224092420';
-        const waLink = matchedProduct?.product_link || `https://wa.me/${targetPhone}?text=${encodeURIComponent('Hola, me interesa pedir el ' + (matchedProduct?.name || 'producto'))}`;
+        // Garantizar que SIEMPRE lleve enlace corto de WhatsApp para compra directa
+        const cleanPhone = (storePhone || '573224092420').replace(/\D/g, '');
+        const waLink = matchedProduct?.product_link || `https://wa.me/${cleanPhone}`;
 
         if (!publicReply.includes('http://') && !publicReply.includes('https://') && !publicReply.includes('wa.me')) {
           publicReply += `\n📲 Escríbenos a WhatsApp aquí: ${waLink}`;
