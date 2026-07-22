@@ -267,8 +267,14 @@ Devuelve EXCLUSIVAMENTE un JSON válido con estas dos llaves: {"public_reply": "
           
           await supabase.from('leads').update(leadUpdate).eq('id', targetLead.id);
           
-          if (dmSent) {
-            await supabase.from('messages').insert({ lead_id: targetLead.id, sender_type: 'ai', content: `[DM FB Enviado] ${privateReply}` });
+          // Registrar mensaje del cliente y respuesta de Sophia en el historial del chat
+          await supabase.from('messages').insert([
+            { lead_id: targetLead.id, sender_type: 'customer', content: comment.message },
+            { lead_id: targetLead.id, sender_type: 'ai', content: publicReply }
+          ]);
+
+          if (dmSent && privateReply) {
+            await supabase.from('messages').insert({ lead_id: targetLead.id, sender_type: 'ai', content: `[DM Enviado por Messenger] ${privateReply}` });
           }
         }
 

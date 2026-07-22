@@ -285,30 +285,18 @@ export function LeadChatPanel({
           {/* Messages Area */}
           <div className="flex-1 overflow-y-auto p-6 space-y-4" style={{ backgroundImage: "url('https://www.transparenttextures.com/patterns/cubes.png')" }}>
              
-             {/* Banner Informativo de Redes Sociales */}
+             {/* Tag Limpio de Redes Sociales */}
              {lead?.board_type === 'social_media' && (
-               <div className="bg-gradient-to-r from-slate-900 to-indigo-950 text-white rounded-2xl p-4 shadow-md mb-4 border border-indigo-800/50">
-                 <div className="flex items-center justify-between mb-2">
-                   <span className="text-xs font-bold text-blue-300 uppercase tracking-wider flex items-center gap-1.5">
-                     💬 Comentario en {lead.social_platform === 'instagram' ? 'Instagram' : 'Facebook'}
+               <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs mb-3 flex items-center justify-between shadow-xs">
+                 <div className="flex items-center gap-2">
+                   <span className="p-1.5 bg-blue-100 text-blue-700 rounded-lg font-bold text-[11px]">
+                     {lead.social_platform === 'instagram' ? '📷 Instagram' : '📘 Facebook'}
                    </span>
-                   <span className={`text-[11px] font-black px-2.5 py-0.5 rounded-full ${lead.comment_status === 'deleted' ? 'bg-red-500/30 text-red-200 border border-red-400/30' : 'bg-emerald-500/30 text-emerald-200 border border-emerald-400/30'}`}>
-                     {lead.comment_status === 'deleted' ? '🛑 Comentario Eliminado (Anti-Hater)' : '✅ Comentario Activo en Pauta'}
-                   </span>
+                   <span className="font-medium text-slate-700">Comentario en Pauta</span>
                  </div>
-                 
-                 {lead.comment_content && (
-                   <div className="bg-white/10 backdrop-blur rounded-xl p-3 border border-white/10 my-2">
-                     <p className="text-[11px] font-semibold text-blue-200 mb-0.5">💬 Texto del Comentario ({lead.name}):</p>
-                     <p className="text-sm font-bold text-white leading-relaxed">"{lead.comment_content}"</p>
-                   </div>
-                 )}
-
-                 <p className="text-[11px] text-gray-300">
-                   {lead.comment_status === 'deleted'
-                     ? '🛡️ Este comentario contenía expresiones ofensivas o falsas acusaciones y fue eliminado en tiempo real de Meta.'
-                     : '🤖 Sophia procesó la consulta, respondió con las ofertas oficiales del catálogo e inyectó el enlace corto de WhatsApp.'}
-                 </p>
+                 <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${lead.comment_status === 'deleted' ? 'bg-red-100 text-red-700 border border-red-200' : 'bg-emerald-100 text-emerald-700 border border-emerald-200'}`}>
+                   {lead.comment_status === 'deleted' ? '🛑 Comentario Borrado' : '✅ Comentario Activo'}
+                 </span>
                </div>
              )}
 
