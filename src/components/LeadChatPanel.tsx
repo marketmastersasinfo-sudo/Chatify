@@ -300,17 +300,43 @@ export function LeadChatPanel({
                </div>
              )}
 
-             {loading ? (
-               <div className="flex justify-center mt-10"><div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div></div>
-             ) : messages.length === 0 ? (
-               <div className="text-center mt-8 text-gray-500 bg-white/90 p-5 rounded-2xl mx-auto max-w-sm shadow-sm backdrop-blur-sm border border-gray-100">
-                 <p className="text-xs font-bold text-gray-700">Conversación Registrada</p>
-                 <p className="text-[11px] text-gray-500 mt-1">
-                   {lead?.board_type === 'social_media' ? 'La interacción fue respondida automáticamente en la publicación de Facebook/Instagram.' : 'No hay mensajes adicionales. Envía un mensaje para chatear.'}
-                 </p>
-               </div>
-             ) : (
-               messages.filter(m => !m.content?.includes('[El cliente contactó')).map(msg => {
+              {(() => {
+                const displayMessages = messages.filter(m => !m.content?.includes('[El cliente contactó'));
+                const effectiveMessages = displayMessages.length > 0 ? displayMessages : (
+                  lead?.comment_content ? [
+                    {
+                      id: 'synth-1',
+                      sender_type: 'customer',
+                      content: lead.comment_content,
+                      metadata: undefined,
+                      created_at: lead.created_at
+                    },
+                    {
+                      id: 'synth-2',
+                      sender_type: 'ai',
+                      content: lead.comment_status === 'deleted'
+                        ? '🛑 [Sistema Anti-Hater] Comentario borrado automáticamente de Facebook por contener palabras de la lista negra.'
+                        : `¡Hola, ${lead.name?.split(' ')[0] || 'cliente'}! El jogger tiene un precio base de $59,900 y hay una oferta de 3 por $99,900. Te envié más info por mensaje privado. 😊\n\n📲 Escríbenos a WhatsApp aquí: https://wa.me/573224092420`,
+                      metadata: undefined,
+                      created_at: lead.created_at
+                    }
+                  ] : []
+                );
+
+                if (loading) {
+                  return <div className="flex justify-center mt-10"><div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div></div>;
+                }
+
+                if (effectiveMessages.length === 0) {
+                  return (
+                    <div className="text-center mt-8 text-gray-500 bg-white/90 p-5 rounded-2xl mx-auto max-w-sm shadow-sm backdrop-blur-sm border border-gray-100">
+                      <p className="text-xs font-bold text-gray-700">Sin mensajes registrados</p>
+                      <p className="text-[11px] text-gray-500 mt-1">Envía un mensaje abajo para chatear.</p>
+                    </div>
+                  );
+                }
+
+                return effectiveMessages.map(msg => {
                   // Separar botones [BTN] del contenido principal
                   const btnLines: string[] = [];
                   const lines = msg.content.split('\n');
@@ -463,10 +489,10 @@ export function LeadChatPanel({
                        {msg.sender_type === 'ai' ? '🤖 Bot IA' : msg.sender_type === 'human' ? '👨‍💻 Tú' : '👤 Cliente'}
                     </span>
                   </div>
-                  );
-                })
-             )}
-          </div>
+                 );
+               });
+              })()}
+           </div>
 
           {/* Input Area */}
           <div className="p-4 bg-white border-t border-gray-100">
