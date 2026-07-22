@@ -310,7 +310,7 @@ export function LeadChatPanel({
                  </p>
                </div>
              ) : (
-               messages.map(msg => {
+               messages.filter(m => !m.content?.includes('[El cliente contactó')).map(msg => {
                   // Separar botones [BTN] del contenido principal
                   const btnLines: string[] = [];
                   const lines = msg.content.split('\n');
