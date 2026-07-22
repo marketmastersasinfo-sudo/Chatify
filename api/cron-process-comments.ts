@@ -229,39 +229,46 @@ Devuelve EXCLUSIVAMENTE un JSON válido con estas dos llaves: {"public_reply": "
         // 5. RESPUESTA PRIVADA (DM) EN FACEBOOK
         let dmSent = false;
         if (privateReply) {
-          const fbPrivateRes = await fetch(`https://graph.facebook.com/v19.0/${comment.comment_id}/private_replies`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              message: privateReply,
-              access_token: pageToken
-            })
-          });
-          if (fbPrivateRes.ok) dmSent = true;
-          else console.error('Error enviando DM:', await fbPrivateRes.json());
+          try {
+            const fbPrivateRes = await fetch(`https://graph.facebook.com/v19.0/${comment.page_id}/messages?access_token=${pageToken}`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                recipient: { comment_id: comment.comment_id },
+                message: { text: privateReply }
+              })
+            });
+            if (fbPrivateRes.ok) {
+              dmSent = true;
+            } else {
+              const errJson = await fbPrivateRes.json();
+              console.error('Error enviando DM:', errJson);
+            }
+          } catch(dmErr) {
+            console.error('Error DM:', dmErr);
+          }
         }
 
         // 6. ACTUALIZAR CRM: Vincular tienda y marcar que se envió DM
-        const { data: leadData } = await supabase
+        const { data: leadsList } = await supabase
           .from('leads')
           .select('id')
           .eq('name', comment.sender_name)
           .eq('board_type', 'social_media')
           .order('created_at', { ascending: false })
-          .limit(1)
-          .single();
+          .limit(1);
           
-        if (leadData) {
+        const targetLead = leadsList?.[0];
+        if (targetLead) {
           const leadUpdate: any = {
             status: dmSent ? 'dm_enviado' : 'comentario'
           };
-          // Vincular la tienda correcta si encontramos producto por hashtag
           if (storeId) leadUpdate.store_id = storeId;
           
-          await supabase.from('leads').update(leadUpdate).eq('id', leadData.id);
+          await supabase.from('leads').update(leadUpdate).eq('id', targetLead.id);
           
           if (dmSent) {
-            await supabase.from('messages').insert({ lead_id: leadData.id, sender_type: 'ai', content: `[DM FB Enviado] ${privateReply}` });
+            await supabase.from('messages').insert({ lead_id: targetLead.id, sender_type: 'ai', content: `[DM FB Enviado] ${privateReply}` });
           }
         }
 
