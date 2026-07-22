@@ -284,11 +284,42 @@ export function LeadChatPanel({
 
           {/* Messages Area */}
           <div className="flex-1 overflow-y-auto p-6 space-y-4" style={{ backgroundImage: "url('https://www.transparenttextures.com/patterns/cubes.png')" }}>
+             
+             {/* Banner Informativo de Redes Sociales */}
+             {lead?.board_type === 'social_media' && (
+               <div className="bg-gradient-to-r from-slate-900 to-indigo-950 text-white rounded-2xl p-4 shadow-md mb-4 border border-indigo-800/50">
+                 <div className="flex items-center justify-between mb-2">
+                   <span className="text-xs font-bold text-blue-300 uppercase tracking-wider flex items-center gap-1.5">
+                     💬 Comentario en {lead.social_platform === 'instagram' ? 'Instagram' : 'Facebook'}
+                   </span>
+                   <span className={`text-[11px] font-black px-2.5 py-0.5 rounded-full ${lead.comment_status === 'deleted' ? 'bg-red-500/30 text-red-200 border border-red-400/30' : 'bg-emerald-500/30 text-emerald-200 border border-emerald-400/30'}`}>
+                     {lead.comment_status === 'deleted' ? '🛑 Comentario Eliminado (Anti-Hater)' : '✅ Comentario Activo en Pauta'}
+                   </span>
+                 </div>
+                 
+                 {lead.comment_content && (
+                   <div className="bg-white/10 backdrop-blur rounded-xl p-3 border border-white/10 my-2">
+                     <p className="text-[11px] font-semibold text-blue-200 mb-0.5">💬 Texto del Comentario ({lead.name}):</p>
+                     <p className="text-sm font-bold text-white leading-relaxed">"{lead.comment_content}"</p>
+                   </div>
+                 )}
+
+                 <p className="text-[11px] text-gray-300">
+                   {lead.comment_status === 'deleted'
+                     ? '🛡️ Este comentario contenía expresiones ofensivas o falsas acusaciones y fue eliminado en tiempo real de Meta.'
+                     : '🤖 Sophia procesó la consulta, respondió con las ofertas oficiales del catálogo e inyectó el enlace corto de WhatsApp.'}
+                 </p>
+               </div>
+             )}
+
              {loading ? (
                <div className="flex justify-center mt-10"><div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div></div>
              ) : messages.length === 0 ? (
-               <div className="text-center mt-20 text-gray-400 bg-white/80 p-4 rounded-2xl mx-auto max-w-sm shadow-sm backdrop-blur-sm border border-gray-100">
-                 No hay mensajes todavía. Envía un mensaje para iniciar la conversación.
+               <div className="text-center mt-8 text-gray-500 bg-white/90 p-5 rounded-2xl mx-auto max-w-sm shadow-sm backdrop-blur-sm border border-gray-100">
+                 <p className="text-xs font-bold text-gray-700">Conversación Registrada</p>
+                 <p className="text-[11px] text-gray-500 mt-1">
+                   {lead?.board_type === 'social_media' ? 'La interacción fue respondida automáticamente en la publicación de Facebook/Instagram.' : 'No hay mensajes adicionales. Envía un mensaje para chatear.'}
+                 </p>
                </div>
              ) : (
                messages.map(msg => {

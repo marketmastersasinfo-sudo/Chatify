@@ -349,10 +349,16 @@ async function handleFacebookPage(body: any, req: VercelRequest, res: VercelResp
       }
 
       // 2. Crear Lead en CRM
-      const { data: storeData } = await supabase.from('connected_pages').select('store_id').eq('page_id', pageId).single();
+      const { data: storeData } = await supabase.from('connected_pages').select('store_id').eq('page_id', pageId).maybeSingle();
+      let assignedStoreId = storeData?.store_id || null;
+
+      if (!assignedStoreId) {
+        const { data: defaultStore } = await supabase.from('stores').select('id').order('created_at', { ascending: true }).limit(1).maybeSingle();
+        assignedStoreId = defaultStore?.id || null;
+      }
 
       const { data: newLead } = await supabase.from('leads').insert({
-        store_id: storeData?.store_id || null,
+        store_id: assignedStoreId,
         name: senderName,
         traffic_source: 'Facebook Ads',
         board_type: 'social_media',
