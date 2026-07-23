@@ -121,6 +121,25 @@ export function TemplateBuilder() {
     } catch (err) {
       console.error(err);
     }
+  }
+
+  // Temp logic to fix Donde Los Primos credentials
+  useEffect(() => {
+    async function fixPrimos() {
+      try {
+        const { data: store } = await supabase.from('stores').select('id').eq('name', 'Donde Los Primos').single();
+        if (store) {
+          await supabase.from('whatsapp_numbers').update({
+            waba_id: '477305412128610',
+            phone_number_id: '454283704431997',
+            access_token: 'EAAa44lUrYZBIBR1Dp7FPFTZC1WwQrlH1l5iQxZCbeMWH2CEbnx67wDTICuKe9ay4cxRaVhkGc9KptaOK4bt296TmOI1Q1cD7WZCYYxIizzoxlPcZBrjFW8Gfh2NSfjH2G7LIu8vgkesPJ4w58XR8GR7IBnKxwEy1488dzCWWris7FS9fc2rYLFJL3CwdfZAmk4QQZDZD'
+          }).eq('store_id', store.id);
+        }
+      } catch (e) {}
+    }
+    fixPrimos();
+  }, []);
+
   async function fetchMetaTemplates(storeId: string) {
     setLoading(true);
     setError(null);
