@@ -53,25 +53,33 @@ export default async function handler(req: any, res: any) {
       resultText = data.choices[0]?.message?.content || '';
       if (data.usage) usageTokens = data.usage;
     } else if (provider === 'gemini') {
-      // Formato oficial de Google Gemini
       const geminiBody: any = {
-        systemInstruction: {
-          parts: [{ text: systemPrompt || 'Eres un asesor comercial experto.' }]
-        },
         contents: [
           {
             role: 'user',
-            parts: [{ text: userPrompt || 'Hola' }]
+            parts: [{ text: `${systemPrompt || 'Eres un asesor comercial.'}\n\nCliente: ${userPrompt || 'Hola'}` }]
           }
         ]
       };
 
-      const resAI = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${apiKey}`, {
+      // Intentar v1beta primero, si falla por cuota/facturación intentar v1
+      let resAI = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${apiKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(geminiBody)
       });
-      const data = await resAI.json();
+      let data = await resAI.json();
+
+      if (data.error) {
+        // Fallback a v1 con gemini-1.5-flash
+        resAI = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(geminiBody)
+        });
+        data = await resAI.json();
+      }
+
       if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
       resultText = data.candidates[0]?.content?.parts[0]?.text || '';
       if (data.usageMetadata) {
