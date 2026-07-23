@@ -23,11 +23,13 @@ export function Settings() {
   // AI Settings
   const [aiSettings, setAiSettings] = useState<Record<string, { model: string; key: string }>>({
     openai: { model: 'gpt-4o-mini', key: '' },
-    gemini: { model: 'gemini-1.5-flash', key: '' },
-    llama: { model: 'llama-3.1-8b-instant', key: '' },
+    gemini: { model: 'gemini-2.0-flash', key: '' },
+    llama: { model: 'llama-3.3-70b-versatile', key: '' },
     anthropic: { model: 'claude-3-haiku-20240307', key: '' },
-    grok: { model: 'grok-2-latest', key: '' },
-    deepseek: { model: 'deepseek-reasoner', key: '' }
+    grok: { model: 'grok-3-mini', key: '' },
+    deepseek: { model: 'deepseek-chat', key: '' },
+    mistral: { model: 'mistral-small-latest', key: '' },
+    together: { model: 'meta-llama/Llama-4-Scout-17B-16E-Instruct', key: '' }
   });
   const [showAiKeys, setShowAiKeys] = useState<Record<string, boolean>>({});
   const [aiRouting, setAiRouting] = useState<Record<string, string[]>>({
@@ -36,6 +38,8 @@ export function Settings() {
     templates: ['openai'],
     nlp: ['openai']
   });
+  const [testingProvider, setTestingProvider] = useState<string | null>(null);
+  const [testResults, setTestResults] = useState<Record<string, { ok: boolean; ms: number; error?: string }>>({});
 
   const updateAiSetting = (provider: string, field: 'model' | 'key', value: string) => {
     setAiSettings((prev) => ({
@@ -235,7 +239,7 @@ export function Settings() {
           <p className="text-sm text-gray-600 mb-6 bg-blue-50 p-3 rounded-lg border border-blue-100">
             <b className="text-blue-800">🧠 AI Router & Fallback (Cascada):</b> Chatify usará <b>GPT-4o mini</b> para cerrar ventas por WA, <b>Claude 3</b> para moderar Redes Sociales, y <b>Llama 3</b> para clasificar Kanban. Si el motor principal se cae en un lanzamiento, el tráfico saltará automáticamente al motor de respaldo para garantizar 100% de operatividad.
           </p>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {/* 1. OpenAI */}
             <div className="p-4 bg-gray-50 rounded-xl border border-blue-200 flex flex-col justify-between shadow-sm relative">
               <div className="absolute -top-3 right-4 bg-blue-100 text-blue-700 text-[10px] font-bold px-2 py-1 rounded-full border border-blue-200">
@@ -244,14 +248,17 @@ export function Settings() {
               <div>
                 <label className="block text-sm font-bold text-gray-900 mb-2">OpenAI</label>
                 <select 
-                  className="w-full mb-3 px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full mb-1 px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-blue-500 focus:border-blue-500"
                   value={aiSettings.openai.model}
                   onChange={(e) => updateAiSetting('openai', 'model', e.target.value)}
                 >
-                  <option value="gpt-4o-mini">GPT-4o mini (El más barato/obediente)</option>
-                  <option value="gpt-4o">GPT-4o (Gasto alto)</option>
-                  <option value="gpt-4-turbo">GPT-4 Turbo</option>
+                  <option value="gpt-4o-mini">GPT-4o mini — $0.15/1M in</option>
+                  <option value="gpt-4.1-mini">GPT-4.1 mini — $0.40/1M in</option>
+                  <option value="gpt-4.1-nano">GPT-4.1 nano — $0.10/1M in</option>
+                  <option value="gpt-4o">GPT-4o (Premium) — $2.50/1M in</option>
+                  <option value="o4-mini">o4-mini (Razonamiento) — $1.10/1M in</option>
                 </select>
+                <p className="text-[10px] text-gray-400 mb-3 ml-1">API compatible con OpenAI. El estándar de la industria.</p>
                 <div className="relative">
                   <input 
                     type={showAiKeys['openai'] ? "text" : "password"} 
@@ -279,17 +286,23 @@ export function Settings() {
             </div>
 
             {/* 2. Google Gemini */}
-            <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 flex flex-col justify-between">
+            <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 flex flex-col justify-between shadow-sm relative">
+              <div className="absolute -top-3 right-4 bg-green-100 text-green-700 text-[10px] font-bold px-2 py-1 rounded-full border border-green-200">
+                🆓 1,500 req/día GRATIS
+              </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-900 mb-2">Google Gemini</label>
                 <select 
-                  className="w-full mb-3 px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full mb-1 px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-blue-500 focus:border-blue-500"
                   value={aiSettings.gemini.model}
                   onChange={(e) => updateAiSetting('gemini', 'model', e.target.value)}
                 >
-                  <option value="gemini-1.5-flash">Gemini 1.5 Flash (Excelente contexto)</option>
-                  <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+                  <option value="gemini-2.0-flash">Gemini 2.0 Flash — $0.10/1M in</option>
+                  <option value="gemini-2.5-flash">Gemini 2.5 Flash (Razonamiento) — $0.15/1M in</option>
+                  <option value="gemini-2.5-pro">Gemini 2.5 Pro (Premium) — $1.25/1M in</option>
+                  <option value="gemini-1.5-flash">Gemini 1.5 Flash (Legacy) — $0.075/1M in</option>
                 </select>
+                <p className="text-[10px] text-gray-400 mb-3 ml-1">aistudio.google.com/apikey — Contexto de 1M tokens.</p>
                 <div className="relative">
                   <input 
                     type={showAiKeys['gemini'] ? "text" : "password"} 
@@ -316,19 +329,23 @@ export function Settings() {
               </div>
             </div>
 
-            {/* 3. Meta Llama */}
-            <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 flex flex-col justify-between">
+            {/* 3. Meta Llama (Groq) */}
+            <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 flex flex-col justify-between shadow-sm relative">
+              <div className="absolute -top-3 right-4 bg-green-100 text-green-700 text-[10px] font-bold px-2 py-1 rounded-full border border-green-200">
+                🆓 14,400 req/día GRATIS
+              </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-900 mb-2">Meta Llama (vía Groq)</label>
                 <select 
-                  className="w-full mb-3 px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full mb-1 px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-blue-500 focus:border-blue-500"
                   value={aiSettings.llama.model}
                   onChange={(e) => updateAiSetting('llama', 'model', e.target.value)}
                 >
-                  <option value="llama-3.1-8b-instant">Llama 3.1 8B (Gratis / Instantáneo)</option>
-                  <option value="llama-3.1-70b-versatile">Llama 3.1 70B</option>
-                  <option value="llama-3.3-70b-versatile">Llama 3.3 70B</option>
+                  <option value="llama-3.3-70b-versatile">Llama 3.3 70B (Potente) — $0.59/1M in</option>
+                  <option value="llama-3.1-8b-instant">Llama 3.1 8B (Gratis) — $0.05/1M in</option>
+                  <option value="llama-4-scout-17b-16e">Llama 4 Scout 17B (Nuevo) — $0.11/1M in</option>
                 </select>
+                <p className="text-[10px] text-gray-400 mb-3 ml-1">console.groq.com — El hardware más rápido del mundo.</p>
                 <div className="relative">
                   <input 
                     type={showAiKeys['llama'] ? "text" : "password"} 
@@ -355,18 +372,24 @@ export function Settings() {
               </div>
             </div>
 
-            {/* 4. Anthropic */}
-            <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 flex flex-col justify-between">
+            {/* 4. Anthropic (Claude) */}
+            <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 flex flex-col justify-between shadow-sm relative">
+              <div className="absolute -top-3 right-4 bg-amber-100 text-amber-700 text-[10px] font-bold px-2 py-1 rounded-full border border-amber-200">
+                Más Humano / Natural
+              </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-900 mb-2">Anthropic (Claude)</label>
                 <select 
-                  className="w-full mb-3 px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full mb-1 px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-blue-500 focus:border-blue-500"
                   value={aiSettings.anthropic.model}
                   onChange={(e) => updateAiSetting('anthropic', 'model', e.target.value)}
                 >
-                  <option value="claude-3-haiku-20240307">Claude 3 Haiku (Más humano)</option>
-                  <option value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet</option>
+                  <option value="claude-3-haiku-20240307">Claude 3 Haiku (Barato) — $0.25/1M in</option>
+                  <option value="claude-sonnet-4-20250514">Claude Sonnet 4 (Potente) — $3.00/1M in</option>
+                  <option value="claude-haiku-4-20250514">Claude Haiku 4 (Nuevo/Rápido) — $0.80/1M in</option>
+                  <option value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet (Legacy) — $3.00/1M in</option>
                 </select>
+                <p className="text-[10px] text-gray-400 mb-3 ml-1">console.anthropic.com — Mejor tono conversacional.</p>
                 <div className="relative">
                   <input 
                     type={showAiKeys['anthropic'] ? "text" : "password"} 
@@ -394,17 +417,22 @@ export function Settings() {
             </div>
 
             {/* 5. Grok */}
-            <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 flex flex-col justify-between">
+            <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 flex flex-col justify-between shadow-sm relative">
+              <div className="absolute -top-3 right-4 bg-red-100 text-red-700 text-[10px] font-bold px-2 py-1 rounded-full border border-red-200">
+                ⚡ Excelente Cierre Ventas
+              </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-900 mb-2">xAI (Grok)</label>
                 <select 
-                  className="w-full mb-3 px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full mb-1 px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-blue-500 focus:border-blue-500"
                   value={aiSettings.grok.model}
                   onChange={(e) => updateAiSetting('grok', 'model', e.target.value)}
                 >
-                  <option value="grok-2-latest">Grok-2 Latest</option>
-                  <option value="grok-beta">Grok Beta</option>
+                  <option value="grok-3-mini">Grok 3 Mini (Nuevo/Rápido) — $0.30/1M in</option>
+                  <option value="grok-3">Grok 3 (Flagship) — $3.00/1M in</option>
+                  <option value="grok-2-latest">Grok-2 (Legacy) — $2.00/1M in</option>
                 </select>
+                <p className="text-[10px] text-gray-400 mb-3 ml-1">console.x.ai — Muy bueno cerrando ventas (caro).</p>
                 <div className="relative">
                   <input 
                     type={showAiKeys['grok'] ? "text" : "password"} 
@@ -439,13 +467,14 @@ export function Settings() {
               <div>
                 <label className="block text-sm font-semibold text-gray-900 mb-2">Deepseek AI</label>
                 <select 
-                  className="w-full mb-3 px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full mb-1 px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-blue-500 focus:border-blue-500"
                   value={aiSettings.deepseek.model}
                   onChange={(e) => updateAiSetting('deepseek', 'model', e.target.value)}
                 >
-                  <option value="deepseek-reasoner">Deepseek R1 (Razonamiento)</option>
-                  <option value="deepseek-chat">Deepseek V3 (Rápido)</option>
+                  <option value="deepseek-chat">DeepSeek V3 (Rápido) — $0.14/1M in</option>
+                  <option value="deepseek-reasoner">DeepSeek R1 (Razonamiento) — $0.55/1M in</option>
                 </select>
+                <p className="text-[10px] text-gray-400 mb-3 ml-1">platform.deepseek.com — Calidad de GPT-4o a precio mínimo.</p>
                 <div className="relative">
                   <input 
                     type={showAiKeys['deepseek'] ? "text" : "password"} 
@@ -461,6 +490,94 @@ export function Settings() {
               </div>
               <div className="mt-4 flex items-center justify-between">
                 {aiSettings.deepseek.key.length > 20 ? (
+                  <div className="flex items-center gap-2 text-xs text-green-700 font-bold bg-green-50 px-2 py-1.5 rounded-md border border-green-200">
+                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div> ✅ Conectado
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 text-xs text-gray-500 font-medium">
+                    <div className="w-2 h-2 rounded-full bg-gray-300"></div> No Configurado
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* 7. Mistral AI — NUEVO */}
+            <div className="p-4 bg-gray-50 rounded-xl border border-orange-200 flex flex-col justify-between shadow-sm relative">
+              <div className="absolute -top-3 right-4 bg-orange-100 text-orange-700 text-[10px] font-bold px-2 py-1 rounded-full border border-orange-200">
+                🆕 Europeo / Ultra-Rápido
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-gray-900 mb-2">Mistral AI</label>
+                <select 
+                  className="w-full mb-1 px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-blue-500 focus:border-blue-500"
+                  value={aiSettings.mistral.model}
+                  onChange={(e) => updateAiSetting('mistral', 'model', e.target.value)}
+                >
+                  <option value="mistral-small-latest">Mistral Small 4 (Rápido) — $0.15/1M in</option>
+                  <option value="mistral-medium-latest">Mistral Medium 3.5 (Potente) — $1.50/1M in</option>
+                  <option value="mistral-large-latest">Mistral Large 3 (Flagship) — $2.00/1M in</option>
+                </select>
+                <p className="text-[10px] text-gray-400 mb-3 ml-1">console.mistral.ai — Excelente en español. API OpenAI-compatible.</p>
+                <div className="relative">
+                  <input 
+                    type={showAiKeys['mistral'] ? "text" : "password"} 
+                    placeholder="..." 
+                    value={aiSettings.mistral.key}
+                    onChange={(e) => updateAiSetting('mistral', 'key', e.target.value)}
+                    className="w-full pl-3 pr-10 py-2 border border-gray-200 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500" 
+                  />
+                  <button type="button" onClick={() => toggleAiKeyVisibility('mistral')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                    {showAiKeys['mistral'] ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+              <div className="mt-4 flex items-center justify-between">
+                {aiSettings.mistral.key.length > 20 ? (
+                  <div className="flex items-center gap-2 text-xs text-green-700 font-bold bg-green-50 px-2 py-1.5 rounded-md border border-green-200">
+                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div> ✅ Conectado
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 text-xs text-gray-500 font-medium">
+                    <div className="w-2 h-2 rounded-full bg-gray-300"></div> No Configurado
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* 8. Together AI — NUEVO */}
+            <div className="p-4 bg-gray-50 rounded-xl border border-cyan-200 flex flex-col justify-between shadow-sm relative">
+              <div className="absolute -top-3 right-4 bg-cyan-100 text-cyan-700 text-[10px] font-bold px-2 py-1 rounded-full border border-cyan-200">
+                🆕 +100 Modelos / Ultra-Barato
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-gray-900 mb-2">Together AI</label>
+                <select 
+                  className="w-full mb-1 px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-blue-500 focus:border-blue-500"
+                  value={aiSettings.together.model}
+                  onChange={(e) => updateAiSetting('together', 'model', e.target.value)}
+                >
+                  <option value="meta-llama/Llama-4-Scout-17B-16E-Instruct">Llama 4 Scout 17B — $0.11/1M in</option>
+                  <option value="meta-llama/Llama-4-Maverick-17B-128E-Instruct">Llama 4 Maverick 17B — $0.27/1M in</option>
+                  <option value="Qwen/Qwen3-235B-A22B">Qwen 3 235B (Enorme) — $0.60/1M in</option>
+                  <option value="deepseek-ai/DeepSeek-R1">DeepSeek R1 (vía Together) — $0.55/1M in</option>
+                  <option value="meta-llama/Llama-3.3-70B-Instruct-Turbo">Llama 3.3 70B Turbo — $0.60/1M in</option>
+                </select>
+                <p className="text-[10px] text-gray-400 mb-3 ml-1">api.together.ai — Acceso a +100 modelos open source con una key.</p>
+                <div className="relative">
+                  <input 
+                    type={showAiKeys['together'] ? "text" : "password"} 
+                    placeholder="..." 
+                    value={aiSettings.together.key}
+                    onChange={(e) => updateAiSetting('together', 'key', e.target.value)}
+                    className="w-full pl-3 pr-10 py-2 border border-gray-200 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500" 
+                  />
+                  <button type="button" onClick={() => toggleAiKeyVisibility('together')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                    {showAiKeys['together'] ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+              <div className="mt-4 flex items-center justify-between">
+                {aiSettings.together.key.length > 20 ? (
                   <div className="flex items-center gap-2 text-xs text-green-700 font-bold bg-green-50 px-2 py-1.5 rounded-md border border-green-200">
                     <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div> ✅ Conectado
                   </div>
@@ -508,11 +625,13 @@ export function Settings() {
                         }}
                       >
                         <option value="openai">OpenAI (GPT-4o Mini)</option>
-                        <option value="anthropic">Anthropic (Claude 3)</option>
+                        <option value="anthropic">Anthropic (Claude)</option>
                         <option value="google">Google Gemini</option>
                         <option value="llama">Meta Llama (Groq)</option>
                         <option value="grok">xAI Grok</option>
-                        <option value="deepseek">Deepseek (Razonamiento)</option>
+                        <option value="deepseek">DeepSeek</option>
+                        <option value="mistral">Mistral AI</option>
+                        <option value="together">Together AI</option>
                       </select>
                     </div>
                     <div>
@@ -527,11 +646,13 @@ export function Settings() {
                       >
                         <option value="">-- Sin respaldo --</option>
                         <option value="openai">OpenAI (GPT-4o Mini)</option>
-                        <option value="anthropic">Anthropic (Claude 3)</option>
+                        <option value="anthropic">Anthropic (Claude)</option>
                         <option value="google">Google Gemini</option>
                         <option value="llama">Meta Llama (Groq)</option>
                         <option value="grok">xAI Grok</option>
-                        <option value="deepseek">Deepseek (Razonamiento)</option>
+                        <option value="deepseek">DeepSeek</option>
+                        <option value="mistral">Mistral AI</option>
+                        <option value="together">Together AI</option>
                       </select>
                     </div>
                     <div>
@@ -546,11 +667,13 @@ export function Settings() {
                       >
                         <option value="">-- Sin respaldo --</option>
                         <option value="openai">OpenAI (GPT-4o Mini)</option>
-                        <option value="anthropic">Anthropic (Claude 3)</option>
+                        <option value="anthropic">Anthropic (Claude)</option>
                         <option value="google">Google Gemini</option>
                         <option value="llama">Meta Llama (Groq)</option>
                         <option value="grok">xAI Grok</option>
-                        <option value="deepseek">Deepseek (Razonamiento)</option>
+                        <option value="deepseek">DeepSeek</option>
+                        <option value="mistral">Mistral AI</option>
+                        <option value="together">Together AI</option>
                       </select>
                     </div>
                   </div>

@@ -17,16 +17,31 @@ const COST_PER_1M: Record<string, number> = {
   'gpt-4o': 2.50,
   'gpt-4.1-mini': 0.40,
   'gpt-4.1-nano': 0.10,
+  'o4-mini': 1.10,
   'claude-3-haiku-20240307': 0.25,
   'claude-3-5-sonnet-20241022': 3.00,
+  'claude-sonnet-4-20250514': 3.00,
+  'claude-haiku-4-20250514': 0.80,
   'gemini-1.5-flash': 0.075,
   'gemini-2.0-flash': 0.10,
+  'gemini-2.5-flash': 0.15,
+  'gemini-2.5-pro': 1.25,
   'llama-3.1-8b-instant': 0.05,
   'llama-3.3-70b-versatile': 0.59,
+  'llama-4-scout-17b-16e': 0.11,
+  'grok-3-mini': 0.30,
+  'grok-3': 3.00,
   'grok-2-latest': 2.00,
   'deepseek-reasoner': 0.55,
   'deepseek-chat': 0.14,
-  'whisper-1': 0.006 // per second, not per token
+  'mistral-small-latest': 0.15,
+  'mistral-medium-latest': 1.50,
+  'mistral-large-latest': 2.00,
+  'meta-llama/Llama-4-Scout-17B-16E-Instruct': 0.11,
+  'meta-llama/Llama-4-Maverick-17B-128E-Instruct': 0.27,
+  'Qwen/Qwen3-235B-A22B': 0.60,
+  'meta-llama/Llama-3.3-70B-Instruct-Turbo': 0.60,
+  'whisper-1': 0.006
 };
 
 export interface AIRequest {
@@ -99,7 +114,9 @@ export async function routeAIRequest(req: AIRequest): Promise<string> {
       google: process.env.GEMINI_API_KEY,
       llama: process.env.GROQ_API_KEY,
       grok: process.env.GROK_API_KEY,
-      deepseek: process.env.DEEPSEEK_API_KEY
+      deepseek: process.env.DEEPSEEK_API_KEY,
+      mistral: process.env.MISTRAL_API_KEY,
+      together: process.env.TOGETHER_API_KEY
     };
     
     const apiKey = providerConfig.key || envKeys[provider];
@@ -243,11 +260,36 @@ async function callProvider(provider: string, config: any, apiKey: string, messa
     const data = await res.json();
     if (data.error) throw new Error(data.error.message);
     let output = data.choices[0].message.content;
-    // Deepseek reasoner outputs <think> tags
     if (requireJson && output.includes('</think>')) {
       output = output.split('</think>')[1].trim();
     }
     return output;
+  }
+
+  if (provider === 'mistral') {
+    const body: any = { model, messages, temperature: 0.65, max_tokens: 2000 };
+    if (requireJson) body.response_format = { type: 'json_object' };
+    const res = await fetch('https://api.mistral.ai/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+      body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
+    return data.choices[0].message.content;
+  }
+
+  if (provider === 'together') {
+    const body: any = { model, messages, temperature: 0.65, max_tokens: 2000 };
+    if (requireJson) body.response_format = { type: 'json_object' };
+    const res = await fetch('https://api.together.ai/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+      body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
+    return data.choices[0].message.content;
   }
 
   throw new Error(`Unsupported AI provider: ${provider}`);
@@ -361,10 +403,12 @@ function getDefaultModel(provider: string): string {
   const defaults: Record<string, string> = {
     openai: 'gpt-4o-mini',
     anthropic: 'claude-3-haiku-20240307',
-    google: 'gemini-1.5-flash',
-    llama: 'llama-3.1-8b-instant',
-    grok: 'grok-2-latest',
-    deepseek: 'deepseek-reasoner'
+    google: 'gemini-2.0-flash',
+    llama: 'llama-3.3-70b-versatile',
+    grok: 'grok-3-mini',
+    deepseek: 'deepseek-chat',
+    mistral: 'mistral-small-latest',
+    together: 'meta-llama/Llama-4-Scout-17B-16E-Instruct'
   };
   return defaults[provider] || 'gpt-4o-mini';
 }
