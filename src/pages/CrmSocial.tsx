@@ -168,6 +168,11 @@ export function CrmSocial() {
               if (isDeleted) {
                 return false;
               }
+              // Si la columna es "comentario", mostramos todos los que tengan un comentario público
+              // sin importar si ya avanzaron en el embudo (para que siempre quede el registro ahí)
+              if (col.id === 'comentario' && l.comment_content) {
+                return true;
+              }
               return l.status === col.id;
             });
             return (
