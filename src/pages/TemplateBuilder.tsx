@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { RefreshCcw, Plus, Image as ImageIcon, MessageSquareDashed, AlertCircle, CheckCircle2, Loader2, Save, X, Sparkles, Wand2, Link2, Trash2 } from 'lucide-react';
+import { RefreshCcw, Plus, Image as ImageIcon, MessageSquareDashed, AlertCircle, CheckCircle2, Loader2, Save, X, Sparkles, Wand2, Link2, Trash2, Search, Filter, Check, Power } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
 
@@ -11,6 +11,11 @@ export function TemplateBuilder() {
   const [templates, setTemplates] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Search & Filter State
+  const [searchTerm, setSearchTerm] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('ALL');
+  const [activeStateFilter, setActiveStateFilter] = useState('ALL'); // ALL, ACTIVE, INACTIVE
 
   // New Template Form State
   const [isCreating, setIsCreating] = useState(false);
@@ -199,6 +204,28 @@ export function TemplateBuilder() {
     } catch (e) { console.error('Analytics error:', e); }
     setAnalyticsLoading(false);
   }
+
+  // Computed Filtered Templates
+  const filteredTemplates = templates.filter((tpl: any) => {
+    // 1. Search term (matches template name or category)
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      const nameMatch = (tpl.name || '').toLowerCase().includes(term);
+      const catMatch = (tpl.category || '').toLowerCase().includes(term);
+      if (!nameMatch && !catMatch) return false;
+    }
+
+    // 2. Category Filter
+    if (categoryFilter !== 'ALL') {
+      if ((tpl.category || '').toUpperCase() !== categoryFilter) return false;
+    }
+
+    // 3. Active State Filter
+    if (activeStateFilter === 'ACTIVE' && !tpl.is_active) return false;
+    if (activeStateFilter === 'INACTIVE' && tpl.is_active) return false;
+
+    return true;
+  });
 
   async function handleSyncNames() {
     if (!selectedStore) return;
@@ -819,23 +846,68 @@ export function TemplateBuilder() {
 
       {/* Main List */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-        <div className="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+        <div className="px-6 py-5 border-b border-gray-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-gray-50/50">
           <div className="flex items-center gap-3">
             <h2 className="text-lg font-bold text-gray-900">Plantillas Sincronizadas</h2>
+            <span className="text-xs bg-gray-200 text-gray-700 px-2.5 py-0.5 rounded-full font-bold">
+              {filteredTemplates.length} de {templates.length}
+            </span>
             {loading && <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />}
           </div>
-          <div className="flex items-center gap-3">
+
+          <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+            {/* Buscador inteligente */}
+            <div className="relative flex-1 md:w-64">
+              <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Buscar por nombre o tipo..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-9 pr-4 py-2 bg-white border border-gray-200 rounded-xl text-xs font-medium text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+              />
+              {searchTerm && (
+                <button onClick={() => setSearchTerm('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+
+            {/* Filtro por Categoría */}
+            <select
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+              className="px-3 py-2 bg-white border border-gray-200 rounded-xl text-xs font-semibold text-gray-700 cursor-pointer"
+            >
+              <option value="ALL">Todas las Categorías</option>
+              <option value="MARKETING">Marketing</option>
+              <option value="UTILITY">Utilidad (Utility)</option>
+              <option value="AUTHENTICATION">Autenticación</option>
+            </select>
+
+            {/* Filtro por Estado de Activación */}
+            <select
+              value={activeStateFilter}
+              onChange={(e) => setActiveStateFilter(e.target.value)}
+              className="px-3 py-2 bg-white border border-gray-200 rounded-xl text-xs font-semibold text-gray-700 cursor-pointer"
+            >
+              <option value="ALL">Todos los Estados</option>
+              <option value="ACTIVE">🟢 Solo Activas</option>
+              <option value="INACTIVE">⚪ Solo Inactivas</option>
+            </select>
+
             <button 
               onClick={() => selectedStore && fetchMetaTemplates(selectedStore.id)}
               disabled={loading || !selectedStore}
-              className="text-gray-500 hover:text-blue-600 font-semibold text-sm flex items-center gap-1.5 transition-colors"
+              className="text-gray-500 hover:text-blue-600 font-semibold text-sm flex items-center gap-1.5 transition-colors p-2"
+              title="Refrescar lista"
             >
-              <RefreshCcw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`}/> Sincronizar
+              <RefreshCcw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`}/>
             </button>
             <button
               onClick={handleSyncNames}
               disabled={syncing || !selectedStore}
-              className="text-purple-600 hover:text-purple-800 font-semibold text-sm flex items-center gap-1.5 transition-colors border border-purple-200 bg-purple-50 hover:bg-purple-100 px-3 py-1.5 rounded-lg"
+              className="text-purple-600 hover:text-purple-800 font-semibold text-sm flex items-center gap-1.5 transition-colors border border-purple-200 bg-purple-50 hover:bg-purple-100 px-3 py-1.5 rounded-xl"
               title="Importa plantillas nuevas desde Meta que aún no estén en Chatify"
             >
               {syncing ? <Loader2 className="w-4 h-4 animate-spin"/> : <Link2 className="w-4 h-4"/>}
@@ -848,6 +920,7 @@ export function TemplateBuilder() {
               <Plus className="w-4 h-4" /> Nueva Plantilla
             </button>
           </div>
+        </div>
         </div>
 
         <div className="overflow-x-auto">
@@ -863,14 +936,14 @@ export function TemplateBuilder() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 text-sm">
-              {templates.length === 0 && !loading ? (
+              {filteredTemplates.length === 0 && !loading ? (
                 <tr>
                   <td colSpan={6} className="p-8 text-center text-gray-500">
-                    No se encontraron plantillas. Haz clic en "Sincronizar" o crea una nueva.
+                    {searchTerm ? `No se encontraron plantillas que coincidan con "${searchTerm}".` : 'No se encontraron plantillas.'}
                   </td>
                 </tr>
               ) : (
-                templates.map((tpl: any) => (
+                filteredTemplates.map((tpl: any) => (
                   <tr key={tpl.id} className="hover:bg-gray-50/50 transition-colors">
                     <td className="p-4 pl-6 font-bold text-gray-900">{tpl.name}</td>
                     <td className="p-4 text-gray-600 font-medium text-xs">{tpl.category}</td>
