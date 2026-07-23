@@ -10,7 +10,11 @@ export interface DashboardFilters {
 export async function fetchDashboardData(filters: DashboardFilters, allowedStoreIds: string[]) {
   if (!allowedStoreIds || allowedStoreIds.length === 0) return [];
 
-  let query = supabase.from('leads').select('*, stores!inner(country)');
+  const selectQuery = filters.country && filters.country !== 'all'
+    ? '*, stores!inner(country)'
+    : '*, stores(country)';
+    
+  let query = supabase.from('leads').select(selectQuery);
 
   if (filters.storeId && filters.storeId !== 'all') {
     if (allowedStoreIds.includes(filters.storeId)) {
