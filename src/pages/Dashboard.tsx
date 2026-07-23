@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Calendar as CalendarIcon, TrendingUp, TrendingDown, Users, ShoppingCart, DollarSign, Activity, Filter, ChevronDown, MessageSquare, MessageCircle, Loader2, Send, Truck, Share2, ShieldAlert } from 'lucide-react';
+import { Calendar as CalendarIcon, TrendingUp, TrendingDown, Users, ShoppingCart, DollarSign, Activity, Filter, ChevronDown, MessageSquare, MessageCircle, Loader2, Send, Truck, ShieldAlert } from 'lucide-react';
 import { cn } from '../utils/cn';
 import { useAuth } from '../lib/auth';
 import { fetchDashboardData, processRemarketingFunnels, processSalesWaFunnels, processRemarketingWaFunnels, processLogisticsFunnels, processSocialFunnels, processAIMetrics, processAdvancedInsights } from '../lib/dashboard-data';

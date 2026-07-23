@@ -184,8 +184,6 @@ export function processSocialFunnels(leads: any[]) {
   const derivadoWa = socialLeads.filter(l => l.status === 'derivado').length;
   const moderados = socialLeads.filter(l => l.status === 'moderado' || l.comment_status === 'deleted').length;
 
-  // Total de comentarios reales (excluye duplicados de DM y moderados del conteo de "entrada")
-  const totalEntrada = comentarios + dmEnviados + charlaDm + ofertaEnviada + datosEntrega + ventaDm + derivadoWa;
   const conversiones = ventaDm + derivadoWa;
 
   const revenue = socialLeads
