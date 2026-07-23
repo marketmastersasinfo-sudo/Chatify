@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Key, MapPin, Target, Plus, Save, Loader2, CheckCircle2, Eye, EyeOff, Network } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { AiTesterPanel } from '../components/AiTesterPanel';
 
 export function Settings() {
   const [orgId, setOrgId] = useState<string | null>(null);
@@ -226,6 +227,9 @@ export function Settings() {
             </div>
           </div>
         )}
+
+        {/* Arena de Comparación de IAs (En Vivo) */}
+        <AiTesterPanel aiSettings={aiSettings} orgId={orgId} />
 
         {/* Motores de IA */}
         <div className="glass-card rounded-2xl p-6">
