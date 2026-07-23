@@ -326,16 +326,8 @@ async function handleFacebookPage(body: any, req: VercelRequest, res: VercelResp
       // Soportar tanto comentarios de posts como publicaciones directas en el muro/menciones
       const validItems = ['comment', 'post', 'status', 'share', 'mention'];
       if (!validItems.includes(value?.item) || value?.verb !== 'add') {
-        // Log al CRM para depuración si no es un item esperado
-        await supabase.from('leads').insert({
-          name: 'Webhook Debug',
-          traffic_source: 'Webhook Debug',
-          board_type: 'social_media',
-          status: 'comentario',
-          social_platform: 'facebook',
-          comment_content: JSON.stringify({ item: value?.item, verb: value?.verb, sender: value?.from?.name, msg: value?.message }),
-          comment_status: 'active'
-        });
+        // Ignorar eventos que no son comentarios nuevos (remove, edited, etc.)
+        console.log(`[FB] Evento ignorado: item=${value?.item}, verb=${value?.verb}`);
         continue;
       }
 
@@ -368,8 +360,9 @@ async function handleFacebookPage(body: any, req: VercelRequest, res: VercelResp
       }
 
       // 2. Crear Lead en CRM
-      const { data: storeData } = await supabase.from('connected_pages').select('store_id').eq('page_id', pageId).maybeSingle();
+      const { data: storeData } = await supabase.from('connected_pages').select('store_id, page_name').eq('page_id', pageId).maybeSingle();
       let assignedStoreId = storeData?.store_id || null;
+      const pageName = storeData?.page_name || null;
 
       if (!assignedStoreId) {
         const { data: defaultStore } = await supabase.from('stores').select('id').order('created_at', { ascending: true }).limit(1).maybeSingle();
@@ -384,7 +377,8 @@ async function handleFacebookPage(body: any, req: VercelRequest, res: VercelResp
         status: isDeleted ? 'moderado' : 'comentario',
         social_platform: 'facebook',
         comment_content: messageText,
-        comment_status: isDeleted ? 'deleted' : 'active'
+        comment_status: isDeleted ? 'deleted' : 'active',
+        page_name: pageName
       }).select().single();
 
       // 3. Disparar Pixel (solo si NO es hater)

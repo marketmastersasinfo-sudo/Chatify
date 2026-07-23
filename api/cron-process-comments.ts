@@ -255,13 +255,29 @@ Devuelve EXCLUSIVAMENTE un JSON válido con estas dos llaves: {"public_reply": "
         }
 
         // 6. ACTUALIZAR CRM: Vincular tienda y marcar que se envió DM
-        const { data: leadsList } = await supabase
+        // Buscar primero por contenido exacto del comentario (más preciso)
+        let leadsList;
+        const { data: exactMatch } = await supabase
           .from('leads')
           .select('id')
-          .eq('name', comment.sender_name)
+          .eq('comment_content', comment.message)
           .eq('board_type', 'social_media')
           .order('created_at', { ascending: false })
           .limit(1);
+        
+        if (exactMatch && exactMatch.length > 0) {
+          leadsList = exactMatch;
+        } else {
+          // Fallback: buscar por nombre del remitente
+          const { data: nameMatch } = await supabase
+            .from('leads')
+            .select('id')
+            .eq('name', comment.sender_name)
+            .eq('board_type', 'social_media')
+            .order('created_at', { ascending: false })
+            .limit(1);
+          leadsList = nameMatch;
+        }
           
         const targetLead = leadsList?.[0];
         if (targetLead) {
