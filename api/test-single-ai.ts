@@ -3,6 +3,7 @@ const COST_PER_1M_TOKENS: Record<string, { in: number; out: number }> = {
   'gpt-4o': { in: 2.50, out: 10.00 },
   'gemini-2.0-flash': { in: 0.00, out: 0.00 }, // Free tier
   'gemini-1.5-flash': { in: 0.00, out: 0.00 }, // Free tier
+  'gemini-1.5-pro': { in: 1.25, out: 5.00 },
   'llama-3.1-8b-instant': { in: 0.00, out: 0.00 }, // Free tier Groq
   'llama-3.3-70b-versatile': { in: 0.59, out: 0.79 },
   'grok-3-mini': { in: 0.30, out: 1.20 },
@@ -52,14 +53,23 @@ export default async function handler(req: any, res: any) {
       resultText = data.choices[0]?.message?.content || '';
       if (data.usage) usageTokens = data.usage;
     } else if (provider === 'gemini') {
-      const contents = messages.map(m => ({
-        role: m.role === 'system' ? 'user' : m.role === 'assistant' ? 'model' : 'user',
-        parts: [{ text: m.content }]
-      }));
+      // Formato oficial de Google Gemini
+      const geminiBody: any = {
+        systemInstruction: {
+          parts: [{ text: systemPrompt || 'Eres un asesor comercial experto.' }]
+        },
+        contents: [
+          {
+            role: 'user',
+            parts: [{ text: userPrompt || 'Hola' }]
+          }
+        ]
+      };
+
       const resAI = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${apiKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contents })
+        body: JSON.stringify(geminiBody)
       });
       const data = await resAI.json();
       if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
