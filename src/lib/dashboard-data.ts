@@ -19,7 +19,7 @@ export async function fetchDashboardData(filters: DashboardFilters, allowedStore
       return [];
     }
   } else {
-    query = query.in('store_id', allowedStoreIds);
+    query = query.or(`store_id.in.(${allowedStoreIds.join(',')}),store_id.is.null`);
   }
 
   if (filters.country && filters.country !== 'all') {
