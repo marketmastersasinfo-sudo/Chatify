@@ -10,6 +10,7 @@ export function Settings() {
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [showCostDetails, setShowCostDetails] = useState(false);
+  const [selectedPeriod, setSelectedPeriod] = useState<'today' | 'current_month' | 'last_month' | 'all'>('current_month');
   const [globalCosts, setGlobalCosts] = useState<any>(null);
 
   // Global Tracking Pixels
@@ -55,7 +56,7 @@ export function Settings() {
 
   useEffect(() => {
     loadSettings();
-  }, []);
+  }, [selectedPeriod]);
 
   async function loadSettings() {
     try {
@@ -101,15 +102,36 @@ export function Settings() {
         }
       }
 
-      // Load global costs & detailed breakdown
-      const currentMonth = new Date().toISOString().substring(0, 7);
+      // Load global costs & detailed breakdown with dynamic date filter
+      const now = new Date();
+      const currentMonthStr = now.toISOString().substring(0, 7);
       
+      let dateFilter: string | null = null;
+      if (selectedPeriod === 'today') {
+        dateFilter = `${now.toISOString().substring(0, 10)}T00:00:00Z`;
+      } else if (selectedPeriod === 'current_month') {
+        dateFilter = `${currentMonthStr}-01T00:00:00Z`;
+      } else if (selectedPeriod === 'last_month') {
+        const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        dateFilter = `${lastMonthDate.toISOString().substring(0, 7)}-01T00:00:00Z`;
+      }
+
+      let aiQuery = (supabase as any).from('ai_usage_log').select('provider, model, estimated_cost_usd, input_tokens, output_tokens, success, created_at');
+      if (dateFilter && selectedPeriod !== 'all') {
+        aiQuery = aiQuery.gte('created_at', dateFilter);
+      }
+
       const [aiLogsRes, apiLogsRes] = await Promise.all([
-        (supabase as any).from('ai_usage_log').select('provider, model, estimated_cost_usd, input_tokens, output_tokens, success, created_at'),
-        (supabase as any).from('api_usage_counters').select('estimated_cost_usd, api_name').eq('month', currentMonth)
+        aiQuery,
+        (supabase as any).from('api_usage_counters').select('estimated_cost_usd, api_name').eq('month', currentMonthStr)
       ]);
       
-      const aiData = aiLogsRes.data || [];
+      let aiData = aiLogsRes.data || [];
+      if (selectedPeriod === 'last_month') {
+        const currentMonthStart = `${currentMonthStr}-01T00:00:00Z`;
+        aiData = aiData.filter((log: any) => log.created_at < currentMonthStart);
+      }
+
       const totalAi = aiData.reduce((sum: number, log: any) => sum + (Number(log.estimated_cost_usd) || 0), 0);
       const totalRequests = aiData.length;
       const totalTokens = aiData.reduce((sum: number, log: any) => sum + (Number(log.input_tokens || 0) + Number(log.output_tokens || 0)), 0);
@@ -234,22 +256,36 @@ export function Settings() {
         {/* Panel de Costos Globales */}
         {globalCosts && (
           <div className="relative overflow-hidden rounded-3xl border border-gray-200/80 bg-white/70 backdrop-blur-xl shadow-xl p-6 transition-all">
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
               <div className="flex items-center gap-3.5">
                 <div className="h-10 w-10 rounded-2xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center font-bold text-lg">
                   💳
                 </div>
                 <div>
                   <h2 className="text-lg font-bold tracking-tight text-gray-900">
-                    Costos Globales del Mes ({globalCosts.month})
+                    Costos y Consumo de IA
                   </h2>
                   <p className="text-xs text-gray-500 font-medium">Consumo acumulado de Inteligencia Artificial y APIs de todas tus tiendas.</p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full text-xs font-semibold border border-emerald-200/60">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                <span>{globalCosts.totalRequests || 0} peticiones registradas</span>
+              {/* Filtro de Periodo Dinámico */}
+              <div className="flex items-center gap-2">
+                <select
+                  value={selectedPeriod}
+                  onChange={(e: any) => setSelectedPeriod(e.target.value)}
+                  className="px-3 py-1.5 bg-white border border-gray-200 rounded-xl text-xs font-semibold text-gray-700 shadow-2xs focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500"
+                >
+                  <option value="today">Hoy</option>
+                  <option value="current_month">Este Mes ({globalCosts.month})</option>
+                  <option value="last_month">Mes Anterior</option>
+                  <option value="all">Histórico Completo</option>
+                </select>
+
+                <div className="flex items-center gap-2 bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-xl text-xs font-semibold border border-emerald-200/60">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                  <span>{globalCosts.totalRequests || 0} peticiones</span>
+                </div>
               </div>
             </div>
 
