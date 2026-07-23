@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Calendar as CalendarIcon, TrendingUp, TrendingDown, Users, ShoppingCart, DollarSign, Activity, Filter, ChevronDown, MessageSquare, Loader2, Send, Truck, Share2 } from 'lucide-react';
+import { Calendar as CalendarIcon, TrendingUp, TrendingDown, Users, ShoppingCart, DollarSign, Activity, Filter, ChevronDown, MessageSquare, MessageCircle, Loader2, Send, Truck, Share2, ShieldAlert } from 'lucide-react';
 import { cn } from '../utils/cn';
 import { useAuth } from '../lib/auth';
 import { fetchDashboardData, processRemarketingFunnels, processSalesWaFunnels, processRemarketingWaFunnels, processLogisticsFunnels, processSocialFunnels, processAIMetrics, processAdvancedInsights } from '../lib/dashboard-data';
@@ -120,10 +120,10 @@ export function Dashboard() {
       title: "Redes Sociales (Instagram, Facebook, TikTok)",
       revenue: p.kpis.revenue,
       kpis: [
-        { label: "Leads Sociales", value: p.kpis.total.toString(), icon: Share2, color: "text-pink-600", bg: "bg-pink-50" },
-        { label: "Enganchados", value: p.kpis.engaged.toString(), icon: Activity, color: "text-rose-600", bg: "bg-rose-50" },
-        { label: "Interesados", value: p.kpis.interested.toString(), icon: Users, color: "text-purple-600", bg: "bg-purple-50" },
-        { label: "Convertidos", value: p.kpis.converted.toString(), icon: DollarSign, color: "text-green-600", bg: "bg-green-50" }
+        { label: "Comentarios Públicos", value: p.kpis.total.toString(), icon: MessageSquare, color: "text-blue-600", bg: "bg-blue-50" },
+        { label: "DM Enviados", value: p.kpis.engaged.toString(), icon: MessageCircle, color: "text-purple-600", bg: "bg-purple-50" },
+        { label: "Moderados / Eliminados", value: (p.kpis as any).moderated?.toString() || '0', icon: ShieldAlert, color: "text-red-600", bg: "bg-red-50" },
+        { label: "Ventas / Derivados", value: p.kpis.converted.toString(), icon: DollarSign, color: "text-green-600", bg: "bg-green-50" }
       ],
       funnel: p.funnel
     };

@@ -174,26 +174,87 @@ export function processLogisticsFunnels(leads: any[]) {
 export function processSocialFunnels(leads: any[]) {
   const socialLeads = leads.filter(l => l.board_type === 'social_media' || l.board_type === 'sales_social');
 
-  const total = socialLeads.length;
-  const engaged = socialLeads.filter(l => !['nuevo', 'cold_lead'].includes(l.status)).length;
-  const interested = socialLeads.filter(l => 
-    ['client_replied', 'verifying_address', 'recovered', 'confirmado', 'warm'].includes(l.status)
-  ).length;
-  const converted = socialLeads.filter(l => 
-    ['recovered', 'confirmado'].includes(l.status)
-  ).length;
+  // KPIs principales — mapeados a los statuses reales del CRM Social
+  const comentarios = socialLeads.filter(l => l.status === 'comentario').length;
+  const dmEnviados = socialLeads.filter(l => l.status === 'dm_enviado').length;
+  const charlaDm = socialLeads.filter(l => l.status === 'charla_dm').length;
+  const ofertaEnviada = socialLeads.filter(l => l.status === 'oferta_enviada').length;
+  const datosEntrega = socialLeads.filter(l => l.status === 'verifying_address').length;
+  const ventaDm = socialLeads.filter(l => l.status === 'venta_dm').length;
+  const derivadoWa = socialLeads.filter(l => l.status === 'derivado').length;
+  const moderados = socialLeads.filter(l => l.status === 'moderado' || l.comment_status === 'deleted').length;
+
+  // Total de comentarios reales (excluye duplicados de DM y moderados del conteo de "entrada")
+  const totalEntrada = comentarios + dmEnviados + charlaDm + ofertaEnviada + datosEntrega + ventaDm + derivadoWa;
+  const conversiones = ventaDm + derivadoWa;
 
   const revenue = socialLeads
-    .filter(l => ['recovered', 'confirmado'].includes(l.status))
+    .filter(l => ['venta_dm', 'derivado', 'recovered', 'confirmado'].includes(l.status))
     .reduce((sum, l) => sum + (Number(l.total_price) || 0), 0);
 
   return {
-    kpis: { total, engaged, interested, converted, revenue },
+    kpis: {
+      total: comentarios,
+      engaged: dmEnviados,
+      interested: charlaDm + ofertaEnviada + datosEntrega,
+      converted: conversiones,
+      moderated: moderados,
+      revenue
+    },
     funnel: [
-      { stage: "1. Leads Sociales", count: total, percentage: 100, colorHex: "#ec4899", color: "text-pink-700", bg: "bg-pink-50" },
-      { stage: "2. Enganchados", count: engaged, percentage: total > 0 ? Math.round((engaged/total)*100) : 0, colorHex: "#f43f5e", color: "text-rose-700", bg: "bg-rose-50", dropoffAnalysis: "Sin Interacción: Escribieron en redes pero no siguieron conversando." },
-      { stage: "3. Interesados", count: interested, percentage: total > 0 ? Math.round((interested/total)*100) : 0, colorHex: "#a855f7", color: "text-purple-700", bg: "bg-purple-50", dropoffAnalysis: "Perdida de Interés: Mostraron interés pero no quisieron comprar." },
-      { stage: "4. Convertidos", count: converted, percentage: total > 0 ? Math.round((converted/total)*100) : 0, colorHex: "#22c55e", color: "text-green-700", bg: "bg-green-50", dropoffAnalysis: "Fricción de Cierre: Interesados que no concretaron la compra." }
+      {
+        stage: "1. Comentarios Públicos",
+        count: comentarios,
+        percentage: 100,
+        colorHex: "#3b82f6",
+        color: "text-blue-700",
+        bg: "bg-blue-50"
+      },
+      {
+        stage: "2. DM Enviados",
+        count: dmEnviados,
+        percentage: comentarios > 0 ? Math.round((dmEnviados / comentarios) * 100) : 0,
+        colorHex: "#8b5cf6",
+        color: "text-purple-700",
+        bg: "bg-purple-50",
+        dropoffAnalysis: "Sin Respuesta: Sophia respondió el comentario y envió DM pero el usuario no contestó."
+      },
+      {
+        stage: "3. Conversación en DM",
+        count: charlaDm,
+        percentage: comentarios > 0 ? Math.round((charlaDm / comentarios) * 100) : 0,
+        colorHex: "#6366f1",
+        color: "text-indigo-700",
+        bg: "bg-indigo-50",
+        dropoffAnalysis: "Sin Interés: El usuario respondió al DM pero no pidió producto ni precio."
+      },
+      {
+        stage: "4. Oferta / Datos Entrega",
+        count: ofertaEnviada + datosEntrega,
+        percentage: comentarios > 0 ? Math.round(((ofertaEnviada + datosEntrega) / comentarios) * 100) : 0,
+        colorHex: "#f59e0b",
+        color: "text-amber-700",
+        bg: "bg-amber-50",
+        dropoffAnalysis: "Carrito Abandonado: Se envió oferta pero el usuario no dio sus datos de entrega."
+      },
+      {
+        stage: "5. Ventas / Derivados WA",
+        count: conversiones,
+        percentage: comentarios > 0 ? Math.round((conversiones / comentarios) * 100) : 0,
+        colorHex: "#22c55e",
+        color: "text-green-700",
+        bg: "bg-green-50",
+        dropoffAnalysis: "Fricción de Cierre: Dio datos pero no concretó la compra."
+      },
+      {
+        stage: "🛑 Moderados / Eliminados",
+        count: moderados,
+        percentage: (comentarios + moderados) > 0 ? Math.round((moderados / (comentarios + moderados)) * 100) : 0,
+        colorHex: "#ef4444",
+        color: "text-red-700",
+        bg: "bg-red-50",
+        dropoffAnalysis: "Comentarios negativos, spam o acusaciones eliminados automáticamente."
+      }
     ]
   };
 }
