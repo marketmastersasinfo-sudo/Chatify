@@ -123,21 +123,46 @@ export function TemplateBuilder() {
     }
   }
 
-  // Temp logic to fix Donde Los Primos credentials
+  }
+
+  // Temp logic to safely restore exact WABA and Token based strictly on Phone Number ID
   useEffect(() => {
-    async function fixPrimos() {
+    async function fixAllStoreTokens() {
       try {
-        const { data: store } = await supabase.from('stores').select('id').eq('name', 'Donde Los Primos').single();
-        if (store) {
-          await supabase.from('whatsapp_numbers').update({
-            waba_id: '477305412128610',
-            phone_number_id: '454283704431997',
-            access_token: 'EAAa44lUrYZBIBR1Dp7FPFTZC1WwQrlH1l5iQxZCbeMWH2CEbnx67wDTICuKe9ay4cxRaVhkGc9KptaOK4bt296TmOI1Q1cD7WZCYYxIizzoxlPcZBrjFW8Gfh2NSfjH2G7LIu8vgkesPJ4w58XR8GR7IBnKxwEy1488dzCWWris7FS9fc2rYLFJL3CwdfZAmk4QQZDZD'
-          }).eq('store_id', store.id);
+        const credentialsMap: Record<string, { waba_id: string, access_token: string }> = {
+          "493736050497479": { "waba_id": "521462044386660", "access_token": "EAAWaEsDhjWIBSKPozNBQ7SBnvcli2wyJOI56LwH6ptXqEZCUpY5RyR67AfQFFMKJ1TBu5Nxl7ZBWjZCocVLp3WEuFOqZACH2ZCQYv3uGSYWDfHkfd3v3Ump658PHTUjs9HZCVrPABZCmrlkZCMOLW7RZCT9zE8CQvMK1XmV8w9QXqiF7VN7bl9umMvme9RwcAgx1cIAZDZD" },
+          "825320060659295": { "waba_id": "1259168529344815", "access_token": "EAAOSZBWctFF8BR4a6K8sBN5i3eueeLuGCfrR207MTJ4mNB6ZBcri1NuDjFIP7EtFG3owFy6up6ToEPj53Ca2pkTT7aD8VQB6yrZBOp4EEpfkzxcFsw7hJPDQiZBQeMIUdRRgNOl0p4m5UTYwcAZBdATNWR9MFUsZCJoJlodK2jPgt9VRirhoxnjAltEqzZCGXKcVgZDZD" },
+          "723025644229688": { "waba_id": "2508397522873921", "access_token": "EAAH5fjPTu2gBRw6hvI0m8ZCe25hTtVaIWY08fEwTejH4du0F42XUnfVSRCtxXRZBjZAlrp0TI597oifZAOudUdcFose5ng0AfekZASkYZAB3q4J8BfpjvwQ2g0LJYmLjwBptm9DCJSry2ZCkBH3QR0oko00wUGGv0axSnR8Oaxp5s9LwYMZAcTKH5ghBIhZC97KfXJQZDZD" },
+          "759578923901833": { "waba_id": "578633691849632", "access_token": "EAAZAHP5ZBukPIBR8cBHUAoiMJYjgsfcq7bMOspZCBzbYGWndUE667IcZAYHH6nXU6bkNfDC0EX4uCo2DH6dQdvm9wZCWMo3qz5IX29Kj6ekOxnisFLow2HYCBCNm8Gnv0uVeTmk4YDfkryrEGF4PLJNGA0ZBZCfRHYDJuIuSracAdG4PfMoytAzPoV2oprU12ErXgZDZD" },
+          "778682605321899": { "waba_id": "1430971018243000", "access_token": "EAAWY72qnprsBRxZC8ZAn0VHy6vhQgWXMhDedANEG94T9MLnEsOxHDZAf6mT2Lg6sXhrBaEunoGwKKut8DbR2FYcCUCBRCTCc0taxfh0z98saM4EzkONXPJGwlplDPBYgRHuvWStLvPArDpHZAZCUL5Vx1YTcHZAPHtfupFrvL9r0dNUZB5CzRC0F2oYPx9NEjsNWgZDZD" },
+          "695765996958287": { "waba_id": "1746357732639717", "access_token": "EAAPGW3LAqM8BR699AyppKxO9D1Ejw71NV3Q9uXQhVdZBE97wRedU4VGwq7Bevto1rGacewvkI1F2SpRfBxEiCZARTFlyOZC1AZAMxZCSWLdidPRuJmZAYEc3iEulbmOSrPRuB470dvnmszZAPECZAZB7tJExadBFkIEi6323VL5DZC7vmChY3rreosPXHNfQeDjlPKAwZDZD" },
+          "438850675978196": { "waba_id": "472440239277336", "access_token": "EAAG82QbCdU4BRySTOtulmsatpBRfYUXdkFb7iRumBE27WVlzwV3Wny8mwmNbGV5SafsdmBbGBqB5F3N0vOjDGJyyLHzMXTfrtMBRKAIhyiBcvvgWV8OFZBQktY5COyWoIilVpNGmHogbP8SMCX7Kd3MCaZAkhq6KwyKfDwEho8SbQgsRyx9VdWjOmcW8IuKgZDZD" },
+          "528853520312028": { "waba_id": "571012919419924", "access_token": "EAAPnGlU80ysBR4ZAgWtxPUZBZCyAbZAcCviprb1mU5ZAupMWWuPbSeiElIkD0JzodcxEz3rhRDhyWLUBSqzbbWn8aguYJ4ZBJuLkoZBdWYcPMDJLKp4XiIQoylk0zm3qPdZAUxPZA9g07rzQgIDZBoBdiG9BbZAVHmOMIZBaR18euHe0ZBRMuU9z51GpqKoJ6xqzbhO96rQZDZD" },
+          "420492581152329": { "waba_id": "376669199094587", "access_token": "EAAa44lUrYZBIBR1Dp7FPFTZC1WwQrlH1l5iQxZCbeMWH2CEbnx67wDTICuKe9ay4cxRaVhkGc9KptaOK4bt296TmOI1Q1cD7WZCYYxIizzoxlPcZBrjFW8Gfh2NSfjH2G7LIu8vgkesPJ4w58XR8GR7IBnKxwEy1488dzCWWris7FS9fc2rYLFJL3CwdfZAmk4QQZDZD" },
+          "454283704431997": { "waba_id": "477305412128610", "access_token": "EAAa44lUrYZBIBR1Dp7FPFTZC1WwQrlH1l5iQxZCbeMWH2CEbnx67wDTICuKe9ay4cxRaVhkGc9KptaOK4bt296TmOI1Q1cD7WZCYYxIizzoxlPcZBrjFW8Gfh2NSfjH2G7LIu8vgkesPJ4w58XR8GR7IBnKxwEy1488dzCWWris7FS9fc2rYLFJL3CwdfZAmk4QQZDZD" },
+          "378073418733738": { "waba_id": "426754590528254", "access_token": "EAAa44lUrYZBIBR1Dp7FPFTZC1WwQrlH1l5iQxZCbeMWH2CEbnx67wDTICuKe9ay4cxRaVhkGc9KptaOK4bt296TmOI1Q1cD7WZCYYxIizzoxlPcZBrjFW8Gfh2NSfjH2G7LIu8vgkesPJ4w58XR8GR7IBnKxwEy1488dzCWWris7FS9fc2rYLFJL3CwdfZAmk4QQZDZD" },
+          "645972178588648": { "waba_id": "1172192867363142", "access_token": "EAARFo1rsZCJcBR1ZCQoudo0u9DVHwfSaMeSWmYy3vnsq3DBpL0HOaT9KXv7fadVYAlCiNgHpOLcnIw78j5mR6dYryFqEtG4SuR5y9bg62OqZBO5lIeJMcXwbi7fiWFVO9IGrUZAaOZAcv5Nw6bShjljFAXYU6jBmCI63UHVlZA3hCFzOVuqw1mZCvKZCDcpiHrNmaAZDZD" },
+          "440561942476804": { "waba_id": "427101777115842", "access_token": "EAAKuswVq7xABRwG1GRICq7eIRJKOR4ZA7dLMIvCYZAgGgEYzU7I1FrGwrZApuVO0iijSA5s5GqAHXiRByCfnHkOK6aDL0RLC6Uj0qw4ZBS9BZBAtUjgwlYjPV7ZAZCawgQ2AHGL3W5tFsZB0PQ9rQjd1ZCZCS5P0AftO29PvizpCgYbaQStrkdZAajJX2lJbem3S9Dp0QZDZD" }
+        };
+
+        const { data: numbers } = await supabase.from('whatsapp_numbers').select('id, phone_number_id, waba_id');
+        if (numbers) {
+          for (const wa of numbers) {
+            if (wa.phone_number_id && credentialsMap[wa.phone_number_id]) {
+              const correctAuth = credentialsMap[wa.phone_number_id];
+              // Only update if waba_id is incorrect/missing to save requests
+              if (wa.waba_id !== correctAuth.waba_id) {
+                await supabase.from('whatsapp_numbers').update({
+                  waba_id: correctAuth.waba_id,
+                  access_token: correctAuth.access_token
+                }).eq('id', wa.id);
+              }
+            }
+          }
         }
       } catch (e) {}
     }
-    fixPrimos();
+    fixAllStoreTokens();
   }, []);
 
   async function fetchMetaTemplates(storeId: string) {
