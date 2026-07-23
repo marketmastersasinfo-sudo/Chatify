@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Store, Smartphone, Target, Plus, ShoppingBag, Loader2, Save, X, AlertTriangle, RefreshCw, RefreshCcw, Wifi, WifiOff, Phone, Zap } from 'lucide-react';
+import { Store, Smartphone, Target, Plus, ShoppingBag, Loader2, Save, X, AlertTriangle, RefreshCw, RefreshCcw, Wifi, WifiOff, Phone, Zap, CreditCard } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 
@@ -511,7 +511,7 @@ export function Stores() {
 
                   {/* Technical Details (collapsed by default) */}
                   {waNumber && (
-                    <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div className="mt-4 grid grid-cols-1 md:grid-cols-4 gap-3">
                       <div className="bg-white/5 rounded-lg p-3 border border-white/10">
                         <p className="text-gray-500 text-[10px] font-bold uppercase tracking-wider mb-1">Phone Number ID</p>
                         <p className="text-gray-300 text-xs font-mono">{waNumber.phone_number_id}</p>
@@ -523,6 +523,25 @@ export function Stores() {
                       <div className="bg-white/5 rounded-lg p-3 border border-white/10">
                         <p className="text-gray-500 text-[10px] font-bold uppercase tracking-wider mb-1">Access Token</p>
                         <p className="text-gray-300 text-xs font-mono truncate">••••••••{waNumber.access_token?.slice(-8) || '---'}</p>
+                      </div>
+                      <div className="bg-white/5 rounded-lg p-3 border border-white/10">
+                        <p className="text-gray-500 text-[10px] font-bold uppercase tracking-wider mb-1 flex items-center gap-1"><CreditCard className="w-3 h-3"/> Tarjeta</p>
+                        <div className="flex items-center gap-1">
+                           <span className="text-gray-400 text-xs font-mono mt-0.5">••••</span>
+                           <input
+                             type="text"
+                             maxLength={4}
+                             placeholder="1234"
+                             className="bg-transparent text-gray-300 text-xs font-mono border-b border-gray-600 focus:border-blue-400 focus:outline-none w-10 text-center pb-0.5"
+                             value={waNumber.payment_card_last_four || ''}
+                             onChange={(e) => setWaNumber({...waNumber, payment_card_last_four: e.target.value.replace(/\D/g, '')})}
+                             onBlur={async (e) => {
+                               if (waNumber.id) {
+                                 await (supabase as any).from('whatsapp_numbers').update({payment_card_last_four: e.target.value}).eq('id', waNumber.id);
+                               }
+                             }}
+                           />
+                        </div>
                       </div>
                     </div>
                   )}
