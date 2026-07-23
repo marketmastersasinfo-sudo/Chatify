@@ -196,7 +196,7 @@ export function Settings() {
       setGlobalCosts({ 
         ai: totalAi, 
         maps: totalMaps, 
-        month: currentMonth,
+        month: currentMonthStr,
         totalRequests,
         totalTokens,
         byProvider: Object.values(byProvider)
