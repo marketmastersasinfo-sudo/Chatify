@@ -9,6 +9,7 @@ export function Settings() {
   const [showMapsKey, setShowMapsKey] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [showCostDetails, setShowCostDetails] = useState(false);
   const [globalCosts, setGlobalCosts] = useState<any>(null);
 
   // Global Tracking Pixels
@@ -100,20 +101,58 @@ export function Settings() {
         }
       }
 
-      // Load global costs
+      // Load global costs & detailed breakdown
       const currentMonth = new Date().toISOString().substring(0, 7);
       const startDate = `${currentMonth}-01T00:00:00Z`;
       
       const [aiLogsRes, apiLogsRes] = await Promise.all([
-        (supabase as any).from('ai_usage_log').select('estimated_cost_usd').gte('created_at', startDate),
+        (supabase as any).from('ai_usage_log').select('provider, model, estimated_cost_usd, input_tokens, output_tokens, success, created_at').gte('created_at', startDate),
         (supabase as any).from('api_usage_counters').select('estimated_cost_usd, api_name').eq('month', currentMonth)
       ]);
       
-      const totalAi = aiLogsRes.data?.reduce((sum: number, log: any) => sum + (Number(log.estimated_cost_usd) || 0), 0) || 0;
+      const aiData = aiLogsRes.data || [];
+      const totalAi = aiData.reduce((sum: number, log: any) => sum + (Number(log.estimated_cost_usd) || 0), 0);
+      const totalRequests = aiData.length;
+      const totalTokens = aiData.reduce((sum: number, log: any) => sum + (Number(log.input_tokens || 0) + Number(log.output_tokens || 0)), 0);
+
+      // Group by provider
+      const byProvider: Record<string, { name: string; cost: number; requests: number; tokens: number }> = {};
+      const providerNames: Record<string, string> = {
+        openai: 'OpenAI',
+        gemini: 'Google Gemini',
+        llama: 'Meta Llama (Groq)',
+        grok: 'xAI (Grok)',
+        deepseek: 'DeepSeek AI',
+        mistral: 'Mistral AI',
+        together: 'Together AI'
+      };
+
+      aiData.forEach((log: any) => {
+        const p = log.provider || 'otros';
+        if (!byProvider[p]) {
+          byProvider[p] = {
+            name: providerNames[p] || p,
+            cost: 0,
+            requests: 0,
+            tokens: 0
+          };
+        }
+        byProvider[p].cost += Number(log.estimated_cost_usd) || 0;
+        byProvider[p].requests += 1;
+        byProvider[p].tokens += (Number(log.input_tokens || 0) + Number(log.output_tokens || 0));
+      });
+
       const totalMaps = apiLogsRes.data?.filter((l: any) => l.api_name === 'google_street_view')
                                        .reduce((sum: number, log: any) => sum + (Number(log.estimated_cost_usd) || 0), 0) || 0;
                                        
-      setGlobalCosts({ ai: totalAi, maps: totalMaps, month: currentMonth });
+      setGlobalCosts({ 
+        ai: totalAi, 
+        maps: totalMaps, 
+        month: currentMonth,
+        totalRequests,
+        totalTokens,
+        byProvider: Object.values(byProvider)
+      });
       
     } catch (e) {
       console.error("Catch error:", e);
@@ -196,41 +235,101 @@ export function Settings() {
         {/* Panel de Costos Globales */}
         {globalCosts && (
           <div className="relative overflow-hidden rounded-3xl border border-gray-200/80 bg-white/70 backdrop-blur-xl shadow-xl p-6 transition-all">
-            <div className="flex items-center gap-3.5 mb-6">
-              <div className="h-10 w-10 rounded-2xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center font-bold text-lg">
-                💳
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3.5">
+                <div className="h-10 w-10 rounded-2xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center font-bold text-lg">
+                  💳
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold tracking-tight text-gray-900">
+                    Costos Globales del Mes ({globalCosts.month})
+                  </h2>
+                  <p className="text-xs text-gray-500 font-medium">Consumo acumulado de Inteligencia Artificial y APIs de todas tus tiendas.</p>
+                </div>
               </div>
-              <div>
-                <h2 className="text-lg font-bold tracking-tight text-gray-900">
-                  Costos Globales del Mes ({globalCosts.month})
-                </h2>
-                <p className="text-xs text-gray-500 font-medium">Consumo acumulado de Inteligencia Artificial y APIs de todas tus tiendas.</p>
+
+              <div className="flex items-center gap-2 bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full text-xs font-semibold border border-emerald-200/60">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span>{globalCosts.totalRequests || 0} peticiones registradas</span>
               </div>
             </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="bg-gradient-to-br from-purple-50/60 to-purple-100/30 rounded-2xl p-5 border border-purple-200/50 flex justify-between items-center shadow-sm">
-                <div>
-                  <p className="text-[11px] font-bold text-purple-600 uppercase tracking-wider">Inteligencia Artificial</p>
-                  <p className="text-3xl font-black text-purple-950 tracking-tight mt-1">
-                    ${globalCosts.ai.toFixed(4)} <span className="text-xs font-semibold text-purple-600">USD</span>
-                  </p>
+              {/* Tarjeta de IA — Clickeable para desplegar detalles */}
+              <div 
+                onClick={() => setShowCostDetails(!showCostDetails)}
+                className="group relative cursor-pointer bg-gradient-to-br from-purple-50/60 to-purple-100/30 hover:from-purple-100/70 hover:to-purple-200/40 rounded-2xl p-5 border border-purple-200/60 transition-all shadow-sm hover:shadow-md"
+              >
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="text-[11px] font-bold text-purple-600 uppercase tracking-wider flex items-center gap-1.5">
+                      Inteligencia Artificial
+                      <span className="text-[10px] text-purple-500 font-normal bg-purple-100 px-2 py-0.5 rounded-full">
+                        {showCostDetails ? '▲ Ocultar Desglose' : '▼ Clic para Ver Desglose'}
+                      </span>
+                    </p>
+                    <p className="text-3xl font-black text-purple-950 tracking-tight mt-1">
+                      ${globalCosts.ai.toFixed(6)} <span className="text-xs font-semibold text-purple-600">USD</span>
+                    </p>
+                    <p className="text-[11px] text-purple-700 font-medium mt-1">
+                      ⚡ {(globalCosts.totalTokens || 0).toLocaleString()} tokens procesados
+                    </p>
+                  </div>
+                  <span className="text-xs font-semibold text-purple-700 bg-purple-100/90 px-3 py-1 rounded-full border border-purple-200/80 group-hover:scale-105 transition-transform">
+                    Todas las tiendas
+                  </span>
                 </div>
-                <span className="text-xs font-semibold text-purple-700 bg-purple-100/80 px-3 py-1 rounded-full border border-purple-200/60">
-                  Todas las tiendas
-                </span>
               </div>
-              <div className="bg-gradient-to-br from-blue-50/60 to-blue-100/30 rounded-2xl p-5 border border-blue-200/50 flex justify-between items-center shadow-sm">
+
+              {/* Tarjeta de Google Maps */}
+              <div className="bg-gradient-to-br from-blue-50/60 to-blue-100/30 rounded-2xl p-5 border border-blue-200/60 flex justify-between items-start shadow-sm">
                 <div>
                   <p className="text-[11px] font-bold text-blue-600 uppercase tracking-wider">Google Maps (Street View)</p>
                   <p className="text-3xl font-black text-blue-950 tracking-tight mt-1">
-                    ${globalCosts.maps.toFixed(4)} <span className="text-xs font-semibold text-blue-600">USD</span>
+                    ${globalCosts.maps.toFixed(6)} <span className="text-xs font-semibold text-blue-600">USD</span>
+                  </p>
+                  <p className="text-[11px] text-blue-700 font-medium mt-1">
+                    📍 Verificación de fachadas por WA
                   </p>
                 </div>
-                <span className="text-xs font-semibold text-blue-700 bg-blue-100/80 px-3 py-1 rounded-full border border-blue-200/60">
+                <span className="text-xs font-semibold text-blue-700 bg-blue-100/90 px-3 py-1 rounded-full border border-blue-200/80">
                   $200/mes gratis
                 </span>
               </div>
             </div>
+
+            {/* Desglose desplegable por Proveedor de IA */}
+            {showCostDetails && (
+              <div className="mt-5 pt-5 border-t border-gray-200/60 animate-fadeIn">
+                <h3 className="text-xs font-bold text-gray-700 uppercase tracking-wider mb-3 flex items-center justify-between">
+                  <span>📊 Desglose de Gastos por Proveedor de IA</span>
+                  <span className="text-[10px] text-gray-400">Actualizado en tiempo real</span>
+                </h3>
+
+                {(!globalCosts.byProvider || globalCosts.byProvider.length === 0) ? (
+                  <p className="text-xs text-gray-400 italic py-2">No hay consumo acumulado registrado en la base de datos para este mes aún.</p>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                    {globalCosts.byProvider.map((p: any) => (
+                      <div key={p.name} className="p-3 bg-white/90 rounded-xl border border-gray-200/70 shadow-2xs flex flex-col justify-between">
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="text-xs font-bold text-gray-900">{p.name}</span>
+                          <span className="text-[10px] font-semibold text-purple-700 bg-purple-50 px-2 py-0.5 rounded border border-purple-200/50">
+                            {p.requests} peticiones
+                          </span>
+                        </div>
+                        <p className="text-base font-black text-gray-900 mt-1">
+                          ${p.cost.toFixed(6)} <span className="text-[10px] font-normal text-gray-500">USD</span>
+                        </p>
+                        <p className="text-[10px] text-gray-400 mt-1">
+                          {(p.tokens || 0).toLocaleString()} tokens
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
 
