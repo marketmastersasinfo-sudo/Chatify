@@ -377,8 +377,7 @@ async function handleFacebookPage(body: any, req: VercelRequest, res: VercelResp
         status: isDeleted ? 'moderado' : 'comentario',
         social_platform: 'facebook',
         comment_content: messageText,
-        comment_status: isDeleted ? 'deleted' : 'active',
-        page_name: pageName
+        comment_status: isDeleted ? 'deleted' : 'active'
       }).select().single();
 
       // 3. Disparar Pixel (solo si NO es hater)
