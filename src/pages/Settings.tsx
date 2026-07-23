@@ -10,7 +10,9 @@ export function Settings() {
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [showCostDetails, setShowCostDetails] = useState(false);
-  const [selectedPeriod, setSelectedPeriod] = useState<'today' | 'current_month' | 'last_month' | 'all'>('current_month');
+  const [selectedPeriod, setSelectedPeriod] = useState<string>('current_month');
+  const [customStartDate, setCustomStartDate] = useState<string>('');
+  const [customEndDate, setCustomEndDate] = useState<string>('');
   const [globalCosts, setGlobalCosts] = useState<any>(null);
 
   // Global Tracking Pixels
@@ -56,7 +58,7 @@ export function Settings() {
 
   useEffect(() => {
     loadSettings();
-  }, [selectedPeriod]);
+  }, [selectedPeriod, customStartDate, customEndDate]);
 
   async function loadSettings() {
     try {
@@ -102,23 +104,52 @@ export function Settings() {
         }
       }
 
-      // Load global costs & detailed breakdown with dynamic date filter
+      // Load global costs & detailed breakdown with advanced date filter presets & custom calendar range
       const now = new Date();
       const currentMonthStr = now.toISOString().substring(0, 7);
       
-      let dateFilter: string | null = null;
+      let gteFilter: string | null = null;
+      let lteFilter: string | null = null;
+
       if (selectedPeriod === 'today') {
-        dateFilter = `${now.toISOString().substring(0, 10)}T00:00:00Z`;
+        const todayStr = now.toISOString().substring(0, 10);
+        gteFilter = `${todayStr}T00:00:00Z`;
+        lteFilter = `${todayStr}T23:59:59Z`;
+      } else if (selectedPeriod === 'yesterday') {
+        const yest = new Date(now);
+        yest.setDate(yest.getDate() - 1);
+        const yestStr = yest.toISOString().substring(0, 10);
+        gteFilter = `${yestStr}T00:00:00Z`;
+        lteFilter = `${yestStr}T23:59:59Z`;
+      } else if (selectedPeriod === 'this_week') {
+        const dayOfWeek = now.getDay() || 7; // Monday = 1
+        const monday = new Date(now);
+        monday.setDate(now.getDate() - (dayOfWeek - 1));
+        gteFilter = `${monday.toISOString().substring(0, 10)}T00:00:00Z`;
+      } else if (selectedPeriod === 'last_7_days') {
+        const d7 = new Date(now);
+        d7.setDate(d7.getDate() - 7);
+        gteFilter = `${d7.toISOString().substring(0, 10)}T00:00:00Z`;
       } else if (selectedPeriod === 'current_month') {
-        dateFilter = `${currentMonthStr}-01T00:00:00Z`;
+        gteFilter = `${currentMonthStr}-01T00:00:00Z`;
       } else if (selectedPeriod === 'last_month') {
-        const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-        dateFilter = `${lastMonthDate.toISOString().substring(0, 7)}-01T00:00:00Z`;
+        const firstDayLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const lastDayLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+        gteFilter = `${firstDayLastMonth.toISOString().substring(0, 10)}T00:00:00Z`;
+        lteFilter = `${lastDayLastMonth.toISOString().substring(0, 10)}T23:59:59Z`;
+      } else if (selectedPeriod === 'custom' && customStartDate) {
+        gteFilter = `${customStartDate}T00:00:00Z`;
+        if (customEndDate) {
+          lteFilter = `${customEndDate}T23:59:59Z`;
+        }
       }
 
       let aiQuery = (supabase as any).from('ai_usage_log').select('provider, model, estimated_cost_usd, input_tokens, output_tokens, success, created_at');
-      if (dateFilter && selectedPeriod !== 'all') {
-        aiQuery = aiQuery.gte('created_at', dateFilter);
+      if (gteFilter && selectedPeriod !== 'all') {
+        aiQuery = aiQuery.gte('created_at', gteFilter);
+      }
+      if (lteFilter && selectedPeriod !== 'all') {
+        aiQuery = aiQuery.lte('created_at', lteFilter);
       }
 
       const [aiLogsRes, apiLogsRes] = await Promise.all([
@@ -126,11 +157,7 @@ export function Settings() {
         (supabase as any).from('api_usage_counters').select('estimated_cost_usd, api_name').eq('month', currentMonthStr)
       ]);
       
-      let aiData = aiLogsRes.data || [];
-      if (selectedPeriod === 'last_month') {
-        const currentMonthStart = `${currentMonthStr}-01T00:00:00Z`;
-        aiData = aiData.filter((log: any) => log.created_at < currentMonthStart);
-      }
+      const aiData = aiLogsRes.data || [];
 
       const totalAi = aiData.reduce((sum: number, log: any) => sum + (Number(log.estimated_cost_usd) || 0), 0);
       const totalRequests = aiData.length;
@@ -269,20 +296,44 @@ export function Settings() {
                 </div>
               </div>
 
-              {/* Filtro de Periodo Dinámico */}
-              <div className="flex items-center gap-2">
+              {/* Filtro de Periodo Dinámico con Calendario Custom */}
+              <div className="flex flex-wrap items-center gap-2">
                 <select
                   value={selectedPeriod}
                   onChange={(e: any) => setSelectedPeriod(e.target.value)}
-                  className="px-3 py-1.5 bg-white border border-gray-200 rounded-xl text-xs font-semibold text-gray-700 shadow-2xs focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500"
+                  className="px-3.5 py-2 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-800 shadow-2xs focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 cursor-pointer"
                 >
-                  <option value="today">Hoy</option>
-                  <option value="current_month">Este Mes ({globalCosts.month})</option>
-                  <option value="last_month">Mes Anterior</option>
-                  <option value="all">Histórico Completo</option>
+                  <option value="today">⚡ Hoy</option>
+                  <option value="yesterday">🕒 Ayer</option>
+                  <option value="this_week">📅 Esta Semana</option>
+                  <option value="last_7_days">📆 Últimos 7 Días</option>
+                  <option value="current_month">🗓️ Este Mes ({globalCosts.month})</option>
+                  <option value="last_month">📁 Mes Pasado</option>
+                  <option value="custom">🗓️ Rango Personalizado (Calendario)</option>
+                  <option value="all">🌐 Histórico Completo</option>
                 </select>
 
-                <div className="flex items-center gap-2 bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-xl text-xs font-semibold border border-emerald-200/60">
+                {/* Date Pickers (Solo si selecciona Custom) */}
+                {selectedPeriod === 'custom' && (
+                  <div className="flex items-center gap-2 bg-white/90 p-1.5 rounded-xl border border-gray-200 shadow-2xs animate-fadeIn">
+                    <span className="text-[10px] font-bold text-gray-500 uppercase px-1">Desde:</span>
+                    <input
+                      type="date"
+                      value={customStartDate}
+                      onChange={(e) => setCustomStartDate(e.target.value)}
+                      className="px-2 py-1 text-xs border border-gray-200 rounded-lg text-gray-800 font-semibold focus:outline-none focus:border-purple-500"
+                    />
+                    <span className="text-[10px] font-bold text-gray-500 uppercase px-1">Hasta:</span>
+                    <input
+                      type="date"
+                      value={customEndDate}
+                      onChange={(e) => setCustomEndDate(e.target.value)}
+                      className="px-2 py-1 text-xs border border-gray-200 rounded-lg text-gray-800 font-semibold focus:outline-none focus:border-purple-500"
+                    />
+                  </div>
+                )}
+
+                <div className="flex items-center gap-2 bg-emerald-50 text-emerald-700 px-3.5 py-2 rounded-xl text-xs font-bold border border-emerald-200/60 shadow-2xs">
                   <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                   <span>{globalCosts.totalRequests || 0} peticiones</span>
                 </div>
