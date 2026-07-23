@@ -221,11 +221,18 @@ export function CrmSocial() {
                         )}
                       </div>
                       <h4 className="font-bold text-gray-900 text-sm">{lead.name}</h4>
-                      {lead.stores?.name && (
-                        <p className="text-[10px] font-bold text-gray-400 mt-0.5 flex items-center gap-1 uppercase tracking-wider">
-                          <Store className="w-3 h-3" /> {lead.stores.name}
-                        </p>
-                      )}
+                      {(() => {
+                        let pageName = lead.stores?.name;
+                        if (lead.notes && lead.notes.startsWith('Fanpage: ')) {
+                          pageName = lead.notes.replace('Fanpage: ', '');
+                        }
+                        if (!pageName) return null;
+                        return (
+                          <p className="text-[10px] font-bold text-gray-400 mt-0.5 flex items-center gap-1 uppercase tracking-wider">
+                            <Store className="w-3 h-3" /> {pageName}
+                          </p>
+                        );
+                      })()}
                       {lead.product_name && (
                         <p className="text-xs font-semibold text-blue-600 mt-1.5 bg-blue-50 w-fit px-2 py-0.5 rounded">
                           🛍️ {lead.product_name}
@@ -238,8 +245,10 @@ export function CrmSocial() {
                           <p className="line-clamp-2 italic">"{lead.comment_content}"</p>
                         </div>
                       )}
-                      {lead.notes && (
-                        <p className="text-xs text-gray-400 mt-2 bg-gray-50 p-2 rounded line-clamp-2">{lead.notes}</p>
+                      {lead.notes && lead.notes !== `Fanpage: ${lead.notes.replace('Fanpage: ', '')}` && (
+                        <p className="text-xs text-gray-400 mt-2 bg-gray-50 p-2 rounded line-clamp-2">
+                          {lead.notes.startsWith('Fanpage: ') ? lead.notes.split('\n').slice(1).join('\n') : lead.notes}
+                        </p>
                       )}
                       <div className="mt-3 pt-3 border-t border-gray-100 flex items-center gap-2">
                         {col.id === 'derivado' ? (
