@@ -1,3 +1,9 @@
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseUrl = process.env.VITE_SUPABASE_URL;
+const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY;
+const supabase = createClient(supabaseUrl || '', supabaseKey || '');
+
 const COST_PER_1M_TOKENS: Record<string, { in: number; out: number }> = {
   'gpt-4o-mini': { in: 0.15, out: 0.60 },
   'gpt-4o': { in: 2.50, out: 10.00 },
@@ -163,6 +169,24 @@ export default async function handler(req: any, res: any) {
     const inputCost = ((usageTokens.prompt_tokens || 100) / 1_000_000) * rates.in;
     const outputCost = ((usageTokens.completion_tokens || 150) / 1_000_000) * rates.out;
     const estimatedCostUsd = inputCost + outputCost;
+
+    // Guardar en ai_usage_log para que impacte el contador global de consumo
+    try {
+      await supabase.from('ai_usage_log').insert({
+        organization_id: req.body.orgId || null,
+        module: 'arena_test',
+        provider,
+        model: selectedModel,
+        input_tokens: usageTokens.prompt_tokens || 100,
+        output_tokens: usageTokens.completion_tokens || 150,
+        total_tokens: (usageTokens.prompt_tokens || 100) + (usageTokens.completion_tokens || 150),
+        estimated_cost_usd: estimatedCostUsd,
+        latency_ms: latencyMs,
+        success: true
+      });
+    } catch (e) {
+      console.error('Error insertando en ai_usage_log:', e);
+    }
 
     return res.status(200).json({
       success: true,

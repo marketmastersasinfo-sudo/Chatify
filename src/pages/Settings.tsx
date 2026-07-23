@@ -103,10 +103,9 @@ export function Settings() {
 
       // Load global costs & detailed breakdown
       const currentMonth = new Date().toISOString().substring(0, 7);
-      const startDate = `${currentMonth}-01T00:00:00Z`;
       
       const [aiLogsRes, apiLogsRes] = await Promise.all([
-        (supabase as any).from('ai_usage_log').select('provider, model, estimated_cost_usd, input_tokens, output_tokens, success, created_at').gte('created_at', startDate),
+        (supabase as any).from('ai_usage_log').select('provider, model, estimated_cost_usd, input_tokens, output_tokens, success, created_at'),
         (supabase as any).from('api_usage_counters').select('estimated_cost_usd, api_name').eq('month', currentMonth)
       ]);
       
