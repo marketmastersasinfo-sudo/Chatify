@@ -1,14 +1,12 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
-import OpenAI from 'openai';
+import { routeAIRequest } from './utils/ai-router.js';
 
 export const maxDuration = 60;
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL;
 const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY;
 const supabase = createClient(supabaseUrl || '', supabaseKey || '');
-
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || '' });
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const authHeader = req.headers.authorization;
@@ -181,17 +179,19 @@ INSTRUCCIONES:
 Devuelve EXCLUSIVAMENTE un JSON válido con estas dos llaves: {"public_reply": "...", "private_reply": "..."}.
             `;
 
-            const aiResponse = await openai.chat.completions.create({
-              model: "gpt-4o-mini",
-              messages: [{ role: "user", content: prompt }],
-              response_format: { type: "json_object" }
+            const aiOutputString = await routeAIRequest({
+              organizationId: pageData?.organization_id || 'demo',
+              module: 'social_media',
+              systemPrompt: prompt,
+              requireJson: true,
+              storeId
             });
 
-            const parsed = JSON.parse(aiResponse.choices[0].message.content || '{}');
+            const parsed = JSON.parse(aiOutputString || '{}');
             if (parsed.public_reply) publicReply = parsed.public_reply;
             if (parsed.private_reply) privateReply = parsed.private_reply;
           } catch (aiError) {
-            console.error('Error en OpenAI:', aiError);
+            console.error('Error en AI Router (cron-process-comments):', aiError);
           }
         }
 
