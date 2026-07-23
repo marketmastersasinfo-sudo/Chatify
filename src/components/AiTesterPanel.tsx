@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Play, Sparkles, Clock, DollarSign, AlertCircle, Loader2, Bot, Zap, ShieldCheck } from 'lucide-react';
+import { Play, Sparkles, Clock, DollarSign, AlertCircle, Loader2, Bot } from 'lucide-react';
 
 interface TestResult {
   provider: string;
