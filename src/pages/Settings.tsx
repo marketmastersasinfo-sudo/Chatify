@@ -38,8 +38,7 @@ export function Settings() {
     templates: ['openai'],
     nlp: ['openai']
   });
-  const [testingProvider, setTestingProvider] = useState<string | null>(null);
-  const [testResults, setTestResults] = useState<Record<string, { ok: boolean; ms: number; error?: string }>>({});
+
 
   const updateAiSetting = (provider: string, field: 'model' | 'key', value: string) => {
     setAiSettings((prev) => ({
