@@ -281,21 +281,38 @@ Devuelve EXCLUSIVAMENTE un JSON válido con estas dos llaves: {"public_reply": "
           
         const targetLead = leadsList?.[0];
         if (targetLead) {
-          const leadUpdate: any = {
-            status: dmSent ? 'dm_enviado' : 'comentario'
-          };
-          if (storeId) leadUpdate.store_id = storeId;
+          // Asegurar que la tienda está vinculada al lead original (el comentario público)
+          if (storeId) {
+            await supabase.from('leads').update({ store_id: storeId }).eq('id', targetLead.id);
+          }
           
-          await supabase.from('leads').update(leadUpdate).eq('id', targetLead.id);
-          
-          // Registrar mensaje del cliente y respuesta de Sophia en el historial del chat
+          // Registrar mensaje del cliente y respuesta pública de Sophia en el lead original
           await supabase.from('messages').insert([
             { lead_id: targetLead.id, sender_type: 'customer', content: comment.message },
             { lead_id: targetLead.id, sender_type: 'ai', content: publicReply }
           ]);
 
+          // Si se envió DM, crear un NUEVO lead para la columna "DM Enviado"
+          // El lead original queda como "comentario" (Comentario Público)
           if (dmSent && privateReply) {
-            await supabase.from('messages').insert({ lead_id: targetLead.id, sender_type: 'ai', content: `[DM Enviado por Messenger] ${privateReply}` });
+            const { data: dmLead } = await supabase.from('leads').insert({
+              store_id: storeId || null,
+              name: comment.sender_name,
+              traffic_source: 'Facebook Ads',
+              board_type: 'social_media',
+              status: 'dm_enviado',
+              social_platform: 'facebook',
+              comment_content: comment.message,
+              comment_status: 'active'
+            }).select().single();
+
+            if (dmLead) {
+              await supabase.from('messages').insert({
+                lead_id: dmLead.id,
+                sender_type: 'ai',
+                content: `[DM Enviado por Messenger] ${privateReply}`
+              });
+            }
           }
         }
 
