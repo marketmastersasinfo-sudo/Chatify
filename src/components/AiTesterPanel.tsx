@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Play, Sparkles, Clock, DollarSign, AlertCircle, Loader2 } from 'lucide-react';
+import { Play, Sparkles, Clock, DollarSign, AlertCircle, Loader2, Bot, Zap, ShieldCheck } from 'lucide-react';
 
 interface TestResult {
   provider: string;
@@ -22,12 +22,12 @@ export function AiTesterPanel({ aiSettings, orgId }: { aiSettings: Record<string
   const [results, setResults] = useState<Record<string, TestResult>>({});
 
   const providers = [
-    { id: 'openai', name: 'OpenAI', badge: '#1 Recomendado' },
-    { id: 'gemini', name: 'Google Gemini', badge: '🆓 1,500 req/día' },
-    { id: 'llama', name: 'Meta Llama (Groq)', badge: '🆓 14,400 req/día' },
-    { id: 'grok', name: 'xAI (Grok)', badge: '⚡ Excelente Cierre' },
-    { id: 'deepseek', name: 'DeepSeek AI', badge: '🧠 Mejor Razonamiento' },
-    { id: 'mistral', name: 'Mistral AI', badge: '🆕 Europeo / Ultra-Rápido' }
+    { id: 'openai', name: 'OpenAI', badge: '#1 Recomendado', logoBg: 'bg-emerald-500/10 text-emerald-600' },
+    { id: 'gemini', name: 'Google Gemini', badge: '🆓 1,500 req/día', logoBg: 'bg-blue-500/10 text-blue-600' },
+    { id: 'llama', name: 'Meta Llama (Groq)', badge: '⚡ Ultra-Rápido', logoBg: 'bg-amber-500/10 text-amber-600' },
+    { id: 'grok', name: 'xAI (Grok)', badge: '🔥 Cierre Agresivo', logoBg: 'bg-red-500/10 text-red-600' },
+    { id: 'deepseek', name: 'DeepSeek AI', badge: '🧠 Razonamiento', logoBg: 'bg-indigo-500/10 text-indigo-600' },
+    { id: 'mistral', name: 'Mistral AI', badge: '🛍️ Persuasivo', logoBg: 'bg-purple-500/10 text-purple-600' }
   ];
 
   const handleRunTest = async () => {
@@ -49,7 +49,6 @@ export function AiTesterPanel({ aiSettings, orgId }: { aiSettings: Record<string
     });
 
     setResults(initialResults);
-
     const activeProviderIds = Object.keys(initialResults);
 
     await Promise.all(
@@ -115,135 +114,168 @@ export function AiTesterPanel({ aiSettings, orgId }: { aiSettings: Record<string
   const configuredCount = providers.filter(p => aiSettings[p.id]?.key?.length > 10).length;
 
   return (
-    <div className="glass-card rounded-2xl p-6 border-2 border-purple-200 bg-gradient-to-br from-purple-50/40 via-white to-blue-50/40 shadow-lg">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-        <div className="flex items-center gap-3">
-          <div className="p-3 bg-purple-600 text-white rounded-xl shadow-md">
-            <Sparkles className="h-6 w-6 animate-pulse" />
+    <div className="relative overflow-hidden rounded-3xl border border-gray-200/80 bg-white/70 backdrop-blur-xl shadow-xl p-8 transition-all">
+      {/* Subtle Apple-style background glow */}
+      <div className="absolute -top-24 -right-24 w-96 h-96 bg-purple-200/30 rounded-full blur-3xl pointer-events-none"></div>
+      <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-blue-200/30 rounded-full blur-3xl pointer-events-none"></div>
+
+      <div className="relative z-10">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 border-b border-gray-100 pb-6">
+          <div className="flex items-center gap-4">
+            <div className="h-12 w-12 rounded-2xl bg-gradient-to-tr from-gray-900 to-gray-700 text-white flex items-center justify-center shadow-lg shadow-gray-900/10">
+              <Sparkles className="h-6 w-6 text-amber-300" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-xl font-bold tracking-tight text-gray-900">
+                  Arena de Inteligencia Artificial
+                </h2>
+                <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-700 border border-gray-200/60">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                  {configuredCount} de 6 activas
+                </span>
+              </div>
+              <p className="text-xs text-gray-500 mt-0.5 font-medium">
+                Benchmark simultáneo de latencia, costo y calidad de redacción comercial.
+              </p>
+            </div>
           </div>
-          <div>
-            <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-              Arena de Comparación de IAs (En Vivo)
-              <span className="text-xs bg-purple-100 text-purple-700 px-2.5 py-1 rounded-full font-semibold">
-                {configuredCount} / 6 Listas para la batalla
-              </span>
-            </h2>
-            <p className="text-sm text-gray-500">
-              Prueba el mismo mensaje de un cliente contra todas tus IAs conectadas al mismo tiempo.
-            </p>
+
+          <button
+            onClick={handleRunTest}
+            disabled={isRunning || configuredCount === 0}
+            className="inline-flex items-center justify-center gap-2.5 px-7 py-3 rounded-2xl bg-gray-900 hover:bg-gray-800 text-white font-semibold text-sm shadow-xl shadow-gray-900/10 disabled:opacity-40 transition-all cursor-pointer transform hover:-translate-y-0.5 active:translate-y-0"
+          >
+            {isRunning ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin text-purple-400" />
+                <span>Simulando 6 Motores...</span>
+              </>
+            ) : (
+              <>
+                <Play className="w-4 h-4 fill-current text-purple-400" />
+                <span>Ejecutar Prueba Multimotor</span>
+              </>
+            )}
+          </button>
+        </div>
+
+        {/* Input Controls */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-8">
+          <div className="bg-gray-50/70 p-4 rounded-2xl border border-gray-200/60 transition-all focus-within:border-purple-500 focus-within:ring-2 focus-within:ring-purple-500/10">
+            <label className="flex items-center justify-between text-xs font-semibold text-gray-600 mb-2">
+              <span className="uppercase tracking-wider">Instrucción Comercial (System Prompt)</span>
+              <span className="text-[10px] text-gray-400">Rol del Bot</span>
+            </label>
+            <textarea
+              rows={2}
+              value={systemPrompt}
+              onChange={e => setSystemPrompt(e.target.value)}
+              className="w-full bg-white p-3 text-xs text-gray-800 border border-gray-200/80 rounded-xl focus:outline-none focus:border-purple-500 leading-relaxed font-medium"
+            />
+          </div>
+
+          <div className="bg-gray-50/70 p-4 rounded-2xl border border-gray-200/60 transition-all focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/10">
+            <label className="flex items-center justify-between text-xs font-semibold text-gray-600 mb-2">
+              <span className="uppercase tracking-wider">Mensaje de Prueba del Cliente (User Prompt)</span>
+              <span className="text-[10px] text-gray-400">Pregunta simulada</span>
+            </label>
+            <textarea
+              rows={2}
+              value={prompt}
+              onChange={e => setPrompt(e.target.value)}
+              className="w-full bg-white p-3 text-xs text-gray-800 border border-gray-200/80 rounded-xl focus:outline-none focus:border-blue-500 leading-relaxed font-medium"
+            />
           </div>
         </div>
 
-        <button
-          onClick={handleRunTest}
-          disabled={isRunning || configuredCount === 0}
-          className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-bold rounded-xl shadow-md disabled:opacity-50 transition-all cursor-pointer"
-        >
-          {isRunning ? (
-            <>
-              <Loader2 className="w-5 h-5 animate-spin" />
-              Procesando 6 IAs...
-            </>
-          ) : (
-            <>
-              <Play className="w-5 h-5 fill-current" />
-              ¡Lanzar Batalla de IAs!
-            </>
-          )}
-        </button>
-      </div>
+        {/* Response Cards Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {providers.map(p => {
+            const cfg = aiSettings[p.id];
+            const isConfigured = cfg && cfg.key && cfg.key.length > 10;
+            const res = results[p.id];
 
-      {/* Configuration Prompts */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        <div>
-          <label className="block text-xs font-bold text-purple-900 uppercase tracking-wide mb-1">
-            Instrucción / Prompt del Bot (System)
-          </label>
-          <textarea
-            rows={2}
-            value={systemPrompt}
-            onChange={e => setSystemPrompt(e.target.value)}
-            className="w-full p-2.5 text-xs border border-purple-200 rounded-xl bg-white focus:ring-2 focus:ring-purple-500"
-          />
-        </div>
-        <div>
-          <label className="block text-xs font-bold text-blue-900 uppercase tracking-wide mb-1">
-            Mensaje de Prueba del Cliente (User Prompt)
-          </label>
-          <textarea
-            rows={2}
-            value={prompt}
-            onChange={e => setPrompt(e.target.value)}
-            className="w-full p-2.5 text-xs border border-blue-200 rounded-xl bg-white focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-      </div>
+            return (
+              <div
+                key={p.id}
+                className={`group relative rounded-2xl p-5 border transition-all duration-300 flex flex-col justify-between ${
+                  !isConfigured
+                    ? 'bg-gray-50/50 border-gray-200/60 opacity-50'
+                    : res?.status === 'success'
+                    ? 'bg-white border-emerald-500/30 shadow-lg shadow-emerald-500/5 ring-1 ring-emerald-500/20'
+                    : res?.status === 'error'
+                    ? 'bg-rose-50/40 border-rose-200/80'
+                    : res?.status === 'pending'
+                    ? 'bg-white border-purple-400/50 shadow-md ring-2 ring-purple-500/10 animate-pulse'
+                    : 'bg-white/80 border-gray-200/70 shadow-sm hover:shadow-md hover:border-gray-300'
+                }`}
+              >
+                <div>
+                  {/* Card Header */}
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2.5">
+                      <div className={`p-2 rounded-xl text-xs font-bold ${p.logoBg}`}>
+                        <Bot className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-gray-900 text-sm tracking-tight">{p.name}</h3>
+                        <p className="text-[10px] text-gray-400 font-mono mt-0.5">{cfg?.model || 'Desconectado'}</p>
+                      </div>
+                    </div>
 
-      {/* Grid of Results */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {providers.map(p => {
-          const cfg = aiSettings[p.id];
-          const isConfigured = cfg && cfg.key && cfg.key.length > 10;
-          const res = results[p.id];
+                    <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-gray-100 text-gray-600 border border-gray-200/60">
+                      {p.badge}
+                    </span>
+                  </div>
 
-          return (
-            <div
-              key={p.id}
-              className={`p-4 rounded-xl border transition-all flex flex-col justify-between ${
-                !isConfigured
-                  ? 'bg-gray-50 border-gray-200 opacity-60'
-                  : res?.status === 'success'
-                  ? 'bg-white border-green-300 shadow-md ring-2 ring-green-100'
-                  : res?.status === 'error'
-                  ? 'bg-red-50/50 border-red-200'
-                  : res?.status === 'pending'
-                  ? 'bg-purple-50/50 border-purple-300 animate-pulse'
-                  : 'bg-white border-gray-200 shadow-sm'
-              }`}
-            >
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-bold text-gray-900 text-sm">{p.name}</span>
-                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 border border-gray-200">
-                    {cfg?.model || 'Desconectado'}
-                  </span>
+                  {/* Body Content */}
+                  {!isConfigured ? (
+                    <div className="py-8 text-center">
+                      <p className="text-xs text-gray-400 font-medium">Clave no ingresada</p>
+                    </div>
+                  ) : res?.status === 'pending' ? (
+                    <div className="py-10 flex flex-col items-center justify-center text-purple-600 gap-2">
+                      <Loader2 className="w-5 h-5 animate-spin text-purple-600" />
+                      <span className="text-xs font-medium text-gray-500">Generando respuesta...</span>
+                    </div>
+                  ) : res?.status === 'error' ? (
+                    <div className="p-3 bg-rose-50 rounded-xl border border-rose-100 text-rose-600 text-xs flex items-start gap-2 leading-relaxed">
+                      <AlertCircle className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
+                      <span>{res.error}</span>
+                    </div>
+                  ) : res?.status === 'success' ? (
+                    <div className="bg-gray-50/80 p-3.5 rounded-xl border border-gray-100 text-xs text-gray-700 leading-relaxed font-medium max-h-48 overflow-y-auto">
+                      "{res.response}"
+                    </div>
+                  ) : (
+                    <div className="py-8 text-center">
+                      <p className="text-xs text-gray-400 font-medium">Listo para ejecutar</p>
+                    </div>
+                  )}
                 </div>
 
-                {!isConfigured ? (
-                  <p className="text-xs text-gray-400 italic py-6 text-center">Falta API Key</p>
-                ) : res?.status === 'pending' ? (
-                  <div className="py-8 flex flex-col items-center justify-center text-purple-600 gap-2">
-                    <Loader2 className="w-6 h-6 animate-spin" />
-                    <span className="text-xs font-semibold">Pensando respuesta...</span>
+                {/* Footer Metrics */}
+                {res?.status === 'success' && (
+                  <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between text-xs">
+                    <span className="flex items-center gap-1.5 font-semibold text-gray-600">
+                      <Clock className="w-3.5 h-3.5 text-blue-500" /> {res.latencyMs} ms
+                    </span>
+                    <span className={`flex items-center gap-1 font-bold px-2.5 py-0.5 rounded-full text-[11px] ${
+                      res.costUsd === 0 
+                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/60' 
+                        : 'bg-gray-100 text-gray-700 border border-gray-200/60'
+                    }`}>
+                      <DollarSign className="w-3 h-3" />
+                      {res.costUsd === 0 ? 'GRATIS' : `$${res.costUsd.toFixed(6)}`}
+                    </span>
                   </div>
-                ) : res?.status === 'error' ? (
-                  <div className="p-3 bg-red-100/60 rounded-lg text-red-700 text-xs flex items-start gap-2">
-                    <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
-                    <span>{res.error}</span>
-                  </div>
-                ) : res?.status === 'success' ? (
-                  <div className="bg-gray-50 p-3 rounded-lg border border-gray-100 text-xs text-gray-800 leading-relaxed font-medium max-h-48 overflow-y-auto">
-                    "{res.response}"
-                  </div>
-                ) : (
-                  <p className="text-xs text-gray-400 py-6 text-center">Presiona "Lanzar Batalla" para probar.</p>
                 )}
               </div>
-
-              {/* Footer Stats */}
-              {res?.status === 'success' && (
-                <div className="mt-3 pt-2.5 border-t border-gray-100 flex items-center justify-between text-[11px] font-bold">
-                  <span className="flex items-center gap-1 text-blue-600">
-                    <Clock className="w-3.5 h-3.5" /> {res.latencyMs} ms
-                  </span>
-                  <span className="flex items-center gap-1 text-green-700 bg-green-50 px-2 py-0.5 rounded border border-green-200">
-                    <DollarSign className="w-3 h-3" /> ${(res.costUsd || 0).toFixed(6)} USD
-                  </span>
-                </div>
-              )}
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
     </div>
   );

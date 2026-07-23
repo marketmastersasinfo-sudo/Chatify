@@ -195,34 +195,40 @@ export function Settings() {
         
         {/* Panel de Costos Globales */}
         {globalCosts && (
-          <div className="glass-card rounded-2xl p-6 mb-2 border-t-4 border-t-emerald-500">
-            <div className="flex items-center gap-3 mb-5">
-              <div className="p-2 bg-emerald-50 rounded-lg">
-                <span className="text-xl">💰</span>
+          <div className="relative overflow-hidden rounded-3xl border border-gray-200/80 bg-white/70 backdrop-blur-xl shadow-xl p-6 transition-all">
+            <div className="flex items-center gap-3.5 mb-6">
+              <div className="h-10 w-10 rounded-2xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center font-bold text-lg">
+                💳
               </div>
               <div>
-                <h2 className="text-xl font-bold text-gray-900">Costos Globales ({globalCosts.month})</h2>
-                <p className="text-sm text-gray-500">Sumatoria de gastos de IA y APIs de todas tus tiendas.</p>
+                <h2 className="text-lg font-bold tracking-tight text-gray-900">
+                  Costos Globales del Mes ({globalCosts.month})
+                </h2>
+                <p className="text-xs text-gray-500 font-medium">Consumo acumulado de Inteligencia Artificial y APIs de todas tus tiendas.</p>
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="bg-purple-50 rounded-xl p-4 border border-purple-100 flex justify-between items-center">
+              <div className="bg-gradient-to-br from-purple-50/60 to-purple-100/30 rounded-2xl p-5 border border-purple-200/50 flex justify-between items-center shadow-sm">
                 <div>
-                  <p className="text-xs font-bold text-purple-600 uppercase tracking-wide">Inteligencia Artificial</p>
-                  <p className="text-2xl font-black text-purple-900">${globalCosts.ai.toFixed(4)} <span className="text-sm font-normal text-purple-600">USD</span></p>
+                  <p className="text-[11px] font-bold text-purple-600 uppercase tracking-wider">Inteligencia Artificial</p>
+                  <p className="text-3xl font-black text-purple-950 tracking-tight mt-1">
+                    ${globalCosts.ai.toFixed(4)} <span className="text-xs font-semibold text-purple-600">USD</span>
+                  </p>
                 </div>
-                <div className="text-right">
-                  <p className="text-xs text-purple-700">Todas las tiendas</p>
-                </div>
+                <span className="text-xs font-semibold text-purple-700 bg-purple-100/80 px-3 py-1 rounded-full border border-purple-200/60">
+                  Todas las tiendas
+                </span>
               </div>
-              <div className="bg-blue-50 rounded-xl p-4 border border-blue-100 flex justify-between items-center">
+              <div className="bg-gradient-to-br from-blue-50/60 to-blue-100/30 rounded-2xl p-5 border border-blue-200/50 flex justify-between items-center shadow-sm">
                 <div>
-                  <p className="text-xs font-bold text-blue-600 uppercase tracking-wide">Google Maps (Street View)</p>
-                  <p className="text-2xl font-black text-blue-900">${globalCosts.maps.toFixed(4)} <span className="text-sm font-normal text-blue-600">USD</span></p>
+                  <p className="text-[11px] font-bold text-blue-600 uppercase tracking-wider">Google Maps (Street View)</p>
+                  <p className="text-3xl font-black text-blue-950 tracking-tight mt-1">
+                    ${globalCosts.maps.toFixed(4)} <span className="text-xs font-semibold text-blue-600">USD</span>
+                  </p>
                 </div>
-                <div className="text-right">
-                  <p className="text-xs text-blue-700">Primeros $200/mes gratis</p>
-                </div>
+                <span className="text-xs font-semibold text-blue-700 bg-blue-100/80 px-3 py-1 rounded-full border border-blue-200/60">
+                  $200/mes gratis
+                </span>
               </div>
             </div>
           </div>
@@ -232,15 +238,18 @@ export function Settings() {
         <AiTesterPanel aiSettings={aiSettings} orgId={orgId} />
 
         {/* Motores de IA */}
-        <div className="glass-card rounded-2xl p-6">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-blue-50 rounded-lg">
-              <Key className="h-6 w-6 text-blue-600" />
+        <div className="relative overflow-hidden rounded-3xl border border-gray-200/80 bg-white/70 backdrop-blur-xl shadow-xl p-8 transition-all">
+          <div className="flex items-center gap-3.5 mb-3">
+            <div className="h-10 w-10 rounded-2xl bg-blue-500/10 text-blue-600 flex items-center justify-center font-bold">
+              <Key className="h-5 w-5" />
             </div>
-            <h2 className="text-xl font-bold text-gray-900">Motores de Inteligencia Artificial & Router</h2>
+            <div>
+              <h2 className="text-xl font-bold tracking-tight text-gray-900">Motores de Inteligencia Artificial</h2>
+              <p className="text-xs text-gray-500 font-medium">Credenciales maestras y modelos de lenguaje.</p>
+            </div>
           </div>
-          <p className="text-sm text-gray-600 mb-6 bg-blue-50 p-3 rounded-lg border border-blue-100">
-            <b className="text-blue-800">🧠 AI Router & Fallback (Cascada):</b> Chatify usará <b>GPT-4o mini</b> para cerrar ventas por WA, <b>Claude 3</b> para moderar Redes Sociales, y <b>Llama 3</b> para clasificar Kanban. Si el motor principal se cae en un lanzamiento, el tráfico saltará automáticamente al motor de respaldo para garantizar 100% de operatividad.
+          <p className="text-xs text-gray-600 mb-8 bg-blue-50/60 p-4 rounded-2xl border border-blue-100/80 leading-relaxed font-medium">
+            <b className="text-blue-900">🧠 AI Router & Fallback (Cascada Inteligente):</b> Chatify selecciona el motor óptimo según la tarea y conmuta automáticamente a los motores de respaldo si el proveedor principal experimenta latencia o falta de cuota.
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {/* 1. OpenAI */}
@@ -595,14 +604,14 @@ export function Settings() {
         </div>
 
         {/* AI Routing Rules */}
-        <div className="glass-card rounded-2xl p-6">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="p-2 bg-purple-50 rounded-lg">
-              <Network className="h-6 w-6 text-purple-600" />
+        <div className="relative overflow-hidden rounded-3xl border border-gray-200/80 bg-white/70 backdrop-blur-xl shadow-xl p-8 transition-all">
+          <div className="flex items-center gap-3.5 mb-6">
+            <div className="h-10 w-10 rounded-2xl bg-purple-500/10 text-purple-600 flex items-center justify-center font-bold">
+              <Network className="h-5 w-5" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-gray-900">Reglas de Enrutamiento (Cascada)</h2>
-              <p className="text-sm text-gray-500">Selecciona el motor principal y sus respaldos por si falla.</p>
+              <h2 className="text-xl font-bold tracking-tight text-gray-900">Reglas de Enrutamiento (Cascada de Inteligencia)</h2>
+              <p className="text-xs text-gray-500 font-medium">Define el motor primario y las capas de respaldo por módulo.</p>
             </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
