@@ -121,36 +121,6 @@ export function TemplateBuilder() {
     } catch (err) {
       console.error(err);
     }
-  }
-
-  // Temp seed logic for Maxitiendas and Donde Los Primos
-  useEffect(() => {
-    async function seedMissingStores() {
-      try {
-        const { data: storesToFix } = await supabase.from('stores').select('id, name').in('name', ['Donde Los Primos', 'Maxitiendas']);
-        if (!storesToFix) return;
-
-        for (const st of storesToFix) {
-          const templatesToInsert = [
-            { template_name: 'carrito_abandonado_inicial_utility_v1_texto', template_type: 'UTILITY' },
-            { template_name: 'carrito_abandonado_recordatorio1_marketing_v1_optimizado', template_type: 'MARKETING' },
-            { template_name: 'carrito_abandonado_recordatorio_final_marketing_v1_optimizado', template_type: 'MARKETING' },
-            { template_name: 'confirmacion_inicial_v1_optimizada', template_type: 'UTILITY' },
-          ].map(t => ({
-            store_id: st.id,
-            template_name: t.template_name,
-            template_type: t.template_type,
-            is_active: true,
-            sent_count: 0,
-            conversion_count: 0
-          }));
-          await supabase.from('store_templates').upsert(templatesToInsert, { onConflict: 'store_id,template_name' });
-        }
-      } catch (e) { console.error('Seed error', e); }
-    }
-    seedMissingStores();
-  }, []);
-
   async function fetchMetaTemplates(storeId: string) {
     setLoading(true);
     setError(null);
