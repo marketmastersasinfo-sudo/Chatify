@@ -74,6 +74,7 @@ export function TemplateBuilder() {
   }
 
   const [now, setNow] = useState(new Date());
+  const [debugWa, setDebugWa] = useState<any>(null);
 
   useEffect(() => {
     const interval = setInterval(() => setNow(new Date()), 60000);
@@ -98,8 +99,11 @@ export function TemplateBuilder() {
   useEffect(() => {
     if (selectedStore) {
       fetchMetaTemplates(selectedStore.id);
+      supabase.from('whatsapp_numbers').select('*').eq('store_id', selectedStore.id).single()
+        .then(({ data }) => setDebugWa(data));
     } else {
       setTemplates([]);
+      setDebugWa(null);
     }
   }, [selectedStore]);
 
@@ -520,6 +524,18 @@ export function TemplateBuilder() {
           <div>
             <h3 className="text-sm font-bold text-red-800">Error de Meta API</h3>
             <p className="text-xs text-red-700 mt-1">{error}</p>
+          </div>
+        </div>
+      )}
+
+      {debugWa && error && (
+        <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-r-xl flex items-start gap-3 mt-2">
+          <div className="text-xs text-red-800 font-mono overflow-x-auto whitespace-nowrap">
+            <strong>DEBUG - DB VALUES:</strong><br />
+            ID: {debugWa.id} <br />
+            PHONE ID: {debugWa.phone_number_id || 'NULL'} <br />
+            WABA ID: {debugWa.waba_id || 'NULL'} <br />
+            DISPLAY: {debugWa.display_phone_number || 'NULL'}
           </div>
         </div>
       )}
