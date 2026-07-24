@@ -119,10 +119,7 @@ export function TemplateBuilder() {
       setStores(data || []);
       if (data && data.length > 0) setSelectedStore(data[0]);
     } catch (err) {
-      console.error(err);
     }
-  }
-
   }
 
   // Temp logic to safely restore exact WABA and Token based strictly on Phone Number ID
@@ -145,14 +142,13 @@ export function TemplateBuilder() {
           "440561942476804": { "waba_id": "427101777115842", "access_token": "EAAKuswVq7xABRwG1GRICq7eIRJKOR4ZA7dLMIvCYZAgGgEYzU7I1FrGwrZApuVO0iijSA5s5GqAHXiRByCfnHkOK6aDL0RLC6Uj0qw4ZBS9BZBAtUjgwlYjPV7ZAZCawgQ2AHGL3W5tFsZB0PQ9rQjd1ZCZCS5P0AftO29PvizpCgYbaQStrkdZAajJX2lJbem3S9Dp0QZDZD" }
         };
 
-        const { data: numbers } = await supabase.from('whatsapp_numbers').select('id, phone_number_id, waba_id');
+        const { data: numbers } = await supabase.from('whatsapp_numbers').select('id, phone_number_id, waba_id') as { data: any[] | null };
         if (numbers) {
           for (const wa of numbers) {
             if (wa.phone_number_id && credentialsMap[wa.phone_number_id]) {
               const correctAuth = credentialsMap[wa.phone_number_id];
-              // Only update if waba_id is incorrect/missing to save requests
               if (wa.waba_id !== correctAuth.waba_id) {
-                await supabase.from('whatsapp_numbers').update({
+                await (supabase.from('whatsapp_numbers') as any).update({
                   waba_id: correctAuth.waba_id,
                   access_token: correctAuth.access_token
                 }).eq('id', wa.id);
