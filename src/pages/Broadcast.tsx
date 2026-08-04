@@ -107,10 +107,10 @@ export function Broadcast() {
       const { data, error } = await query;
       if (error) throw error;
 
-      let finalLeads = data || [];
+      let finalLeads: any[] = data || [];
       if (ltv !== 'all') {
         const minAmount = parseInt(ltv);
-        finalLeads = (finalLeads as any[]).filter(l => (l.total_price || 0) >= minAmount);
+        finalLeads = finalLeads.filter(l => (l.total_price || 0) >= minAmount);
       }
       setAudienceCount(finalLeads.length);
     } catch (err) {
