@@ -58,7 +58,7 @@ export function Broadcast() {
       
       const { data } = await query;
       setStores(data || []);
-      if (data && data.length > 0) setSelectedStoreId(data[0].id);
+      if (data && data.length > 0) setSelectedStoreId((data as any[])[0].id);
     } catch (err) {
       console.error(err);
     }
@@ -73,7 +73,7 @@ export function Broadcast() {
         .eq('status', 'APPROVED');
       setTemplates(data || []);
       if (data && data.length > 0) {
-        setSelectedTemplateId(data[0].id);
+        setSelectedTemplateId((data as any[])[0].id);
       }
     } catch (err) {
       console.error(err);
@@ -110,7 +110,7 @@ export function Broadcast() {
       let finalLeads = data || [];
       if (ltv !== 'all') {
         const minAmount = parseInt(ltv);
-        finalLeads = finalLeads.filter(l => (l.total_price || 0) >= minAmount);
+        finalLeads = (finalLeads as any[]).filter(l => (l.total_price || 0) >= minAmount);
       }
       setAudienceCount(finalLeads.length);
     } catch (err) {
