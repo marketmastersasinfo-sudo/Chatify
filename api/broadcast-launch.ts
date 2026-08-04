@@ -30,16 +30,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     let query = supabase
       .from('leads')
       .select('id')
-      .eq('store_id', storeId);
+      .eq('store_id', storeId)
+      .limit(100000);
 
     // Apply Tags / Status
     if (tags && tags !== 'all') {
-      if (tags === 'vip') {
-        // VIP = >1 purchase or LTV > high. Example fallback:
-        query = query.not('status', 'eq', 'lost');
-      } else {
-        query = query.eq('status', tags);
-      }
+      if (tags === 'vip') query = query.in('status', ['confirmado', 'closed', 'paid', 'delivered']);
+      else if (tags === 'abandoned') query = query.in('status', ['abandoned', 'bot_sent']);
+      else if (tags === 'remarketing') query = query.in('status', ['new', 'inquiry', 'negotiating', 'cold_lead', 'high_intent']);
+      else query = query.eq('status', tags);
     }
 
     // Apply Product Filter

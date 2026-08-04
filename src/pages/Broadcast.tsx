@@ -102,10 +102,12 @@ export function Broadcast() {
   async function calculateAudience() {
     setIsCalculating(true);
     try {
-      let query = supabase.from('leads').select('id, total_price').eq('store_id', selectedStoreId);
+      let query = supabase.from('leads').select('id, total_price').eq('store_id', selectedStoreId).limit(100000);
       
       if (tag !== 'all') {
-        if (tag === 'vip') query = query.not('status', 'eq', 'lost');
+        if (tag === 'vip') query = query.in('status', ['confirmado', 'closed', 'paid', 'delivered']);
+        else if (tag === 'abandoned') query = query.in('status', ['abandoned', 'bot_sent']);
+        else if (tag === 'remarketing') query = query.in('status', ['new', 'inquiry', 'negotiating', 'cold_lead', 'high_intent']);
         else query = query.eq('status', tag);
       }
 
