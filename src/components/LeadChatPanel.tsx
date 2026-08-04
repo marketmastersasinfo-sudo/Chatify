@@ -41,7 +41,8 @@ export function LeadChatPanel({
     comment_content: lead?.comment_content || '',
     comment_status: lead?.comment_status || '',
     product_name: lead?.product_name || '',
-    total_price: lead?.total_price || ''
+    total_price: lead?.total_price || '',
+    contact_phone: lead?.contact_phone || ''
   });
   const [savingForm, setSavingForm] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -83,7 +84,8 @@ export function LeadChatPanel({
         comment_content: lead.comment_content || '',
         comment_status: lead.comment_status || '',
         product_name: lead.product_name || '',
-        total_price: lead.total_price || ''
+        total_price: lead.total_price || '',
+        contact_phone: lead.contact_phone || ''
       });
     }
   }, [lead]);
