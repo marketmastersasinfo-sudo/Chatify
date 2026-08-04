@@ -12,17 +12,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const { 
       storeId, 
-      templateId, 
+      templateIds, 
       tags, // array of statuses or board types
       dateFrom,
       dateTo,
       geography, // e.g., 'all', 'principal'
       ltv, // e.g., 'all', '50', '100'
-      paymentStatus // e.g., 'delivered'
+      paymentStatus, // e.g., 'delivered'
+      productName
     } = req.body;
 
-    if (!storeId || !templateId) {
-      return res.status(400).json({ error: 'storeId and templateId are required' });
+    if (!storeId || !templateIds || templateIds.length === 0) {
+      return res.status(400).json({ error: 'storeId and templateIds are required' });
     }
 
     // Build Query
@@ -39,6 +40,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       } else {
         query = query.eq('status', tags);
       }
+    }
+
+    // Apply Product Filter
+    if (productName && productName !== 'all') {
+      query = query.ilike('product_name', `%${productName}%`);
     }
 
     // Apply Dates
@@ -84,13 +90,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: 'No leads found after applying LTV filters.' });
     }
 
-    // Insert into broadcast_queue
-    const queueInserts = finalLeads.map(lead => ({
-      store_id: storeId,
-      lead_id: lead.id,
-      template_id: templateId,
-      status: 'pending'
-    }));
+    // Insert into broadcast_queue (Equally distributed A/B/C/D testing)
+    // We shuffle the finalLeads array to ensure true random distribution before splitting
+    const shuffledLeads = finalLeads.sort(() => Math.random() - 0.5);
+
+    const queueInserts = shuffledLeads.map((lead, index) => {
+      // Pick template mathematically
+      const assignedTemplateId = templateIds[index % templateIds.length];
+      
+      return {
+        store_id: storeId,
+        lead_id: lead.id,
+        template_id: assignedTemplateId,
+        status: 'pending'
+      };
+    });
 
     // Insert in batches of 1000 to avoid request too large
     for (let i = 0; i < queueInserts.length; i += 1000) {

@@ -78,10 +78,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         continue;
       }
 
-      // Format variables
+      // Format variables (1: Name, 2: Product Name or City)
       const contentVariables: Record<string, string> = {
-        '1': lead.name?.split(' ')[0] || 'Amigo',
-        '2': lead.city || 'tu ciudad',
+        '1': lead.name?.split(' ')[0] || 'Cliente',
+        '2': lead.product_name || lead.city || 'tu pedido',
       };
       const filtered = Object.fromEntries(
         Object.entries(contentVariables).filter(([, v]) => v.trim() !== '')
@@ -96,14 +96,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
 
       try {
-        await sendMetaTemplate({
+        const result = await sendMetaTemplate({
           phoneNumberId: metaCreds.phoneNumberId,
           accessToken: metaCreds.accessToken,
           to: lead.phone
         }, template.template_name, 'es', components);
 
-        // Mark as sent
-        await supabase.from('broadcast_queue').update({ status: 'sent', processed_at: new Date().toISOString() }).eq('id', item.id);
+        const messageId = result?.messages?.[0]?.id || null;
+
+        // Mark as sent and store message_id for open rate tracking
+        await supabase.from('broadcast_queue').update({ 
+          status: 'sent', 
+          message_id: messageId,
+          processed_at: new Date().toISOString() 
+        }).eq('id', item.id);
         
         // Save to CRM messages
         await supabase.from('messages').insert({

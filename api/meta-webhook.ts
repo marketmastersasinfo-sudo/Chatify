@@ -71,6 +71,16 @@ async function handleWhatsApp(body: any, req: VercelRequest, res: VercelResponse
   const value = changes?.value;
   const incomingPhoneId = value?.metadata?.phone_number_id;
 
+  // Procesar Open Rates de Campañas (Status: read)
+  if (value?.statuses?.[0]) {
+    const statusObj = value.statuses[0];
+    if (statusObj.status === 'read' && statusObj.id) {
+      // Actualizar la cola de ráfagas de 'sent' a 'read' silenciosamente
+      await supabase.from('broadcast_queue').update({ status: 'read' }).eq('message_id', statusObj.id);
+    }
+    return res.status(200).send('EVENT_RECEIVED');
+  }
+
   // Solo procesar mensajes entrantes (no status updates)
   if (!value?.messages?.[0] || !incomingPhoneId) {
     return res.status(200).send('EVENT_RECEIVED');
