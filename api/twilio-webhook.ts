@@ -895,6 +895,6 @@ export async function handleSophia({ lead, productInfo, leadId, incomingText, st
     await sb.from('messages').insert({ lead_id: leadId, sender_type: 'ai', content: textForDB });
   } catch (err: any) {
     console.error('Sophia AI Error:', err);
-    await sb.from('messages').insert({ lead_id: leadId, sender_type: 'ai', content: `[BOT CRASH] OpenAI Error: ${err.message}` });
+    await sb.from('messages').insert({ lead_id: leadId, sender_type: 'ai', content: `[BOT CRASH] System/API Error: ${err.message}` });
   }
 }
