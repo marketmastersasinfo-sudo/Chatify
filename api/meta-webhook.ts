@@ -183,7 +183,7 @@ async function handleWhatsApp(body: any, req: VercelRequest, res: VercelResponse
   // ── B. Buscar o crear Lead ──
   const { data: allLeads } = await supabase
     .from('leads')
-    .select('id, name, phone, store_id, status, board_type, address, city, product_name, total_price, notes, document_id, email, recovery_touch, last_name, department, sector, postal_code, comment_content, comment_status, social_platform, traffic_source')
+    .select('id, name, phone, contact_phone, store_id, status, board_type, address, city, product_name, total_price, notes, document_id, email, recovery_touch, last_name, department, sector, postal_code, comment_content, comment_status, social_platform, traffic_source')
     .eq('phone', phone)
     .eq('store_id', store.id)
     .order('created_at', { ascending: false });

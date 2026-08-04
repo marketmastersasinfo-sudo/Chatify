@@ -175,11 +175,8 @@ export async function handleSophia({ lead, productInfo, leadId, incomingText, st
       
       if (parsed.extracted_product_name && parsed.extracted_product_name !== lead?.product_name) { updateData.product_name = parsed.extracted_product_name; addressUpdated = true; }
       if (parsed.extracted_phone) { 
-         const currentNotes = lead?.notes || '';
-         if (!currentNotes.includes(parsed.extracted_phone)) {
-           updateData.notes = currentNotes ? `${currentNotes}\nTeléfono de contacto: ${parsed.extracted_phone}` : `Teléfono de contacto: ${parsed.extracted_phone}`;
-           addressUpdated = true;
-         }
+         updateData.contact_phone = parsed.extracted_phone;
+         addressUpdated = true;
       }
       
       if (parsed.extracted_total_price) { updateData.total_price = Number(parsed.extracted_total_price); }
