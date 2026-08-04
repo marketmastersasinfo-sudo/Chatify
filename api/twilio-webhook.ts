@@ -85,6 +85,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       else incomingBody = '[El cliente interactuó con el anuncio o envió un formato no soportado]';
     }
 
+    // --- Tracking Extraction ---
+    const fbclidMatch = incomingBody.match(/\[fbclid:(.*?)\]/);
+    const gclidMatch = incomingBody.match(/\[gclid:(.*?)\]/);
+    const ttclidMatch = incomingBody.match(/\[ttclid:(.*?)\]/);
+    
+    const trackingTokens = [];
+    if (fbclidMatch) trackingTokens.push(`FBCLID: ${fbclidMatch[1]}`);
+    if (gclidMatch) trackingTokens.push(`GCLID: ${gclidMatch[1]}`);
+    if (ttclidMatch) trackingTokens.push(`TTCLID: ${ttclidMatch[1]}`);
+    const trackingText = trackingTokens.join('\n');
+
+    // Clean the text from tracking tokens so the AI doesn't see them
+    incomingBody = incomingBody.replace(/\[fbclid:.*?\]/g, '').replace(/\[gclid:.*?\]/g, '').replace(/\[ttclid:.*?\]/g, '').trim();
+    // ---------------------------
+
     // ── Find Store ──────────────────────────────────
     const { data: stores } = await supabase.from('stores').select('id, twilio_phone_number, organization_id, country');
     const store = stores?.find(s => {
@@ -137,6 +152,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
       }
 
+      const initialNotes = trackingText ? `Tracking Data:\n${trackingText}` : null;
+
       // Create new lead for unknown inbound contacts
       const { data: newLead } = await supabase.from('leads').insert({
         store_id: store.id,
@@ -146,7 +163,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         status: 'new',
         board_type: 'sales_wa',
         traffic_source: detectedSource,
-        is_banned: false
+        is_banned: false,
+        notes: initialNotes
       }).select().single();
       if (newLead) {
         lead = newLead;
@@ -160,6 +178,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const incomingText = incomingBody;
+
+    // Reactivate existing lead if they text again today
+    if (lead && trackingText) {
+      const currentNotes = lead.notes || '';
+      if (!currentNotes.includes(trackingText)) {
+        const newNotes = currentNotes ? `${currentNotes}\n\nTracking Data:\n${trackingText}` : `Tracking Data:\n${trackingText}`;
+        await supabase.from('leads').update({ notes: newNotes }).eq('id', lead.id);
+        lead.notes = newNotes;
+      }
+    }
 
     // ── Update Product Name if Ad Click ─────────────
     if (incomingText.includes('información sobre:')) {
@@ -372,8 +400,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       // STATE: bot_sent / abandoned / client_replied — waiting for any interaction
       if (leadStatus === 'bot_sent' || leadStatus === 'abandoned' || leadStatus === 'client_replied') {
-        if (leadStatus === 'bot_sent') {
-          await supabase.from('leads').update({ status: 'client_replied' }).eq('id', leadId);
+        if (leadStatus === 'bot_sent' || leadStatus === 'abandoned') {
+          const newStatus = (leadBoard || '').includes('remarketing') ? 'negotiating' : 'client_replied';
+          await supabase.from('leads').update({ status: newStatus }).eq('id', leadId);
         }
 
         const isOrderConfirmed = isConfirmation(incomingText) ||
@@ -394,18 +423,41 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
           if (leadAddress && leadCity) {
             const mapQuery = encodeURIComponent(`${leadAddress}, ${leadCity}`);
-            const streetViewUrl = `https://maps.googleapis.com/maps/api/streetview?size=600x400&location=${mapQuery}&key=${apiKey}`;
+            
+            const metaUrl = `https://maps.googleapis.com/maps/api/streetview/metadata?location=${mapQuery}&key=${apiKey}`;
+            let hasStreetView = false;
             try {
-              await isTwilioClient.messages.create({
-                from: `whatsapp:+${storeTwilioPhone.replace('+', '')}`,
-                to: `whatsapp:+${customerPhone}`,
-                body: '\u00a1Excelente! \uD83C\uDF89 Para asegurar una entrega perfecta, ¿esta es la fachada de tu dirección? \uD83C\uDFE0\uD83D\uDCCD',
-                mediaUrl: [streetViewUrl]
-              });
-              await supabase.from('messages').insert({
-                lead_id: leadId, sender_type: 'ai',
-                content: `[Automated Street View] ¿Esta es la fachada correcta?\nImage: ${streetViewUrl}`
-              });
+              const metaRes = await fetch(metaUrl);
+              const metaData = await metaRes.json();
+              if (metaData.status === 'OK') hasStreetView = true;
+            } catch (e) {
+              console.error('Error fetching StreetView metadata:', e);
+            }
+
+            try {
+              if (hasStreetView) {
+                const streetViewUrl = `https://maps.googleapis.com/maps/api/streetview?size=600x400&location=${mapQuery}&key=${apiKey}`;
+                await isTwilioClient.messages.create({
+                  from: `whatsapp:+${storeTwilioPhone.replace('+', '')}`,
+                  to: `whatsapp:+${customerPhone}`,
+                  body: '\u00a1Excelente! \uD83C\uDF89 Para asegurar una entrega perfecta, ¿esta es la fachada de tu dirección? \uD83C\uDFE0\uD83D\uDCCD',
+                  mediaUrl: [streetViewUrl]
+                });
+                await supabase.from('messages').insert({
+                  lead_id: leadId, sender_type: 'ai',
+                  content: `[Automated Street View] ¿Esta es la fachada correcta?\nImage: ${streetViewUrl}`
+                });
+              } else {
+                await isTwilioClient.messages.create({
+                  from: `whatsapp:+${storeTwilioPhone.replace('+', '')}`,
+                  to: `whatsapp:+${customerPhone}`,
+                  body: '\u00a1Excelente! \uD83C\uDF89 Tengo toda la información. Para asegurar que la entrega de tu pedido sea perfecta, por favor confírmame si tu dirección es correcta o si hay alguna observación adicional para el mensajero. \uD83C\uDFE0\uD83D\uDCCD'
+                });
+                await supabase.from('messages').insert({
+                  lead_id: leadId, sender_type: 'ai',
+                  content: `[Automated Text] ¡Excelente! 🎉 Tengo toda la información. Para asegurar que la entrega de tu pedido sea perfecta, por favor confírmame si tu dirección es correcta.`
+                });
+              }
             } catch (e: any) {
               await supabase.from('messages').insert({ lead_id: leadId, sender_type: 'ai', content: `[BOT CRASH] Street View Error: ${e.message}` });
             }
@@ -478,6 +530,11 @@ async function fetchProductInfo(lead: any, storeId: string): Promise<any> {
     .limit(1).maybeSingle();
     
   if (product && product.flow_template_id) {
+    // Registrar el embudo actual en el lead para métricas de Test A/B
+    if (lead.flow_template_id !== product.flow_template_id && !['closed', 'confirmado', 'sent'].includes(lead.status)) {
+       await supabase.from('leads').update({ flow_template_id: product.flow_template_id }).eq('id', lead.id);
+    }
+
     const { data: template } = await supabase.from('flow_templates')
       .select('interactions')
       .eq('id', product.flow_template_id)
@@ -662,29 +719,51 @@ export async function handleSophia({ lead, productInfo, leadId, incomingText, st
 
     if (parsed.intent === 'Purchase' || parsed.intent === 'OrderConfirmed') {
       
+      const isAlreadyClosed = ['confirmado', 'closed', 'recovered'].includes(lead?.status);
+
       // INTERCEPTAR PARA STREET VIEW (Solo si tenemos dirección y ciudad y no estamos verificando ya)
-      if (lead?.status !== 'verifying_address' && newAddress && newCity) {
+      if (!isAlreadyClosed && lead?.status !== 'verifying_address' && newAddress && newCity) {
         await sb.from('leads').update({ status: 'verifying_address' }).eq('id', leadId);
         const { data: orgData } = await sb.from('organizations').select('google_maps_api_key').eq('id', store.organization_id);
         const apiKey = (orgData as any)?.[0]?.google_maps_api_key || 'AIzaSyD3amxq4t9GA892zO4C70nbnPGqnG4Ct-A';
         const mapQuery = encodeURIComponent(`${newAddress}, ${newCity}`);
-        const streetViewUrl = `https://maps.googleapis.com/maps/api/streetview?size=600x400&location=${mapQuery}&key=${apiKey}`;
         
-        aiReply = `¡Excelente! 🎉 Tengo toda la información. Para asegurar que la entrega de tu pedido sea perfecta, ¿esta es la fachada correcta de tu dirección? 🏠📍`;
-        
-        // 💰 OPTIMIZACIÓN: Texto + imagen en 1 solo mensaje (antes eran 2)
-        await isTwilioClient.messages.create({
-          from: `whatsapp:+${storeTwilioPhone.replace('+', '')}`,
-          to: `whatsapp:+${customerPhone}`,
-          body: aiReply,
-          mediaUrl: [streetViewUrl]
-        });
-        await sb.from('messages').insert({ lead_id: leadId, sender_type: 'ai', content: `[Automated Street View] ${aiReply}\nImage: ${streetViewUrl}` });
+        const metaUrl = `https://maps.googleapis.com/maps/api/streetview/metadata?location=${mapQuery}&key=${apiKey}`;
+        let hasStreetView = false;
+        try {
+          const metaRes = await fetch(metaUrl);
+          const metaData = await metaRes.json();
+          if (metaData.status === 'OK') hasStreetView = true;
+        } catch (e) {
+          console.error('Error fetching StreetView metadata:', e);
+        }
+
+        if (hasStreetView) {
+          const streetViewUrl = `https://maps.googleapis.com/maps/api/streetview?size=600x400&location=${mapQuery}&key=${apiKey}`;
+          aiReply = `¡Excelente! 🎉 Tengo toda la información. Para asegurar que la entrega de tu pedido sea perfecta, ¿esta es la fachada correcta de tu dirección? 🏠📍`;
+          
+          await isTwilioClient.messages.create({
+            from: `whatsapp:+${storeTwilioPhone.replace('+', '')}`,
+            to: `whatsapp:+${customerPhone}`,
+            body: aiReply,
+            mediaUrl: [streetViewUrl]
+          });
+          await sb.from('messages').insert({ lead_id: leadId, sender_type: 'ai', content: `[Automated Street View] ${aiReply}\nImage: ${streetViewUrl}` });
+        } else {
+          aiReply = `¡Excelente! 🎉 Tengo toda la información. Para asegurar que la entrega de tu pedido sea perfecta, por favor confírmame si tu dirección es correcta o si hay alguna observación adicional para el mensajero. 🏠📍`;
+          
+          await isTwilioClient.messages.create({
+            from: `whatsapp:+${storeTwilioPhone.replace('+', '')}`,
+            to: `whatsapp:+${customerPhone}`,
+            body: aiReply
+          });
+          await sb.from('messages').insert({ lead_id: leadId, sender_type: 'ai', content: aiReply });
+        }
         return; // Detener flujo aquí, no cerrar el pedido aún
       }
 
-      // CIERRE NORMAL DE PEDIDO (Si ya se verificó la dirección)
-      if (lead?.status === 'verifying_address') {
+      // CIERRE NORMAL DE PEDIDO (Si ya se verificó la dirección o se saltó)
+      if (!isAlreadyClosed) {
         if (leadBoardType.includes('remarketing')) {
           await sb.from('leads').update({ status: 'recovered', recovery_confirmed_at: new Date().toISOString() }).eq('id', leadId);
         } else if (leadBoardType === 'logistics') {
@@ -698,8 +777,13 @@ export async function handleSophia({ lead, productInfo, leadId, incomingText, st
         } else if (leadBoardType === 'sales_wa') {
           await sb.from('leads').update({ status: 'closed' }).eq('id', leadId);
         }
-        const { firePixelEvent } = await import('./utils/_tracking.js');
-        await firePixelEvent(sb, leadId, 'Purchase', lead?.total_price || 0, 'COP', customerPhone).catch(console.error);
+        
+        try {
+          const { firePixelEvent } = await import('./utils/_tracking.js');
+          await firePixelEvent(sb, leadId, 'Purchase', lead?.total_price || 0, 'COP', customerPhone);
+        } catch (e) {
+          console.error('Tracking Error', e);
+        }
       }
     }
 

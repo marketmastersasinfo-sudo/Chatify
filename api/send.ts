@@ -20,13 +20,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!leadId) return res.status(400).json({ error: 'Missing leadId' });
 
   try {
-    const { data: lead } = await supabase.from('leads').select('phone, store_id, board_type, status').eq('id', leadId).single();
+    const { data: lead } = await supabase.from('leads').select('phone, store_id, board_type, status, social_platform').eq('id', leadId).single();
     if (!lead || !lead.phone) return res.status(404).json({ error: 'Lead not found or no phone' });
+
+    if (lead.social_platform === 'facebook' || lead.social_platform === 'instagram') {
+      const { data: pageData } = await supabase.from('connected_pages').select('page_id, access_token').eq('store_id', lead.store_id).limit(1).single();
+      if (!pageData) return res.status(400).json({ error: 'No Facebook/Instagram page connected to this store' });
+      
+      if (action === 'message') {
+        if (!message) return res.status(400).json({ error: 'Missing message' });
+        const { sendMessengerText } = await import('./utils/_meta-messenger.js');
+        const metaRes = await sendMessengerText({
+          pageId: pageData.page_id,
+          pageToken: pageData.access_token,
+          to: lead.phone
+        }, message);
+        return res.status(200).json({ success: true, messageId: metaRes?.message_id || 'messenger-msg-id' });
+      } else {
+        return res.status(400).json({ error: 'Templates are not natively supported in Messenger/Instagram within this flow' });
+      }
+    }
 
     // Get Meta credentials from whatsapp_numbers (not from stores)
     const { data: waNumber } = await supabase
       .from('whatsapp_numbers')
-      .select('phone_number_id, access_token')
+      .select('phone_number_id, access_token, waba_id')
       .eq('store_id', lead.store_id)
       .eq('is_active', true)
       .limit(1)
@@ -39,7 +57,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (!phoneNumberId || !accessToken) {
       const { data: fallbackNumber } = await supabase
         .from('whatsapp_numbers')
-        .select('phone_number_id, access_token')
+        .select('phone_number_id, access_token, waba_id')
         .eq('store_id', lead.store_id)
         .limit(1)
         .single();
@@ -139,6 +157,33 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }, template.template_name, 'es', components);
       
       const messageId = metaRes.messages?.[0]?.id || 'meta-tpl-id';
+
+      // Fetch the real template body from Meta API and render with variables
+      const wabaId = waNumber?.waba_id || '';
+      let renderedPreview = '';
+      if (wabaId) {
+        try {
+          const tplUrl = `https://graph.facebook.com/v25.0/${wabaId}/message_templates?name=${encodeURIComponent(template.template_name)}&fields=components`;
+          const tplResp = await fetch(tplUrl, { headers: { 'Authorization': `Bearer ${accessToken}` } });
+          const tplData = await tplResp.json();
+          const tpl = tplData.data?.[0];
+          if (tpl) {
+            const bodyComp = tpl.components?.find((c: any) => c.type === 'BODY');
+            if (bodyComp?.text) {
+              renderedPreview = bodyComp.text.replace(/\{\{(\d+)\}\}/g, (_: string, num: string) => {
+                return contentVariables[num] || `{{${num}}}`;
+              });
+            }
+          }
+        } catch (e) {
+          // Non-fatal
+        }
+      }
+
+      // Build the body text — include rendered preview for the frontend
+      if (renderedPreview) {
+        bodyText += `\n---PREVIEW---\n${renderedPreview}`;
+      }
 
       // Log in messages table
       await supabase.from('messages').insert({

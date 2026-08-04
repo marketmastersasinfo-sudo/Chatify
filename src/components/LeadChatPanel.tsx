@@ -358,7 +358,90 @@ export function LeadChatPanel({
                     }
                   }
                   const cleanContent = bodyLines.join('\n').trim();
-                  const isSystemMsg = msg.content.startsWith('[SISTEMA]') || msg.content.startsWith('[Bot Carrito') || msg.content.startsWith('[ERROR') || msg.content.startsWith('[BOT');
+                  const isSystemMsg = msg.content.startsWith('[SISTEMA]') || msg.content.startsWith('[ERROR') || msg.content.startsWith('[BOT');
+                  const isCartBot = msg.content.startsWith('[Bot Carrito');
+                  
+                  // ── Cart Recovery Bot Messages — Show the REAL message as the customer sees it ──
+                  if (isCartBot) {
+                    const touchMatch = msg.content.match(/\[Bot Carrito T(\d)\]/);
+                    const touchNum = touchMatch ? touchMatch[1] : '1';
+                    const touchLabels: Record<string, string> = { '1': '1er Recordatorio', '2': '2do Recordatorio', '3': 'Último Intento' };
+                    
+                    // Extract template name from [TEMPLATE:name] tag
+                    const templateTag = msg.content.match(/\[TEMPLATE:(.+?)\]/);
+                    const templateName = templateTag ? templateTag[1] : '';
+                    
+                    // Extract the rendered preview text (everything between [Bot Carrito T#] and [TEMPLATE:...])
+                    let previewText = '';
+                    if (templateTag) {
+                      const afterHeader = msg.content.replace(/\[Bot Carrito T\d\]\s*/, '');
+                      previewText = afterHeader.replace(/\s*\[TEMPLATE:.+?\]\s*$/, '').trim();
+                    }
+                    
+                    // Fallback: old format with {{var}}=val or Plantilla "name"
+                    if (!previewText) {
+                      const varRegex = /\{\{(.+?)\}\}=([^\{]*?)(?=\s*\{\{|$)/g;
+                      const vars: Record<string, string> = {};
+                      let vm;
+                      while ((vm = varRegex.exec(msg.content)) !== null) {
+                        vars[vm[1].trim()] = vm[2].trim();
+                      }
+                      const oldMatch = msg.content.match(/Plantilla\s+"(.+?)"/);
+                      
+                      // Build a summary from available data
+                      const parts: string[] = [];
+                      if (vars['customerName']) parts.push(`Cliente: ${vars['customerName']}`);
+                      if (vars['productName']) parts.push(`Producto: ${vars['productName']}`);
+                      if (vars['totalPrice']) parts.push(`Precio: ${vars['totalPrice']}`);
+                      if (parts.length > 0) {
+                        previewText = parts.join('\n');
+                      } else if (oldMatch) {
+                        previewText = `Plantilla: ${oldMatch[1]}`;
+                      }
+                    }
+                    
+                    return (
+                      <div key={msg.id} className="flex flex-col items-end">
+                        <div className="max-w-[85%] w-fit relative rounded-2xl rounded-tr-none overflow-hidden shadow-md border border-orange-200/60">
+                          {/* Compact Header */}
+                          <div className="bg-gradient-to-r from-orange-500 to-amber-500 px-3 py-1.5 flex items-center gap-2">
+                            <span className="text-[11px]">🛒</span>
+                            <span className="font-semibold text-[11px] text-white">
+                              Recuperación de Carrito
+                            </span>
+                            <span className="ml-auto bg-white/25 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">
+                              {touchLabels[touchNum] || `T${touchNum}`}
+                            </span>
+                          </div>
+                          {/* Message Body — Shows the REAL message as the client receives it */}
+                          <div className="bg-white p-3.5">
+                            {previewText ? (
+                              <p className="text-[13px] text-gray-800 leading-relaxed whitespace-pre-line">{previewText}</p>
+                            ) : (
+                              <p className="text-[12px] text-gray-400 italic">Plantilla enviada automáticamente</p>
+                            )}
+                            {/* Template name (collapsible) */}
+                            {templateName && (
+                              <details className="group mt-2 pt-1.5 border-t border-gray-100">
+                                <summary className="text-[10px] font-semibold text-orange-400 cursor-pointer hover:text-orange-500 transition-colors select-none list-none flex items-center gap-1">
+                                  <span className="group-open:rotate-90 transition-transform text-[8px]">▶</span>
+                                  Ver nombre de plantilla
+                                </summary>
+                                <span className="text-[10px] text-gray-500 font-mono mt-1 block">{templateName}</span>
+                              </details>
+                            )}
+                            {/* Timestamp */}
+                            <div className="flex justify-end mt-1.5">
+                              <span className="text-[10px] text-gray-300">
+                                {msg.created_at ? new Date(msg.created_at).toLocaleDateString('es-ES', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        <span className="text-[10px] font-medium text-gray-400 mt-1 px-1">🤖 Bot Automático</span>
+                      </div>
+                    );
+                  }
                   
                   if (isSystemMsg && !cleanContent.includes('¡') && !cleanContent.includes('Hola')) {
                     return (
@@ -372,45 +455,95 @@ export function LeadChatPanel({
                   let finalContent = cleanContent;
                   
                   if (finalContent.startsWith('[Plantilla Meta:')) {
-                    const match = finalContent.match(/\[Plantilla Meta:\s*(.+?)\](.*)/);
+                    const match = finalContent.match(/\[Plantilla Meta:\s*(.+?)\](.*)/s);
                     if (match) {
                       const templateName = match[1];
-                      const varsRaw = match[2];
+                      const restContent = match[2];
+                      
+                      // Extract rendered preview if available (new format)
+                      let previewText = '';
+                      let varsSection = restContent;
+                      const previewMatch = restContent.match(/---PREVIEW---\s*([\s\S]+)$/);
+                      if (previewMatch) {
+                        previewText = previewMatch[1].trim();
+                        varsSection = restContent.replace(/\s*---PREVIEW---[\s\S]+$/, '');
+                      }
+                      
+                      // Parse variables for fallback display
                       const varRegex = /\{\{(.+?)\}\}=([^\{]*)/g;
-                      const variables = [];
+                      const variables: { key: string; value: string }[] = [];
                       let vMatch;
-                      while ((vMatch = varRegex.exec(varsRaw)) !== null) {
+                      while ((vMatch = varRegex.exec(varsSection)) !== null) {
                         variables.push({ key: vMatch[1].trim(), value: vMatch[2].trim() });
                       }
                       
+                      // Extract meaningful data from variables (fallback if no preview)
+                      const varMap: Record<string, string> = {};
+                      variables.forEach(v => { varMap[v.key] = v.value; });
+                      
+                      if (!previewText) {
+                        // Build fallback summary from variables
+                        const custName = varMap['customerName'] || varMap['1'] || '';
+                        const prodName = varMap['productName'] || varMap['2'] || '';
+                        const price = varMap['totalPrice'] || varMap['3'] || '';
+                        const addr = varMap['address'] || varMap['4'] || '';
+                        const cityDept = varMap['5'] || [varMap['city'], varMap['department']].filter(Boolean).join(', ') || '';
+                        const parts: string[] = [];
+                        if (custName) parts.push(`Cliente: ${custName}`);
+                        if (prodName) parts.push(`Producto: ${prodName}`);
+                        if (price) parts.push(`Total: ${price}`);
+                        if (addr) parts.push(`Dirección: ${addr}`);
+                        if (cityDept) parts.push(`Ciudad: ${cityDept}`);
+                        if (parts.length > 0) previewText = parts.join('\n');
+                      }
+                      
+                      const isConfirmation = templateName.includes('confirmacion') || templateName.includes('confirmation');
+                      
                       return (
                         <div key={msg.id} className="flex flex-col items-end">
-                          <div className="bg-orange-50 border border-orange-200 text-orange-900 p-3 shadow-sm max-w-[85%] w-fit relative rounded-2xl rounded-tr-none">
-                            <div className="flex items-center gap-2 mb-2">
-                              <FileText className="w-4 h-4 text-orange-600" />
-                              <span className="font-bold text-[11px] uppercase tracking-wider text-orange-700">Plantilla Automática</span>
+                          <div className="max-w-[85%] w-fit relative rounded-2xl rounded-tr-none overflow-hidden shadow-md border border-purple-200/60">
+                            {/* Compact Header */}
+                            <div className="bg-gradient-to-r from-purple-600 to-indigo-600 px-3 py-1.5 flex items-center gap-2">
+                              <span className="text-[11px]">{isConfirmation ? '📦' : '📋'}</span>
+                              <span className="font-semibold text-[11px] text-white">
+                                {isConfirmation ? 'Confirmación de Pedido' : 'Plantilla Enviada'}
+                              </span>
                             </div>
-                            <div className="bg-white rounded-lg p-2 border border-orange-100 shadow-sm flex flex-col gap-1">
-                              <span className="text-[12px] font-mono text-gray-600 font-bold">{templateName}</span>
-                            </div>
-                            {variables.length > 0 && (
-                              <div className="flex flex-col mt-2 border-t border-orange-100 pt-2 w-full">
-                                <span className="text-[9px] font-bold text-orange-400 uppercase tracking-wider mb-1">Variables Inyectadas</span>
-                                <div className="flex flex-wrap gap-1">
+                            {/* Message Body — Shows the REAL message as the client receives it */}
+                            <div className="bg-white p-3.5">
+                              {previewText ? (
+                                <p className="text-[13px] text-gray-800 leading-relaxed whitespace-pre-line">{previewText}</p>
+                              ) : (
+                                <p className="text-[12px] text-gray-400 italic">Plantilla enviada</p>
+                              )}
+                              {/* Template details (collapsible) */}
+                              <details className="group mt-2 pt-1.5 border-t border-gray-100">
+                                <summary className="text-[10px] font-semibold text-purple-400 cursor-pointer hover:text-purple-500 transition-colors select-none list-none flex items-center gap-1">
+                                  <span className="group-open:rotate-90 transition-transform text-[8px]">▶</span>
+                                  Ver detalles de plantilla
+                                </summary>
+                                <div className="mt-1.5 space-y-1 bg-purple-50/50 rounded-lg p-2">
+                                  <div className="flex items-start gap-1.5">
+                                    <span className="text-[9px] font-bold text-purple-400 uppercase shrink-0">Plantilla</span>
+                                    <span className="text-[10px] text-gray-600 font-mono break-all">{templateName}</span>
+                                  </div>
                                   {variables.map((v, idx) => (
-                                    <div key={idx} className="flex items-center gap-1 bg-orange-100/50 rounded px-1.5 py-0.5 border border-orange-100/50 text-[10px]">
-                                      <span className="text-orange-500 font-bold">{"{{"}{v.key}{"}}"}</span>
-                                      <span className="font-medium text-gray-800 truncate max-w-[150px]">{v.value}</span>
+                                    <div key={idx} className="flex items-start gap-1.5">
+                                      <span className="text-[9px] font-bold text-purple-400 uppercase shrink-0">{v.key}</span>
+                                      <span className="text-[10px] text-gray-600 break-all">{v.value}</span>
                                     </div>
                                   ))}
                                 </div>
+                              </details>
+                              {/* Timestamp */}
+                              <div className="flex justify-end mt-1.5">
+                                <span className="text-[10px] text-gray-300">
+                                  {msg.created_at ? new Date(msg.created_at).toLocaleDateString('es-ES', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}
+                                </span>
                               </div>
-                            )}
-                            <span className="absolute bottom-2 right-3 text-[10px] opacity-70">
-                              {msg.created_at ? new Date(msg.created_at).toLocaleDateString('es-ES', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}
-                            </span>
+                            </div>
                           </div>
-                          <span className="text-[10px] font-medium text-gray-400 mt-1 px-1">⚙️ Sistema Webhook</span>
+                          <span className="text-[10px] font-medium text-gray-400 mt-1 px-1">⚙️ Sistema Automático</span>
                         </div>
                       );
                     }
@@ -509,13 +642,15 @@ export function LeadChatPanel({
                
                {/* Templates Menu */}
                <div className="relative">
-                 <button 
-                   onClick={() => setShowTemplates(!showTemplates)}
-                   className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-colors"
-                   title="Plantillas Oficiales de WhatsApp"
-                 >
-                   <FileText className="w-5 h-5" />
-                 </button>
+                 {lead.social_platform !== 'facebook' && lead.social_platform !== 'instagram' && (
+                   <button 
+                     onClick={() => setShowTemplates(!showTemplates)}
+                     className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-colors"
+                     title="Plantillas Oficiales de WhatsApp"
+                   >
+                     <FileText className="w-5 h-5" />
+                   </button>
+                 )}
                  
                  {showTemplates && (
                    <div className="absolute bottom-full left-0 mb-2 w-64 bg-white rounded-xl shadow-xl border border-gray-200 py-2 z-50">

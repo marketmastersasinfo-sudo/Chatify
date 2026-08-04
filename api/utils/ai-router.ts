@@ -130,8 +130,8 @@ export async function routeAIRequest(req: AIRequest): Promise<string> {
       const result = await callProvider(provider, providerConfig, apiKey, finalMessages, req.requireJson);
       const elapsed = Date.now() - startTime;
 
-      // Log usage (fire-and-forget, don't block response)
-      logUsage({
+      // Log usage (await it so Vercel doesn't kill the background process)
+      await logUsage({
         organizationId: req.organizationId,
         storeId: req.storeId,
         leadId: req.leadId,
@@ -142,7 +142,7 @@ export async function routeAIRequest(req: AIRequest): Promise<string> {
         outputTokens: estimateTokens([{ content: result }]),
         latencyMs: elapsed,
         success: true
-      }).catch(() => {}); // Silent fail for logging
+      }).catch((e) => { console.error('logUsage success error:', e); });
 
       return result;
 
@@ -152,7 +152,7 @@ export async function routeAIRequest(req: AIRequest): Promise<string> {
       console.error(`[AI Router] ${errorMsg} — trying next provider...`);
       
       // Log failed attempt
-      logUsage({
+      await logUsage({
         organizationId: req.organizationId,
         storeId: req.storeId,
         module: req.module,
@@ -163,7 +163,7 @@ export async function routeAIRequest(req: AIRequest): Promise<string> {
         latencyMs: Date.now() - Date.now(),
         success: false,
         error: err.message
-      }).catch(() => {});
+      }).catch((e) => { console.error('logUsage fail error:', e); });
 
       continue; // Try next provider
     }

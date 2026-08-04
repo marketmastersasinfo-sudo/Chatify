@@ -70,7 +70,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const hr4ago    = new Date(now.getTime() - 4 * 60 * 60 * 1000);
   const hr24ago   = new Date(now.getTime() - 24 * 60 * 60 * 1000);
   const hr48ago   = new Date(now.getTime() - 48 * 60 * 60 * 1000);
-  const hr25ago   = new Date(now.getTime() - 25 * 60 * 60 * 1000);
 
   let processed = 0;
   const log: string[] = [];
@@ -79,10 +78,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // ── Load WhatsApp numbers (Meta credentials) and countries per store ──
     const { data: waNumbers } = await (supabase as any)
       .from('whatsapp_numbers')
-      .select('store_id, phone_number_id, access_token, is_active, stores(country)');
+      .select('store_id, phone_number_id, access_token, waba_id, is_active, stores(country)');
 
     // Build store → Meta credentials map
-    const storeMetaMap: Record<string, { phoneNumberId: string, accessToken: string, country: string }> = {};
+    const storeMetaMap: Record<string, { phoneNumberId: string, accessToken: string, country: string, wabaId: string }> = {};
     for (const wn of (waNumbers || [])) {
       if (wn.store_id && wn.phone_number_id && wn.access_token) {
         // Prefer active numbers, but use any if none active
@@ -91,10 +90,35 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           storeMetaMap[wn.store_id] = {
             phoneNumberId: wn.phone_number_id,
             accessToken: wn.access_token,
-            country: storeCountry
+            country: storeCountry,
+            wabaId: wn.waba_id || ''
           };
         }
       }
+    }
+
+    // ── Template body cache: fetch template body text from Meta API ──
+    const templateBodyCache: Record<string, string> = {};
+    async function getTemplateBodyText(templateName: string, wabaId: string, accessToken: string): Promise<string> {
+      const cacheKey = `${wabaId}:${templateName}`;
+      if (templateBodyCache[cacheKey] !== undefined) return templateBodyCache[cacheKey];
+      
+      try {
+        const url = `https://graph.facebook.com/v25.0/${wabaId}/message_templates?name=${encodeURIComponent(templateName)}&fields=components`;
+        const resp = await fetch(url, { headers: { 'Authorization': `Bearer ${accessToken}` } });
+        const data = await resp.json();
+        const tpl = data.data?.[0];
+        if (tpl) {
+          const bodyComp = tpl.components?.find((c: any) => c.type === 'BODY');
+          const bodyText = bodyComp?.text || '';
+          templateBodyCache[cacheKey] = bodyText;
+          return bodyText;
+        }
+      } catch (e) {
+        // Non-fatal: fallback to empty
+      }
+      templateBodyCache[cacheKey] = '';
+      return '';
     }
 
     // ── Helper: Check working hours ──
@@ -150,7 +174,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const contentVariables: Record<string, string> = {
         '1': lead.name?.split(' ')[0] || 'Amigo',
         '2': lead.product_name || 'tu pedido',
-        '3': lead.total_price ? `$${Number(lead.total_price).toLocaleString('es-CO')}` : 'tu pedido',
+        '3': lead.total_price ? `${Number(lead.total_price).toLocaleString('es-CO')}` : 'tu pedido',
         '4': lead.address || 'tu dirección',
         '5': `${lead.city || ''}`.trim() || 'tu ciudad',
         '6': lead.phone || ''
@@ -180,8 +204,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           to: lead.phone
         }, template.template_name, 'es', components);
 
-        // Log the message
-        let bodyText = `[Bot Carrito T${touch}] Plantilla "${template.template_name}"`;
+        // ── Get the real template body and render it with actual data ──
+        let renderedPreview = '';
+        if (metaCreds.wabaId) {
+          const bodyTemplate = await getTemplateBodyText(template.template_name, metaCreds.wabaId, metaCreds.accessToken);
+          if (bodyTemplate) {
+            // Replace {{1}}, {{2}}, etc. with actual values
+            renderedPreview = bodyTemplate.replace(/\{\{(\d+)\}\}/g, (_, num) => {
+              return contentVariables[num] || `{{${num}}}`;
+            });
+          }
+        }
+
+        // Log the message — store the rendered preview so the frontend can show it like a real chat bubble
+        const customerFirstName = lead.name?.split(' ')[0] || 'Cliente';
+        let bodyText = `[Bot Carrito T${touch}]`;
+        if (renderedPreview) {
+          bodyText += `\n${renderedPreview}`;
+        }
+        bodyText += `\n[TEMPLATE:${template.template_name}]`;
         await supabase.from('messages').insert({
           lead_id: lead.id,
           sender_type: 'human',
@@ -244,6 +285,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // ═══════════════════════════════════════
     // TOQUE 1 — 30 minutos tras abandono
     // ═══════════════════════════════════════
+    const hr72ago = new Date(now.getTime() - 72 * 60 * 60 * 1000);
     const { data: t1Leads } = await supabase
       .from('leads')
       .select('id, name, phone, product_name, total_price, address, city, store_id')
@@ -251,8 +293,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .eq('status', 'abandoned')
       .eq('recovery_touch', 0)
       .lte('created_at', min30ago.toISOString())
-      .gte('created_at', hr25ago.toISOString())
-      .limit(2); // Anti-burst limit
+      .gte('created_at', hr72ago.toISOString())
+      .limit(10); // Process up to 10 leads per cron cycle
 
     for (const lead of (t1Leads || [])) {
       const metaCreds = storeMetaMap[lead.store_id];
@@ -286,7 +328,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .eq('status', 'bot_sent')
       .eq('recovery_touch', 1)
       .lte('recovery_last_sent_at', hr4ago.toISOString())
-      .limit(2); // Anti-burst limit
+      .limit(10); // Process up to 10 leads per cron cycle
 
     for (const lead of (t2Leads || [])) {
       const metaCreds = storeMetaMap[lead.store_id];
@@ -318,7 +360,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .eq('status', 'bot_sent')
       .eq('recovery_touch', 2)
       .lte('recovery_last_sent_at', hr24ago.toISOString())
-      .limit(2); // Anti-burst limit
+      .limit(10); // Process up to 10 leads per cron cycle
 
     for (const lead of (t3Leads || [])) {
       const metaCreds = storeMetaMap[lead.store_id];

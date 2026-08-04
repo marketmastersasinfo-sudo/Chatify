@@ -14,9 +14,13 @@ interface MetaMessageOptions {
  */
 export async function sendMetaText(options: MetaMessageOptions, text: string) {
   const { phoneNumberId, accessToken, to } = options;
+  if (!to) {
+    console.log('[Meta WA] No phone number provided, skipping message send.');
+    return null;
+  }
   
   // Format 'to' number (WhatsApp Cloud API requires numbers without + and without spaces)
-  const cleanTo = to.replace(/\D/g, '');
+  const cleanTo = (to || '').replace(/\D/g, '');
 
   const payload = {
     messaging_product: 'whatsapp',
@@ -37,8 +41,117 @@ export async function sendMetaText(options: MetaMessageOptions, text: string) {
  */
 export async function sendMetaImage(options: MetaMessageOptions, imageUrl: string, caption?: string) {
   const { phoneNumberId, accessToken, to } = options;
-  const cleanTo = to.replace(/\D/g, '');
+  if (!to) {
+    console.log('[Meta WA] No phone number provided, skipping image send.');
+    return null;
+  }
+  
+  const cleanTo = (to || '').replace(/\D/g, '');
 
+  // Meta-supported image types: image/jpeg, image/png, image/webp
+  // GIFs and other formats need special handling
+  const SUPPORTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+
+  // Strategy: Download image and upload to Meta as media, then send with media_id
+  // This works even with signed/private URLs since WE download (server-side)
+  try {
+    const imgRes = await fetch(imageUrl);
+    if (imgRes.ok) {
+      let contentType = imgRes.headers.get('content-type') || 'image/jpeg';
+      const buffer = Buffer.from(await imgRes.arrayBuffer());
+      
+      // Determine how to send based on content type
+      const isGif = contentType.includes('gif');
+      const isSupportedImage = SUPPORTED_IMAGE_TYPES.some(t => contentType.includes(t));
+      
+      // For GIFs: send as document (Meta doesn't support GIF as image)
+      // For supported images: upload and send as image
+      if (isGif) {
+        // Send GIF as document so at least it arrives
+        const formData = new FormData();
+        formData.append('messaging_product', 'whatsapp');
+        formData.append('type', 'image/gif');
+        formData.append('file', new Blob([buffer], { type: 'image/gif' }), 'animation.gif');
+        
+        // Try as document type since Meta rejects GIF as image
+        const docFormData = new FormData();
+        docFormData.append('messaging_product', 'whatsapp');
+        docFormData.append('type', 'application/octet-stream');
+        docFormData.append('file', new Blob([buffer], { type: 'application/octet-stream' }), 'animation.gif');
+        
+        const uploadRes = await fetch(`https://graph.facebook.com/v19.0/${phoneNumberId}/media`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${accessToken}` },
+          body: docFormData
+        });
+        const uploadData = await uploadRes.json();
+        
+        if (uploadData.id) {
+          const payload = {
+            messaging_product: 'whatsapp',
+            recipient_type: 'individual',
+            to: cleanTo,
+            type: 'document',
+            document: {
+              id: uploadData.id,
+              filename: 'animation.gif',
+              ...(caption && { caption })
+            }
+          };
+          return await fetchMetaApi(phoneNumberId, accessToken, payload);
+        }
+        // If GIF upload fails, skip it silently (GIFs are optional)
+        console.warn('GIF upload to Meta failed, skipping:', uploadData);
+        return { skipped: true, reason: 'GIF not supported by Meta' };
+      }
+      
+      // For regular images: fix content type if needed
+      if (!isSupportedImage) {
+        contentType = 'image/jpeg'; // Default fallback
+      }
+      
+      // Determine correct file extension
+      let fileName = 'image.jpg';
+      if (contentType.includes('png')) fileName = 'image.png';
+      else if (contentType.includes('webp')) fileName = 'image.webp';
+      
+      const formData = new FormData();
+      formData.append('messaging_product', 'whatsapp');
+      formData.append('type', contentType);
+      formData.append('file', new Blob([buffer], { type: contentType }), fileName);
+      
+      const uploadRes = await fetch(`https://graph.facebook.com/v19.0/${phoneNumberId}/media`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${accessToken}` },
+        body: formData
+      });
+      const uploadData = await uploadRes.json();
+      
+      if (uploadData.id) {
+        // Send using media_id (most reliable method)
+        const payload = {
+          messaging_product: 'whatsapp',
+          recipient_type: 'individual',
+          to: cleanTo,
+          type: 'image',
+          image: {
+            id: uploadData.id,
+            ...(caption && { caption })
+          }
+        };
+        return await fetchMetaApi(phoneNumberId, accessToken, payload);
+      } else {
+        console.error('Meta media upload failed:', uploadData);
+      }
+    } else {
+      console.error('Image download failed:', imgRes.status, imgRes.statusText);
+    }
+  } catch (uploadErr) {
+    console.error('Media upload exception:', uploadErr);
+  }
+
+  // Fallback: send with link (works for public URLs only)
+  console.warn('Falling back to link method for:', imageUrl.substring(0, 80));
   const payload = {
     messaging_product: 'whatsapp',
     recipient_type: 'individual',
@@ -56,14 +169,14 @@ export async function sendMetaImage(options: MetaMessageOptions, imageUrl: strin
 /**
  * Sends a template message
  */
-export async function sendMetaTemplate(
-  options: MetaMessageOptions, 
-  templateName: string, 
-  languageCode: string = 'es',
-  components: any[] = []
-): Promise<any> {
+export async function sendMetaTemplate(options: MetaMessageOptions, templateName: string, languageCode: string = 'es', components: any[] = []) {
   const { phoneNumberId, accessToken, to } = options;
-  const cleanTo = to.replace(/\D/g, '');
+  if (!to) {
+    console.log('[Meta WA] No phone number provided, skipping template send.');
+    return null;
+  }
+  
+  const cleanTo = (to || '').replace(/\D/g, '');
 
   const payload = {
     messaging_product: 'whatsapp',

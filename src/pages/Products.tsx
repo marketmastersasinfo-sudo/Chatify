@@ -31,7 +31,7 @@ export function Products() {
   const [flowTemplates, setFlowTemplates] = useState<any[]>([]);
   const [selectedFlowTemplateId, setSelectedFlowTemplateId] = useState<string>('');
 
-  const [mediaAssets, setMediaAssets] = useState<{ tag: string, url: string, type: string, rule?: string, name?: string }[]>([]);
+  const [mediaAssets, setMediaAssets] = useState<{ tag: string, url: string, type: string, rule?: string, name?: string, path?: string }[]>([]);
   const [uploadingMedia, setUploadingMedia] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -136,11 +136,13 @@ export function Products() {
       setOffers([]);
     }
 
-    let parsedMedia = [];
+    let parsedMedia: any[] = [];
     try {
       if (prod.media_assets) parsedMedia = JSON.parse(prod.media_assets);
     } catch {}
-    setMediaAssets(Array.isArray(parsedMedia) ? parsedMedia : []);
+    const validMedia = Array.isArray(parsedMedia) ? parsedMedia : [];
+    // Regenerate signed URLs for assets that have a stored path
+    refreshSignedUrls(validMedia).then(refreshed => setMediaAssets(refreshed));
     
     setIsAdding(true);
   }
@@ -233,12 +235,40 @@ export function Products() {
     return assets.map(a => {
       counts[a.type] = (counts[a.type] || 0) + 1;
       let prefix = 'MEDIA';
-      if (a.type === 'gif') prefix = 'GIF';
+      if (a.type === 'image') prefix = 'IMG';
+      else if (a.type === 'gif') prefix = 'GIF';
       else if (a.type === 'audio') prefix = 'AUDIO';
       else if (a.type === 'video') prefix = 'VIDEO';
       else if (a.type === 'pdf' || a.type === 'file') prefix = 'FILE';
       return { ...a, tag: `[${prefix}_${counts[a.type]}]` };
     });
+  }
+
+  async function refreshSignedUrls(assets: any[]): Promise<any[]> {
+    const refreshed = [];
+    for (const asset of assets) {
+      if (asset.path) {
+        const { data: signedData } = await supabase.storage
+          .from('chatify_media')
+          .createSignedUrl(asset.path, 60 * 60 * 24 * 7); // 7 days
+        refreshed.push({ ...asset, url: signedData?.signedUrl || asset.url });
+      } else if (asset.url) {
+        // Legacy asset without path - try to extract path from URL
+        const match = asset.url.match(/chatify_media\/(.+?)(\?|$)/);
+        if (match) {
+          const extractedPath = decodeURIComponent(match[1]);
+          const { data: signedData } = await supabase.storage
+            .from('chatify_media')
+            .createSignedUrl(extractedPath, 60 * 60 * 24 * 7);
+          refreshed.push({ ...asset, path: extractedPath, url: signedData?.signedUrl || asset.url });
+        } else {
+          refreshed.push(asset);
+        }
+      } else {
+        refreshed.push(asset);
+      }
+    }
+    return refreshed;
   }
 
   async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -282,11 +312,15 @@ export function Products() {
 
         if (error) throw error;
 
-        const { data: { publicUrl } } = supabase.storage.from('chatify_media').getPublicUrl(data.path);
+        // Use signed URL instead of public URL (bucket is private)
+        const { data: signedData } = await supabase.storage
+          .from('chatify_media')
+          .createSignedUrl(data.path, 60 * 60 * 24 * 7); // 7 days
         
         currentAssets.push({
           tag: '',
-          url: publicUrl,
+          url: signedData?.signedUrl || '',
+          path: data.path, // Store path for URL regeneration
           type: assetType,
           name: file.name
         });

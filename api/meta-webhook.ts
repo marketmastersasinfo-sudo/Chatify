@@ -87,6 +87,21 @@ async function handleWhatsApp(body: any, req: VercelRequest, res: VercelResponse
     text = message.interactive?.button_reply?.title || message.interactive?.list_reply?.title || '';
   }
 
+  // --- Tracking Extraction ---
+  const fbclidMatch = text.match(/\[fbclid:(.*?)\]/);
+  const gclidMatch = text.match(/\[gclid:(.*?)\]/);
+  const ttclidMatch = text.match(/\[ttclid:(.*?)\]/);
+  
+  const trackingTokens = [];
+  if (fbclidMatch) trackingTokens.push(`FBCLID: ${fbclidMatch[1]}`);
+  if (gclidMatch) trackingTokens.push(`GCLID: ${gclidMatch[1]}`);
+  if (ttclidMatch) trackingTokens.push(`TTCLID: ${ttclidMatch[1]}`);
+  const trackingText = trackingTokens.join('\n');
+
+  // Clean the text from tracking tokens so the AI doesn't see them
+  text = text.replace(/\[fbclid:.*?\]/g, '').replace(/\[gclid:.*?\]/g, '').replace(/\[ttclid:.*?\]/g, '').trim();
+  // ---------------------------
+
   // ── A. Buscar el número en el Pool (whatsapp_numbers) ──
   const { data: waNumber } = await supabase
     .from('whatsapp_numbers')
@@ -123,16 +138,18 @@ async function handleWhatsApp(body: any, req: VercelRequest, res: VercelResponse
           .upload(fileName, buffer, { contentType: mimeType });
           
         if (!uploadError && uploadData) {
-          const { data: { publicUrl } } = supabase.storage
+          // Use signed URL (bucket is private)
+          const { data: signedData } = await supabase.storage
             .from('chatify_media')
-            .getPublicUrl(uploadData.path);
+            .createSignedUrl(uploadData.path, 60 * 60 * 24 * 30); // 30 days
+          const mediaUrl = signedData?.signedUrl || '';
             
           let tag = 'DOC';
           if (msgType === 'image') tag = 'IMG';
           if (msgType === 'video') tag = 'VID';
           if (msgType === 'audio') tag = 'SND';
           
-          text = `[${tag}:${publicUrl}] ${text}`;
+          text = `[${tag}:${mediaUrl}] ${text}`;
           
           // Transcribir audio si es SND
           if (tag === 'SND') {
@@ -161,8 +178,15 @@ async function handleWhatsApp(body: any, req: VercelRequest, res: VercelResponse
     .eq('store_id', store.id)
     .order('created_at', { ascending: false });
 
-  // Preferir lead de sales_wa
-  let lead = allLeads?.find((l: any) => l.board_type === 'sales_wa') || null;
+  // Prefer active logistics/remarketing leads over sales_wa (they come from ShopyEasy webhook confirmations)
+  const activeLogisticsStatuses = ['nuevo', 'confirmation_sent', 'client_replied', 'verifying_address', 'confirmado'];
+  const activeRemarketingStatuses = ['abandoned', 'bot_sent', 'negotiating', 'verifying_address'];
+  
+  let lead = allLeads?.find((l: any) => l.board_type === 'logistics' && activeLogisticsStatuses.includes(l.status))
+    || allLeads?.find((l: any) => (l.board_type || '').includes('remarketing') && activeRemarketingStatuses.includes(l.status))
+    || allLeads?.find((l: any) => l.board_type === 'sales_wa')
+    || allLeads?.[0] // Fallback to most recent lead of any type
+    || null;
 
   if (!lead) {
     // Walink Smart Parser (Anti-Friction)
@@ -185,6 +209,8 @@ async function handleWhatsApp(body: any, req: VercelRequest, res: VercelResponse
       }
     }
 
+    const initialNotes = trackingText ? `Tracking Data:\n${trackingText}` : null;
+
     const { data: newLead } = await supabase.from('leads').insert({
       store_id: store.id,
       name,
@@ -192,7 +218,8 @@ async function handleWhatsApp(body: any, req: VercelRequest, res: VercelResponse
       traffic_source: detectedSource,
       product_name: detectedProduct,
       board_type: 'sales_wa',
-      status: 'new'
+      status: 'new',
+      notes: initialNotes
     }).select().single();
 
     lead = newLead;
@@ -202,13 +229,37 @@ async function handleWhatsApp(body: any, req: VercelRequest, res: VercelResponse
     return res.status(200).send('EVENT_RECEIVED');
   }
 
-  // Reactivar lead existente si vuelve a escribir hoy (actualizar fecha a HOY y estado a Interesado)
+  // Reactivar lead existente si vuelve a escribir hoy (actualizar fecha a HOY)
   const leadUpdates: any = {
     created_at: new Date().toISOString()
   };
-  if (['closed', 'lost'].includes(lead.status)) {
-    leadUpdates.status = 'inquiry';
+  
+  if (trackingText) {
+    const currentNotes = lead.notes || '';
+    if (!currentNotes.includes(trackingText)) {
+       leadUpdates.notes = currentNotes ? `${currentNotes}\n\nTracking Data:\n${trackingText}` : `Tracking Data:\n${trackingText}`;
+    }
   }
+  
+  // Board-type-aware reactivation
+  if (lead.board_type === 'logistics') {
+    // Logistics leads: move from confirmation_sent → client_replied when customer responds
+    if (lead.status === 'confirmation_sent') {
+      leadUpdates.status = 'client_replied';
+    }
+    // Never reset logistics leads to 'inquiry' — they follow their own funnel
+  } else if ((lead.board_type || '').includes('remarketing')) {
+    // Remarketing leads: don't reset to inquiry either, but if they are in cart recovery, move to negotiating so CRON stops bugging them
+    if (['abandoned', 'bot_sent'].includes(lead.status)) {
+      leadUpdates.status = 'negotiating';
+    }
+  } else {
+    // Sales WA leads: reactivate closed/lost leads
+    if (['closed', 'lost'].includes(lead.status)) {
+      leadUpdates.status = 'inquiry';
+    }
+  }
+  
   if (text.toLowerCase().includes('interesado en')) {
     const parts = text.split(/interesado en/i);
     if (parts.length > 1) {
@@ -240,7 +291,20 @@ async function handleWhatsApp(body: any, req: VercelRequest, res: VercelResponse
       .eq('store_id', store.id)
       .ilike('name', `%${lead.product_name}%`)
       .limit(1);
-    if (prods && prods.length > 0) productInfo = prods[0];
+    if (prods && prods.length > 0) {
+      productInfo = prods[0];
+      if (productInfo.flow_template_id) {
+        // Registrar el embudo actual en el lead para métricas de Test A/B
+        if (lead.flow_template_id !== productInfo.flow_template_id && !['closed', 'confirmado', 'sent'].includes(lead.status)) {
+           await supabase.from('leads').update({ flow_template_id: productInfo.flow_template_id }).eq('id', lead.id);
+        }
+
+        const { data: template } = await supabase.from('flow_templates').select('interactions').eq('id', productInfo.flow_template_id).single();
+        if (template) {
+          productInfo.flow_template = template.interactions;
+        }
+      }
+    }
   }
 
   // Inyectar los datos del pool al store para que handleSophia use el token correcto
@@ -316,6 +380,25 @@ async function handleFacebookPage(body: any, req: VercelRequest, res: VercelResp
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ leadId: leadObj.id, eventName: 'PageView', currency: 'COP' })
         }).catch(console.error);
+
+        // Enrutar a Sophia (Omnicanal)
+        const { data: storeData } = await supabase.from('connected_pages').select('store_id').eq('page_id', pageId).maybeSingle();
+        if (storeData?.store_id) {
+          const { data: storeInfo } = await supabase.from('stores').select('*').eq('id', storeData.store_id).maybeSingle();
+          const { data: productInfo } = await supabase.from('products').select('*').eq('name', leadObj.product_name).maybeSingle();
+          const { handleSophia } = await import('./utils/_sophia-handler.js');
+          await handleSophia({
+            lead: leadObj,
+            productInfo: productInfo || {},
+            leadId: leadObj.id,
+            incomingText: text,
+            storeTwilioPhone: '',
+            customerPhone: senderId,
+            store: storeInfo || {},
+            supabase,
+            platform: 'facebook'
+          });
+        }
       }
     }
 
@@ -377,7 +460,8 @@ async function handleFacebookPage(body: any, req: VercelRequest, res: VercelResp
         status: isDeleted ? 'moderado' : 'comentario',
         social_platform: 'facebook',
         comment_content: messageText,
-        comment_status: isDeleted ? 'deleted' : 'active'
+        comment_status: isDeleted ? 'deleted' : 'active',
+        notes: pageName ? `Fanpage: ${pageName}` : null
       }).select().single();
 
       // 3. Disparar Pixel (solo si NO es hater)
@@ -467,6 +551,25 @@ async function handleInstagram(body: any, req: VercelRequest, res: VercelRespons
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ leadId: leadObj.id, eventName: 'PageView', currency: 'COP' })
         }).catch(console.error);
+
+        // Enrutar a Sophia (Omnicanal)
+        const { data: storeData } = await supabase.from('connected_pages').select('store_id').eq('instagram_account_id', igAccountId).maybeSingle();
+        if (storeData?.store_id) {
+          const { data: storeInfo } = await supabase.from('stores').select('*').eq('id', storeData.store_id).maybeSingle();
+          const { data: productInfo } = await supabase.from('products').select('*').eq('name', leadObj.product_name).maybeSingle();
+          const { handleSophia } = await import('./utils/_sophia-handler.js');
+          await handleSophia({
+            lead: leadObj,
+            productInfo: productInfo || {},
+            leadId: leadObj.id,
+            incomingText: text,
+            storeTwilioPhone: '',
+            customerPhone: senderId,
+            store: storeInfo || {},
+            supabase,
+            platform: 'instagram'
+          });
+        }
       }
     }
 

@@ -20,10 +20,46 @@ export function Funnels() {
   const [selectedTemplate, setSelectedTemplate] = useState<FlowTemplate | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [metrics, setMetrics] = useState({ processed: 0, conversion: 0 });
 
   useEffect(() => {
     fetchTemplates();
   }, []);
+
+  useEffect(() => {
+    if (selectedTemplate) {
+      calculateMetrics(selectedTemplate.id);
+    }
+  }, [selectedTemplate]);
+
+  const calculateMetrics = async (templateId: string) => {
+    try {
+      // Fetch all leads historically processed with this template
+      const { data: leads, error } = await (supabase as any)
+        .from('leads')
+        .select('status')
+        .eq('flow_template_id', templateId);
+        
+      if (error) throw error;
+        
+      if (!leads || leads.length === 0) {
+        setMetrics({ processed: 0, conversion: 0 });
+        return;
+      }
+      
+      const processed = leads.length;
+      const closed = leads.filter((l: any) => l.status === 'closed' || l.status === 'confirmado' || l.status === 'sent').length;
+      const conversion = processed > 0 ? (closed / processed) * 100 : 0;
+      
+      setMetrics({
+        processed,
+        conversion: parseFloat(conversion.toFixed(1))
+      });
+    } catch (e) {
+      console.error('Error calculating metrics:', e);
+      setMetrics({ processed: 0, conversion: 0 });
+    }
+  };
 
   const fetchTemplates = async () => {
     try {
@@ -278,13 +314,13 @@ export function Funnels() {
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-slate-500">Leads procesados</span>
                       <span className="font-semibold text-slate-700">
-                        {selectedTemplate.is_base ? 'Mil+' : '0'}
+                        {metrics.processed.toLocaleString()}
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-slate-500">Tasa de Cierre</span>
                       <span className="font-semibold text-emerald-600">
-                        {selectedTemplate.is_base ? '15.2%' : '0.0%'}
+                        {metrics.conversion.toFixed(1)}%
                       </span>
                     </div>
                     <p className="text-xs text-slate-400 mt-3 pt-3 border-t border-slate-200 leading-relaxed">
