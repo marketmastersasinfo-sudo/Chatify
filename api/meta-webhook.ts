@@ -264,8 +264,8 @@ async function handleWhatsApp(body: any, req: VercelRequest, res: VercelResponse
       leadUpdates.status = 'negotiating';
     }
   } else {
-    // Sales WA leads: reactivate closed/lost leads
-    if (['closed', 'lost'].includes(lead.status)) {
+    // Sales WA leads: reactivate lost leads only
+    if (lead.status === 'lost') {
       leadUpdates.status = 'inquiry';
     }
   }

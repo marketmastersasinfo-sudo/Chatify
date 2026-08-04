@@ -212,7 +212,7 @@ export async function handleSophia({ lead, productInfo, leadId, incomingText, st
           await sb.from('leads').update({ status: 'inquiry' }).eq('id', leadId);
         }
       } else if (parsed.intent === 'AddToCart' || parsed.intent === 'InitiateCheckout') {
-        if (lead?.status !== 'negotiating' && lead?.status !== 'verifying_address' && lead?.status !== 'closed') {
+        if (lead?.status !== 'negotiating' && lead?.status !== 'verifying_address') {
           await sb.from('leads').update({ status: 'negotiating' }).eq('id', leadId);
         }
       }
