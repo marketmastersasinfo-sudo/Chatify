@@ -164,6 +164,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           sent_count: local.sent_count || 0,
           conversion_count: local.conversion_count || 0,
           components: formattedComponents,
+          raw_meta: metaInfo,
           source: metaInfo ? 'meta' : 'local_only'
         };
       });
