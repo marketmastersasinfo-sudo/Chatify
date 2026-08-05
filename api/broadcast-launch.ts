@@ -68,26 +68,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       query = query.in('status', ['paid', 'delivered']);
     }
 
-    const { data: leads, error } = await query;
-    if (error) throw error;
+    // Apply LTV
+    if (ltv && ltv !== 'all') {
+      query = query.gte('total_price', parseInt(ltv));
+    }
 
-    if (!leads || leads.length === 0) {
+    let allLeads: any[] = [];
+    let from = 0;
+    const step = 1000;
+
+    while (true) {
+      const { data, error } = await query.range(from, from + step - 1);
+      if (error) throw error;
+      if (!data || data.length === 0) break;
+      allLeads.push(...data);
+      if (data.length < step) break;
+      from += step;
+    }
+
+    if (allLeads.length === 0) {
       return res.status(400).json({ error: 'No leads found matching these filters.' });
     }
 
-    // Filter locally for LTV if needed since we don't have direct LTV column (we have total_price)
-    let finalLeads = leads;
-    if (ltv && ltv !== 'all') {
-      const minAmount = parseInt(ltv);
-      const { data: fullLeads } = await supabase.from('leads').select('id, total_price').in('id', leads.map(l => l.id));
-      if (fullLeads) {
-        finalLeads = fullLeads.filter(l => (l.total_price || 0) >= minAmount);
-      }
-    }
-
-    if (finalLeads.length === 0) {
-      return res.status(400).json({ error: 'No leads found after applying LTV filters.' });
-    }
+    const finalLeads = allLeads;
 
     // Insert into broadcast_queue (Equally distributed A/B/C/D testing)
     // We shuffle the finalLeads array to ensure true random distribution before splitting

@@ -46,13 +46,19 @@ export function Broadcast() {
   useEffect(() => {
     if (selectedStoreId) {
       loadProducts();
-      calculateAudience();
       loadTemplates();
+    } else {
+      setTemplates([]);
+      setProducts([]);
+    }
+  }, [selectedStoreId]);
+
+  useEffect(() => {
+    if (selectedStoreId) {
+      calculateAudience();
       if (activeTab === 'analytics') loadAnalytics();
     } else {
       setAudienceCount(0);
-      setTemplates([]);
-      setProducts([]);
     }
   }, [selectedStoreId, selectedProduct, tag, dateFrom, dateTo, geography, ltv, paymentStatus, activeTab]);
 
@@ -88,12 +94,17 @@ export function Broadcast() {
 
   async function loadTemplates() {
     try {
-      const { data } = await supabase.from('store_templates')
-        .select('*')
-        .eq('store_id', selectedStoreId)
-        .eq('category', 'MARKETING')
-        .eq('status', 'APPROVED');
-      setTemplates(data || []);
+      const res = await fetch(`/api/meta/templates?storeId=${selectedStoreId}`);
+      if (res.ok) {
+        const json = await res.json();
+        const metaData = json.data || [];
+        const marketingTemplates = metaData.filter((t: any) => {
+          const cat = (t.category || '').toUpperCase();
+          const stat = (t.status || '').toUpperCase();
+          return (cat.includes('MARKETING')) && (stat === 'APPROVED' || stat === 'RECEIVED');
+        });
+        setTemplates(marketingTemplates);
+      }
     } catch (err) {
       console.error(err);
     }
@@ -102,7 +113,7 @@ export function Broadcast() {
   async function calculateAudience() {
     setIsCalculating(true);
     try {
-      let query = supabase.from('leads').select('id, total_price').eq('store_id', selectedStoreId).limit(100000);
+      let query = supabase.from('leads').select('id', { count: 'exact', head: true }).eq('store_id', selectedStoreId);
       
       if (tag !== 'all') {
         if (tag === 'vip') query = query.in('status', ['confirmado', 'closed', 'paid', 'delivered']);
@@ -130,20 +141,20 @@ export function Broadcast() {
       if (paymentStatus === 'delivered') query = query.eq('status', 'delivered');
       if (paymentStatus === 'paid') query = query.in('status', ['paid', 'delivered']);
 
-      const { data, error } = await query;
-      if (error) throw error;
-
-      let finalLeads: any[] = data || [];
       if (ltv !== 'all') {
         const minAmount = parseInt(ltv);
-        finalLeads = finalLeads.filter(l => (l.total_price || 0) >= minAmount);
+        query = query.gte('total_price', minAmount);
       }
-      setAudienceCount(finalLeads.length);
+
+      const { count, error } = await query;
+      if (error) throw error;
+
+      setAudienceCount(count || 0);
     } catch (err) {
       console.error(err);
-      setAudienceCount(0);
+    } finally {
+      setIsCalculating(false);
     }
-    setIsCalculating(false);
   }
 
   async function loadAnalytics() {
@@ -399,8 +410,8 @@ export function Broadcast() {
                 ) : (
                   templates.map(t => {
                     const isSelected = selectedTemplateIds.includes(t.id);
-                    const bodyText = t.meta_payload?.components?.find((c:any) => c.type === 'BODY')?.text || 'Sin texto';
-                    const header = t.meta_payload?.components?.find((c:any) => c.type === 'HEADER');
+                    const bodyText = t.raw_meta?.components?.find((c:any) => c.type === 'BODY')?.text || 'Sin texto';
+                    const header = t.raw_meta?.components?.find((c:any) => c.type === 'HEADER');
                     
                     return (
                       <div 
@@ -437,7 +448,7 @@ export function Broadcast() {
                         </div>
 
                         <div className="p-4 bg-white border-t border-gray-100">
-                          <h4 className="font-bold text-gray-900 truncate" title={t.template_name}>{t.template_name}</h4>
+                          <h4 className="font-bold text-gray-900 truncate" title={t.name}>{t.name}</h4>
                           <span className="text-xs font-semibold bg-green-100 text-green-700 px-2 py-0.5 rounded-full mt-1 inline-block">Aprobada</span>
                         </div>
                       </div>
