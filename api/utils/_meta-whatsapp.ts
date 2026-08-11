@@ -115,15 +115,25 @@ export async function sendMetaImage(options: MetaMessageOptions, imageUrl: strin
       if (contentType.includes('png')) fileName = 'image.png';
       else if (contentType.includes('webp')) fileName = 'image.webp';
       
-      const formData = new FormData();
-      formData.append('messaging_product', 'whatsapp');
-      formData.append('type', contentType);
-      formData.append('file', new Blob([buffer], { type: contentType }), fileName);
+      const boundary = '----WhatsAppMediaBoundary' + Date.now().toString(16);
+      let multipartBody = Buffer.alloc(0);
+      
+      multipartBody = Buffer.concat([
+        multipartBody,
+        Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="messaging_product"\r\n\r\nwhatsapp\r\n`),
+        Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="type"\r\n\r\n${contentType}\r\n`),
+        Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="${fileName}"\r\nContent-Type: ${contentType}\r\n\r\n`),
+        buffer,
+        Buffer.from(`\r\n--${boundary}--\r\n`)
+      ]);
       
       const uploadRes = await fetch(`https://graph.facebook.com/v19.0/${phoneNumberId}/media`, {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${accessToken}` },
-        body: formData
+        headers: { 
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': `multipart/form-data; boundary=${boundary}`
+        },
+        body: multipartBody
       });
       const uploadData = await uploadRes.json();
       
@@ -142,28 +152,17 @@ export async function sendMetaImage(options: MetaMessageOptions, imageUrl: strin
         return await fetchMetaApi(phoneNumberId, accessToken, payload);
       } else {
         console.error('Meta media upload failed:', uploadData);
+        throw new Error('Meta media upload failed: ' + JSON.stringify(uploadData));
       }
     } else {
       console.error('Image download failed:', imgRes.status, imgRes.statusText);
+      throw new Error('Image download failed: ' + imgRes.statusText);
     }
   } catch (uploadErr) {
     console.error('Media upload exception:', uploadErr);
+    // IMPORTANTE: Si falla, lanzamos error para que _sophia-handler.ts envíe el texto al menos.
+    throw uploadErr;
   }
-
-  // Fallback: send with link (works for public URLs only)
-  console.warn('Falling back to link method for:', imageUrl.substring(0, 80));
-  const payload = {
-    messaging_product: 'whatsapp',
-    recipient_type: 'individual',
-    to: cleanTo,
-    type: 'image',
-    image: {
-      link: imageUrl,
-      ...(caption && { caption })
-    }
-  };
-
-  return await fetchMetaApi(phoneNumberId, accessToken, payload);
 }
 
 /**
