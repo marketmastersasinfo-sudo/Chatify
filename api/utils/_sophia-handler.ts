@@ -167,8 +167,8 @@ export async function handleSophia({ lead, productInfo, leadId, incomingText, st
       const cleanNewCity = normalizeStr(parsed.extracted_city);
       if (parsed.extracted_city && cleanOldCity !== cleanNewCity) { updateData.city = parsed.extracted_city; newCity = parsed.extracted_city; addressUpdated = true; facadeChanged = true; }
       
-      if (parsed.extracted_name && !lead?.name) { updateData.name = parsed.extracted_name; addressUpdated = true; }
-      if (parsed.extracted_last_name && !lead?.last_name) { updateData.last_name = parsed.extracted_last_name; addressUpdated = true; }
+      if (parsed.extracted_name) { updateData.name = parsed.extracted_name; addressUpdated = true; }
+      if (parsed.extracted_last_name) { updateData.last_name = parsed.extracted_last_name; addressUpdated = true; }
       if (parsed.extracted_department && !lead?.department) { updateData.department = parsed.extracted_department; addressUpdated = true; }
       if (parsed.extracted_sector && !lead?.sector) { updateData.sector = parsed.extracted_sector; addressUpdated = true; }
       if (parsed.extracted_postal_code && !lead?.postal_code) { updateData.postal_code = parsed.extracted_postal_code; addressUpdated = true; }

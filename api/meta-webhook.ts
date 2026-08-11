@@ -295,6 +295,7 @@ async function handleWhatsApp(body: any, req: VercelRequest, res: VercelResponse
   // ── D. Invocar IA (Sophia) ──
   let productInfo = null;
   if (lead.product_name) {
+    // Strategy 1: Direct substring match
     const { data: prods } = await supabase
       .from('products')
       .select('*')
@@ -303,6 +304,35 @@ async function handleWhatsApp(body: any, req: VercelRequest, res: VercelResponse
       .limit(1);
     if (prods && prods.length > 0) {
       productInfo = prods[0];
+    }
+    
+    // Strategy 2: Try matching the product name FROM the DB containing the lead's name
+    if (!productInfo) {
+      const { data: prods2 } = await supabase
+        .from('products')
+        .select('*')
+        .eq('store_id', store.id);
+      if (prods2 && prods2.length > 0) {
+        const leadNameLower = lead.product_name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        const words = leadNameLower.split(/\s+/).filter((w: string) => w.length > 2);
+        // Try matching any significant word from lead name to product names
+        for (const prod of prods2) {
+          const prodNameLower = (prod.name || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+          if (words.some((w: string) => prodNameLower.includes(w))) {
+            productInfo = prod;
+            break;
+          }
+        }
+        // Strategy 3: If store has only ONE product, use it regardless
+        if (!productInfo && prods2.length === 1) {
+          productInfo = prods2[0];
+          console.log(`[PRODUCT-MATCH] Fallback: store has only 1 product, using "${prods2[0].name}"`);
+        }
+      }
+    }
+    
+    if (productInfo) {
+      console.log(`[PRODUCT-MATCH] Found product: "${productInfo.name}" for lead product: "${lead.product_name}"`);
       if (productInfo.flow_template_id) {
         // Registrar el embudo actual en el lead para métricas de Test A/B
         if (lead.flow_template_id !== productInfo.flow_template_id && !['closed', 'confirmado', 'sent'].includes(lead.status)) {
@@ -317,6 +347,23 @@ async function handleWhatsApp(body: any, req: VercelRequest, res: VercelResponse
     }
   }
 
+  // Fallback: If no product found and lead has no product_name, try store's only product
+  if (!productInfo) {
+    const { data: allProds } = await supabase
+      .from('products')
+      .select('*')
+      .eq('store_id', store.id);
+    if (allProds && allProds.length === 1) {
+      productInfo = allProds[0];
+      console.log(`[PRODUCT-MATCH] No lead product_name. Store has 1 product, using: "${allProds[0].name}"`);
+    } else if (allProds && allProds.length > 0) {
+      console.log(`[PRODUCT-MATCH] No match found. Store has ${allProds.length} products: ${allProds.map((p: any) => p.name).join(', ')}`);
+    }
+    if (productInfo?.flow_template_id) {
+      const { data: template } = await supabase.from('flow_templates').select('interactions').eq('id', productInfo.flow_template_id).single();
+      if (template) productInfo.flow_template = template.interactions;
+    }
+  }
   // Inyectar los datos del pool al store para que handleSophia use el token correcto
   store.meta_access_token = waNumber.access_token;
   store.meta_phone_number_id = waNumber.phone_number_id;

@@ -54,19 +54,20 @@ export const buildSophiaPrompt = (leadInfo: any, productInfo: any, variantInfo?:
   }
 
   const confirmed: string[] = [];
-  if (leadInfo.name)    confirmed.push(`Nombre del cliente: ${leadInfo.name}`);
+  if (leadInfo.name)    confirmed.push(`Nombre del perfil WhatsApp: ${leadInfo.name} (⚠️ puede no ser el nombre real)`);
+  if (leadInfo.last_name) confirmed.push(`Apellido confirmado: ${leadInfo.last_name}`);
+  if (leadInfo.contact_phone) confirmed.push(`Celular de contacto: ${leadInfo.contact_phone}`);
   if (productNameRaw)   confirmed.push(`Artículo(s) pedidos: ${productNameRaw}`);
   if (leadInfo.total_price) confirmed.push(`Valor total: $${leadInfo.total_price}`);
   if (leadInfo.city)    confirmed.push(`Ciudad de entrega: ${leadInfo.city}`);
+  if (leadInfo.department) confirmed.push(`Departamento: ${leadInfo.department}`);
   if (leadInfo.address) confirmed.push(`Dirección de entrega: ${leadInfo.address}`);
+  if (leadInfo.sector) confirmed.push(`Barrio: ${leadInfo.sector}`);
+  if (leadInfo.notes?.includes('Zona:')) { const z = leadInfo.notes.match(/Zona:\s*(.+)/); if (z) confirmed.push(`Zona: ${z[1]}`); }
+  if (leadInfo.notes?.includes('Referencias:')) { const r = leadInfo.notes.match(/Referencias:\s*(.+)/); if (r) confirmed.push(`Referencias: ${r[1]}`); }
   if (leadInfo.document_id) confirmed.push(`Documento: ${leadInfo.document_id}`);
   if (leadInfo.email)   confirmed.push(`Email: ${leadInfo.email}`);
   if (orderId)          confirmed.push(`# Orden: ${orderId}`);
-
-  if (leadInfo.last_name) confirmed.push(`Apellido: ${leadInfo.last_name}`);
-  if (leadInfo.department) confirmed.push(`Departamento/Estado/Provincia: ${leadInfo.department}`);
-  if (leadInfo.sector) confirmed.push(`Barrio/Sector/Colonia: ${leadInfo.sector}`);
-  if (leadInfo.postal_code) confirmed.push(`Código Postal: ${leadInfo.postal_code}`);
 
   const missing: string[] = [];
 
@@ -83,17 +84,19 @@ DEBES responderle amable y afirmativamente diciéndole que SÍ aceptamos el pago
 
   if (leadInfo.board_type === 'sales_wa') {
     const missingForm = [];
-    if (!leadInfo.name || !leadInfo.last_name) missingForm.push('- Nombre y Apellido');
-    if (!leadInfo.phone && !leadInfo.contact_phone && !leadInfo.notes?.includes('Celular:')) missingForm.push('- Número de celular');
-    if (!leadInfo.department) missingForm.push('- Departamento / Estado');
-    if (!leadInfo.city) missingForm.push('- Ciudad o municipio');
-    if (!leadInfo.notes?.includes('Zona:')) missingForm.push('- Zona (Urbana o Rural)');
-    if (!leadInfo.address) missingForm.push('- Dirección completa y Complementos (Casa, apto, conjunto, torre, etc.)');
-    if (!leadInfo.sector) missingForm.push('- Barrio');
-    if (!leadInfo.notes?.includes('Referencias:')) missingForm.push('- Otras referencias (Al lado de, cerca a, casa color rojo, etc.)');
+    // SIEMPRE pedir nombre y apellido REAL (el nombre de WhatsApp no sirve)
+    if (!leadInfo.last_name) missingForm.push('📝 Nombre completo y Apellido (nombre real para el envío)');
+    // SIEMPRE pedir celular de contacto para la transportadora
+    if (!leadInfo.contact_phone) missingForm.push('📱 Número de celular (para que la transportadora te contacte)');
+    if (!leadInfo.department) missingForm.push('🏢 Departamento');
+    if (!leadInfo.city) missingForm.push('🏙️ Ciudad o municipio');
+    if (!leadInfo.notes?.includes('Zona:')) missingForm.push('📍 Zona (Urbana o Rural)');
+    if (!leadInfo.address) missingForm.push('🏠 Dirección completa (Calle/Carrera, número, casa/apto/conjunto/torre)');
+    if (!leadInfo.sector) missingForm.push('🗺️ Barrio');
+    if (!leadInfo.notes?.includes('Referencias:')) missingForm.push('🔎 Referencias para el mensajero (al lado de, cerca a, casa de color, etc.)');
 
     if (missingForm.length > 0) {
-      missing.push(`⚠️ PARA PODER CERRAR LA VENTA Y HACER EL ENVÍO, DEBES PEDIRLE AL CLIENTE QUE LLENE ESTOS DATOS. Envíalos en forma de lista (formulario corto):\n${missingForm.join('\n')}`);
+      missing.push(`\n🚚 DATOS OBLIGATORIOS PARA EL ENVÍO — Pídele al cliente que te los envíe en UN SOLO MENSAJE, como un formulario rápido:\n${missingForm.join('\n')}\n\n📌 INSTRUCCIÓN: No pidas los datos uno por uno. Envía la lista completa de los que faltan para que el cliente los llene todos de una vez. Así el proceso es más rápido y fácil.`);
     }
     
     if (!productNameRaw) missing.push('Producto exacto, Cantidad y Variantes (Talla/Color)');
@@ -130,16 +133,18 @@ REGLAS ESTRICTAS — NUNCA las violes
 ════════════════════════════════════════
 1. CÉNTRATE EN TU CATÁLOGO: Toda la información sobre qué colores, tallas o precios vendemos está en el "CONTEXTO ADICIONAL DEL PRODUCTO". Si el cliente pregunta qué manejamos, léelo de ahí.
 2. DATOS DEL CLIENTE: Si el cliente ya hizo un pedido y pregunta qué pidió, busca la información en "RESUMEN COMPLETO DEL PEDIDO".
-3. PRECIOS Y MATEMÁTICAS ESTRICTAS: El precio base de 1 unidad es $${productInfo?.price || 0}. Tienes PROHIBIDO inventar precios o promociones. Si el cliente pide una cantidad para la cual NO existe una oferta explícita en tu contexto, DEBES calcular el precio sumando la oferta más cercana más las unidades adicionales al precio base. NUNCA regales unidades ni asumas que 4 valen lo mismo que 3. Por ejemplo, si lleva 4 unidades y solo hay promoción para 3, el precio total es el combo de 3 más 1 a precio base.
-4. JAMÁS digas "no tengo esa información" — TÚ ERES LA TIENDA. Sophia es la representante oficial de la tienda.
-5. Si genuinamente no hay un dato en ninguna sección, di "voy a verificarlo con el equipo" — nunca "revisa tú".
-6. JAMÁS repitas preguntas sobre datos que ya el cliente respondió.
-6. TÚ ERES LA ÚNICA ASESORA. JAMÁS digas que "un asesor te contactará", "te paso con soporte" o "voy a hacer que un asesor te hable". Tú debes resolver TODAS las dudas tú misma.
-7. NO CANCELES PEDIDOS FÁCILMENTE. Tu meta principal es SALVAR LA VENTA (tasa de confirmación >90%). Si el cliente dice que la dirección está mal, quiere cancelar o tiene dudas, usa toda tu empatía para solucionar el problema. Pregúntale: "¿Cuál es la dirección correcta?", o pídele amablemente puntos de referencia (un parque cercano, el color de la casa) o la foto de un recibo público para asegurar que el mensajero llegue sin problemas.
-8. JAMÁS canceles el pedido en la primera objeción. Siempre busca alternativas para lograr la entrega.
-9. CIERRE Y CONFIRMACIÓN OBLIGATORIA: Una vez tengas absolutamente TODOS los datos de la lista (cuando la sección AÚN FALTA esté vacía), DEBES mandar un MENSAJE DE RESUMEN FINAL confirmando todo de forma clara. Debes incluir: El producto exacto, la cantidad u oferta elegida, las variantes (tallas/colores), el precio total a pagar, y la dirección de entrega con la ciudad. Ejemplo: "Perfecto, entonces te enviaré 2 Joggers (1 Negro Talla M, 1 Azul Talla L) a la Carrera 45 # 12-34 en Bogotá, por un total de $90.000 a contraentrega. ¿Todos estos datos son correctos?". NO devuelvas el intent "Purchase" hasta que el cliente diga explícitamente "Sí" o confirme que el resumen es correcto.
-10. Si el cliente responde "Todo está correcto" o "todo correcto", asume INMEDIATAMENTE que aprueba los datos del pedido y finaliza el proceso de validación.
-11. REGLA ESTRICTA DE NO REPETIR PREGUNTAS: Si el cliente ya te dio su nombre, ciudad u otro dato, TOMA NOTA y NO VUELVAS A PREGUNTARLO. Solo enfócate en preguntar lo que esté en la sección "AÚN FALTA". Si algo no está en "AÚN FALTA", es porque ya lo sabemos. No lo pidas de nuevo.
+3. PRECIOS Y MATEMÁTICAS ESTRICTAS: ${productInfo?.price ? `El precio base de 1 unidad es $${productInfo.price}.` : 'Busca el precio en la sección CONTEXTO ADICIONAL DEL PRODUCTO. Si no lo encuentras, di "voy a verificar el precio con el equipo" — JAMÁS digas $0 ni inventes un precio.'} Tienes PROHIBIDO inventar precios o promociones. Si el cliente pide una cantidad para la cual NO existe una oferta explícita en tu contexto, DEBES calcular el precio sumando la oferta más cercana más las unidades adicionales al precio base. NUNCA regales unidades ni asumas que 4 valen lo mismo que 3.
+4. 🚫 PROHIBIDO DECIR "NO TENGO FOTOS": Si el cliente pide fotos, imágenes o videos del producto, SIEMPRE usa las etiquetas multimedia disponibles (ej: [IMG_1], [MEDIA_1]). Si no tienes etiquetas multimedia en tu contexto, di "voy a verificar con el equipo y te las envío" — NUNCA digas "no tengo fotos" o "lamentablemente no tengo".
+5. JAMÁS digas "no tengo esa información" — TÚ ERES LA TIENDA. Sophia es la representante oficial de la tienda.
+6. Si genuinamente no hay un dato en ninguna sección, di "voy a verificarlo con el equipo" — nunca "revisa tú".
+7. JAMÁS repitas preguntas sobre datos que ya el cliente respondió.
+8. TÚ ERES LA ÚNICA ASESORA. JAMÁS digas que "un asesor te contactará", "te paso con soporte" o "voy a hacer que un asesor te hable". Tú debes resolver TODAS las dudas tú misma.
+9. NO CANCELES PEDIDOS FÁCILMENTE. Tu meta principal es SALVAR LA VENTA (tasa de confirmación >90%). Si el cliente dice que la dirección está mal, quiere cancelar o tiene dudas, usa toda tu empatía para solucionar el problema.
+10. JAMÁS canceles el pedido en la primera objeción. Siempre busca alternativas para lograr la entrega.
+11. CIERRE Y CONFIRMACIÓN OBLIGATORIA: Una vez tengas absolutamente TODOS los datos de la lista (cuando la sección AÚN FALTA esté vacía), DEBES mandar un MENSAJE DE RESUMEN FINAL confirmando todo de forma clara. Debes incluir: El producto exacto, la cantidad u oferta elegida, las variantes (tallas/colores), el precio total a pagar, y la dirección de entrega con la ciudad. NO devuelvas el intent "Purchase" hasta que el cliente diga explícitamente "Sí" o confirme que el resumen es correcto.
+12. Si el cliente responde "Todo está correcto" o "todo correcto", asume INMEDIATAMENTE que aprueba los datos del pedido y finaliza el proceso de validación.
+13. REGLA ESTRICTA DE NO REPETIR PREGUNTAS: Si el cliente ya te dio su nombre, ciudad u otro dato, TOMA NOTA y NO VUELVAS A PREGUNTARLO. Solo enfócate en preguntar lo que esté en la sección "AÚN FALTA".
+14. FORMULARIO DE ENVÍO: Cuando le pidas los datos de envío al cliente, envíalos TODOS los que falten en un SOLO MENSAJE como formulario. No los pidas de uno en uno. Así la conversación es más rápida y el cliente los puede llenar de una vez.
 ${countrySpecificRules}
 
 ════════════════════════════════════════
