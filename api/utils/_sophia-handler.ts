@@ -122,7 +122,7 @@ export async function handleSophia({ lead, productInfo, leadId, incomingText, st
       cleanedOutput = cleanedOutput.replace(/^```json\s*/i, '').replace(/^```\s*/, '').replace(/\s*```$/i, '').trim();
     }
     
-    let parsed: { reply: string, intent: string, extracted_name?: string, extracted_city?: string, extracted_address?: string, extracted_last_name?: string, extracted_department?: string, extracted_sector?: string, extracted_postal_code?: string, extracted_total_price?: string | number, extracted_phone?: string, extracted_product_name?: string } = { reply: '', intent: 'None' };
+    let parsed: { reply: string, intent: string, extracted_name?: string, extracted_city?: string, extracted_address?: string, extracted_last_name?: string, extracted_department?: string, extracted_sector?: string, extracted_postal_code?: string, extracted_total_price?: string | number, extracted_phone?: string, extracted_product_name?: string, extracted_zone?: string, extracted_references?: string } = { reply: '', intent: 'None' };
     
     try {
       parsed = JSON.parse(cleanedOutput);
@@ -155,7 +155,7 @@ export async function handleSophia({ lead, productInfo, leadId, incomingText, st
     let addressUpdated = false;
     let facadeChanged = false;
 
-    if (parsed.extracted_address || parsed.extracted_city || parsed.extracted_last_name || parsed.extracted_department || parsed.extracted_sector || parsed.extracted_postal_code || parsed.extracted_total_price || parsed.extracted_name || parsed.extracted_phone || parsed.extracted_product_name) {
+    if (parsed.extracted_address || parsed.extracted_city || parsed.extracted_last_name || parsed.extracted_department || parsed.extracted_sector || parsed.extracted_postal_code || parsed.extracted_total_price || parsed.extracted_name || parsed.extracted_phone || parsed.extracted_product_name || parsed.extracted_zone || parsed.extracted_references) {
       const updateData: any = {};
       const normalizeStr = (str: string) => (str || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]/g, "");
       
@@ -177,6 +177,22 @@ export async function handleSophia({ lead, productInfo, leadId, incomingText, st
       if (parsed.extracted_phone) { 
          updateData.contact_phone = parsed.extracted_phone;
          addressUpdated = true;
+      }
+      
+      let newNotes = lead?.notes || '';
+      let notesUpdated = false;
+      if (parsed.extracted_zone && !newNotes.includes('Zona:')) {
+        newNotes += `\nZona: ${parsed.extracted_zone}`;
+        notesUpdated = true;
+      }
+      if (parsed.extracted_references && !newNotes.includes('Referencias:')) {
+        newNotes += `\nReferencias: ${parsed.extracted_references}`;
+        notesUpdated = true;
+      }
+      if (notesUpdated) {
+        updateData.notes = newNotes.trim();
+        lead.notes = updateData.notes;
+        addressUpdated = true;
       }
       
       if (parsed.extracted_total_price) { updateData.total_price = Number(parsed.extracted_total_price); }

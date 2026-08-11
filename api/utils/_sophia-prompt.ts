@@ -82,26 +82,21 @@ DEBES responderle amable y afirmativamente diciéndole que SÍ aceptamos el pago
   }
 
   if (leadInfo.board_type === 'sales_wa') {
-    // Validar Nombre: El nombre del perfil de WhatsApp suele ser falso (ej: emojis, apodos). Pedir nombre real SIEMPRE si falta el apellido.
-    if (!leadInfo.last_name) {
-      missing.push('Nombre y Apellido reales (para el envío)');
+    const missingForm = [];
+    if (!leadInfo.name || !leadInfo.last_name) missingForm.push('- Nombre y Apellido');
+    if (!leadInfo.phone && !leadInfo.contact_phone && !leadInfo.notes?.includes('Celular:')) missingForm.push('- Número de celular');
+    if (!leadInfo.department) missingForm.push('- Departamento / Estado');
+    if (!leadInfo.city) missingForm.push('- Ciudad o municipio');
+    if (!leadInfo.notes?.includes('Zona:')) missingForm.push('- Zona (Urbana o Rural)');
+    if (!leadInfo.address) missingForm.push('- Dirección completa y Complementos (Casa, apto, conjunto, torre, etc.)');
+    if (!leadInfo.sector) missingForm.push('- Barrio');
+    if (!leadInfo.notes?.includes('Referencias:')) missingForm.push('- Otras referencias (Al lado de, cerca a, casa color rojo, etc.)');
+
+    if (missingForm.length > 0) {
+      missing.push(`⚠️ PARA PODER CERRAR LA VENTA Y HACER EL ENVÍO, DEBES PEDIRLE AL CLIENTE QUE LLENE ESTOS DATOS. Envíalos en forma de lista (formulario corto):\n${missingForm.join('\n')}`);
     }
-    if (!leadInfo.city) missing.push('Ciudad');
-    if (!leadInfo.address) missing.push('Dirección exacta de entrega (Calle, Carrera, Número, Apartamento/Casa)');
-    if (!leadInfo.notes?.includes('Teléfono de contacto:') && !leadInfo.phone) missing.push('Número de teléfono de contacto (para la transportadora)');
-    if (!productNameRaw) missing.push('Producto exacto, Cantidad y Variantes (Talla/Color)');
     
-    if (storeCountry === 'Colombia') {
-      if (!leadInfo.department) missing.push('Departamento');
-      if (!leadInfo.sector) missing.push('Barrio o Sector');
-    } else if (storeCountry === 'México') {
-      if (!leadInfo.department) missing.push('Estado');
-      if (!leadInfo.sector) missing.push('Colonia o Delegación');
-      if (!leadInfo.postal_code) missing.push('Código Postal');
-    } else {
-      if (!leadInfo.department) missing.push('Provincia / Estado');
-      if (!leadInfo.postal_code) missing.push('Código Postal');
-    }
+    if (!productNameRaw) missing.push('Producto exacto, Cantidad y Variantes (Talla/Color)');
   } else {
     if (!leadInfo.city) missing.push('Ciudad');
     if (!leadInfo.address) missing.push('Dirección exacta de entrega (Calle, Carrera, Número, Apartamento/Casa)');
@@ -186,6 +181,8 @@ Return a raw JSON object (NO markdown formatting, NO \`\`\`json) with the follow
   "extracted_address": "La dirección de entrega (incluyendo apartamento/casa) si la mencionó",
   "extracted_department": "Departamento, Estado o Provincia si lo mencionó",
   "extracted_sector": "Barrio, colonia o sector si lo mencionó",
+  "extracted_zone": "Zona (Urbana o Rural) si la mencionó",
+  "extracted_references": "Otras referencias o complementos de la dirección si los mencionó",
   "extracted_postal_code": "Código postal si lo mencionó",
   "extracted_product_name": "El nombre exacto del producto, cantidad y variantes (tallas/colores) que eligió el cliente",
   "extracted_total_price": "El valor NUMÉRICO total del pedido (solo números, ej: 85000) si ya está claro qué va a llevar el cliente"
