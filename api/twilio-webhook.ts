@@ -112,6 +112,45 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).json({ error: 'No store found', storeTwilioPhone });
     }
 
+    // ── Meta Cloud API Fallback ─────────────────────
+    // If this store has an active WhatsApp number in the pool, inject its
+    // credentials so the rest of the handler can send via Meta Cloud API
+    // instead of the (potentially expired) Twilio client.
+    const { data: metaWaNumber } = await supabase
+      .from('whatsapp_numbers')
+      .select('phone_number_id, access_token')
+      .eq('store_id', store.id)
+      .eq('is_active', true)
+      .limit(1)
+      .maybeSingle();
+
+    if (metaWaNumber?.access_token && metaWaNumber?.phone_number_id) {
+      store.meta_access_token = metaWaNumber.access_token;
+      store.meta_phone_number_id = metaWaNumber.phone_number_id;
+    }
+
+    const hasMeta = !!(store.meta_access_token && store.meta_phone_number_id);
+
+    // ── Universal Send Helpers ──────────────────────
+    // Route through Meta Cloud API when available, Twilio as fallback
+    const sendWAText = async (text: string) => {
+      if (hasMeta) {
+        const { sendMetaText } = await import('./utils/_meta-whatsapp.js');
+        return sendMetaText({ phoneNumberId: store.meta_phone_number_id, accessToken: store.meta_access_token, to: customerPhone }, text);
+      }
+      const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+      return client.messages.create({ from: `whatsapp:+${storeTwilioPhone.replace('+', '')}`, to: `whatsapp:+${customerPhone}`, body: text });
+    };
+
+    const sendWAMedia = async (text: string, mediaUrl: string) => {
+      if (hasMeta) {
+        const { sendMetaImage } = await import('./utils/_meta-whatsapp.js');
+        return sendMetaImage({ phoneNumberId: store.meta_phone_number_id, accessToken: store.meta_access_token, to: customerPhone }, mediaUrl, text || undefined);
+      }
+      const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+      return client.messages.create({ from: `whatsapp:+${storeTwilioPhone.replace('+', '')}`, to: `whatsapp:+${customerPhone}`, body: text, mediaUrl: [mediaUrl] });
+    };
+
     // ── Find Lead ───────────────────────────────────
     let { data: lead } = await supabase
       .from('leads')
@@ -215,7 +254,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }).catch(e => console.error('Tracking Import Error:', e));
     }
 
-    const isTwilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+    // Twilio client — only used as fallback when Meta Cloud API is not available
+    const isTwilioClient = hasMeta ? null : twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 
     // ── DEBUG COMMAND: RESET ────────────────────────
     if (incomingText.trim().toUpperCase() === 'RESET') {
@@ -224,11 +264,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       await supabase.from('messages').delete().eq('lead_id', leadId);
       
       const resetMsg = '[SISTEMA] Memoria borrada. Empieza de cero mandando de nuevo tu primer mensaje.';
-      await isTwilioClient.messages.create({
-        from: `whatsapp:+${storeTwilioPhone.replace('+', '')}`,
-        to: `whatsapp:+${customerPhone}`,
-        body: resetMsg
-      });
+      await sendWAText(resetMsg);
       return res.status(200).send(TWILIO_EMPTY_RESPONSE);
     }
 
@@ -237,11 +273,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const searchTerm = lead?.product_name ? lead.product_name.substring(0, 15) : '';
       const { data: prods, error } = await supabase.from('products').select('id, name, price, offers, media_assets, master_prompt').ilike('name', `%${searchTerm}%`);
       const debugMsg = `Buscando "${searchTerm}":\nERROR: ${error?.message || 'Ninguno'}\nDATA: ${JSON.stringify(prods, null, 2)}`;
-      await isTwilioClient.messages.create({
-        from: `whatsapp:+${storeTwilioPhone.replace('+', '')}`,
-        to: `whatsapp:+${customerPhone}`,
-        body: debugMsg.substring(0, 1500)
-      });
+      await sendWAText(debugMsg.substring(0, 1500));
       return res.status(200).send(TWILIO_EMPTY_RESPONSE);
     }
 
@@ -250,11 +282,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const searchTerm = lead?.product_name ? lead.product_name.substring(0, 15) : '';
       const { data, error } = await supabase.from('products').select('id, name, offers, media_assets').ilike('name', `%${searchTerm}%`).order('created_at', { ascending: false }).limit(1);
       const debugMsg = `SCHEMA ERROR: ${error?.message || 'Ninguno'}\nDATA: ${JSON.stringify(data, null, 2)}`;
-      await isTwilioClient.messages.create({
-        from: `whatsapp:+${storeTwilioPhone.replace('+', '')}`,
-        to: `whatsapp:+${customerPhone}`,
-        body: debugMsg.substring(0, 1500)
-      });
+      await sendWAText(debugMsg.substring(0, 1500));
       return res.status(200).send(TWILIO_EMPTY_RESPONSE);
     }
 
@@ -310,12 +338,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             const streetViewUrl = `https://maps.googleapis.com/maps/api/streetview?size=600x400&location=${mapQuery}&key=${apiKey}`;
 
             try {
-              await isTwilioClient.messages.create({
-                from: `whatsapp:+${storeTwilioPhone.replace('+', '')}`,
-                to: `whatsapp:+${customerPhone}`,
-                body: '¡Perfecto! 🏠 Para asegurar que la transportadora no se pierda, ¿esta es la fachada de tu dirección de entrega?',
-                mediaUrl: [streetViewUrl]
-              });
+              await sendWAMedia('¡Perfecto! 🏠 Para asegurar que la transportadora no se pierda, ¿esta es la fachada de tu dirección de entrega?', streetViewUrl);
               await supabase.from('messages').insert({
                 lead_id: leadId,
                 sender_type: 'ai',
@@ -351,11 +374,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             console.error('Tracking Error on Purchase (address_confirming)', e);
           }
           const closeMsg = `¡Excelente, ${lead?.name?.split(' ')[0] || 'gracias'}! 🎉 Tu pedido está *confirmado* y pasó a despacho. En breve recibirás la información del envío. Si tienes dudas adicionales, ¡con gusto te ayudo!`;
-          await isTwilioClient.messages.create({
-            from: `whatsapp:+${storeTwilioPhone.replace('+', '')}`,
-            to: `whatsapp:+${customerPhone}`,
-            body: closeMsg
-          });
+          await sendWAText(closeMsg);
           await supabase.from('messages').insert({ lead_id: leadId, sender_type: 'ai', content: closeMsg });
         } else {
           // Client said the address is WRONG or asked something — let Sophia handle it
@@ -389,11 +408,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (isRejection && leadStatus !== 'verifying_address') {
         await supabase.from('leads').update({ status: 'lost' }).eq('id', leadId);
         const byeMsg = `Entendido \uD83D\uDE0A No hay problema. Si en algún momento cambias de opinión, aquí estaremos.\n\n¡Que tengas un excelente día! \uD83C\uDF1F`;
-        await isTwilioClient.messages.create({
-          from: `whatsapp:+${storeTwilioPhone.replace('+', '')}`,
-          to: `whatsapp:+${customerPhone}`,
-          body: byeMsg
-        });
+        await sendWAText(byeMsg);
         await supabase.from('messages').insert({ lead_id: leadId, sender_type: 'ai', content: byeMsg });
         return res.status(200).send(TWILIO_EMPTY_RESPONSE);
       }
@@ -437,22 +452,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             try {
               if (hasStreetView) {
                 const streetViewUrl = `https://maps.googleapis.com/maps/api/streetview?size=600x400&location=${mapQuery}&key=${apiKey}`;
-                await isTwilioClient.messages.create({
-                  from: `whatsapp:+${storeTwilioPhone.replace('+', '')}`,
-                  to: `whatsapp:+${customerPhone}`,
-                  body: '\u00a1Excelente! \uD83C\uDF89 Para asegurar una entrega perfecta, ¿esta es la fachada de tu dirección? \uD83C\uDFE0\uD83D\uDCCD',
-                  mediaUrl: [streetViewUrl]
-                });
+                await sendWAMedia('\u00a1Excelente! \uD83C\uDF89 Para asegurar una entrega perfecta, ¿esta es la fachada de tu dirección? \uD83C\uDFE0\uD83D\uDCCD', streetViewUrl);
                 await supabase.from('messages').insert({
                   lead_id: leadId, sender_type: 'ai',
                   content: `[Automated Street View] ¿Esta es la fachada correcta?\nImage: ${streetViewUrl}`
                 });
               } else {
-                await isTwilioClient.messages.create({
-                  from: `whatsapp:+${storeTwilioPhone.replace('+', '')}`,
-                  to: `whatsapp:+${customerPhone}`,
-                  body: '\u00a1Excelente! \uD83C\uDF89 Tengo toda la información. Para asegurar que la entrega de tu pedido sea perfecta, por favor confírmame si tu dirección es correcta o si hay alguna observación adicional para el mensajero. \uD83C\uDFE0\uD83D\uDCCD'
-                });
+                await sendWAText('\u00a1Excelente! \uD83C\uDF89 Tengo toda la información. Para asegurar que la entrega de tu pedido sea perfecta, por favor confírmame si tu dirección es correcta o si hay alguna observación adicional para el mensajero. \uD83C\uDFE0\uD83D\uDCCD');
                 await supabase.from('messages').insert({
                   lead_id: leadId, sender_type: 'ai',
                   content: `[Automated Text] ¡Excelente! 🎉 Tengo toda la información. Para asegurar que la entrega de tu pedido sea perfecta, por favor confírmame si tu dirección es correcta.`
@@ -481,11 +487,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           }).eq('id', leadId);
           const firstName = lead?.name?.split(' ')[0] || 'amig@';
           const confirmMsg = `\u00a1Perfecto, ${firstName}! \u2705 Tu pedido de *${lead?.product_name || 'tu producto'}* está *100% confirmado*.\n\nEn breve recibirás la información del envío. \u00a1Gracias por tu compra! \uD83C\uDF81`;
-          await isTwilioClient.messages.create({
-            from: `whatsapp:+${storeTwilioPhone.replace('+', '')}`,
-            to: `whatsapp:+${customerPhone}`,
-            body: confirmMsg
-          });
+          await sendWAText(confirmMsg);
           await supabase.from('messages').insert({ lead_id: leadId, sender_type: 'ai', content: confirmMsg });
         } else {
           const productInfo = await fetchProductInfo(lead, store.id);
@@ -688,8 +690,26 @@ export async function handleSophia({ lead, productInfo, leadId, incomingText, st
       }
     }
 
-    // Reusar la instancia global de Twilio (evitar doble instanciación)
-    const isTwilioClient = twilio(process.env.TWILIO_ACCOUNT_SID!, process.env.TWILIO_AUTH_TOKEN!);
+    // Route through Meta Cloud API when available, Twilio as fallback
+    const hasMeta = !!(store?.meta_access_token && store?.meta_phone_number_id);
+    const isTwilioClient = hasMeta ? null : twilio(process.env.TWILIO_ACCOUNT_SID!, process.env.TWILIO_AUTH_TOKEN!);
+
+    // Helper to send text/media from handleSophia scope
+    const sophiaSendText = async (text: string) => {
+      if (hasMeta) {
+        const { sendMetaText } = await import('./utils/_meta-whatsapp.js');
+        return sendMetaText({ phoneNumberId: store.meta_phone_number_id, accessToken: store.meta_access_token, to: customerPhone }, text);
+      }
+      return isTwilioClient!.messages.create({ from: `whatsapp:+${storeTwilioPhone.replace('+', '')}`, to: `whatsapp:+${customerPhone}`, body: text });
+    };
+
+    const sophiaSendMedia = async (text: string, mediaUrl: string) => {
+      if (hasMeta) {
+        const { sendMetaImage } = await import('./utils/_meta-whatsapp.js');
+        return sendMetaImage({ phoneNumberId: store.meta_phone_number_id, accessToken: store.meta_access_token, to: customerPhone }, mediaUrl, text || undefined);
+      }
+      return isTwilioClient!.messages.create({ from: `whatsapp:+${storeTwilioPhone.replace('+', '')}`, to: `whatsapp:+${customerPhone}`, body: text, mediaUrl: [mediaUrl] });
+    };
 
     // ══════════════════════════════════════════════════════
     // MOVER LEAD AUTOMÁTICAMENTE o INTERCEPTAR STREET VIEW
@@ -742,21 +762,12 @@ export async function handleSophia({ lead, productInfo, leadId, incomingText, st
           const streetViewUrl = `https://maps.googleapis.com/maps/api/streetview?size=600x400&location=${mapQuery}&key=${apiKey}`;
           aiReply = `¡Excelente! 🎉 Tengo toda la información. Para asegurar que la entrega de tu pedido sea perfecta, ¿esta es la fachada correcta de tu dirección? 🏠📍`;
           
-          await isTwilioClient.messages.create({
-            from: `whatsapp:+${storeTwilioPhone.replace('+', '')}`,
-            to: `whatsapp:+${customerPhone}`,
-            body: aiReply,
-            mediaUrl: [streetViewUrl]
-          });
+          await sophiaSendMedia(aiReply, streetViewUrl);
           await sb.from('messages').insert({ lead_id: leadId, sender_type: 'ai', content: `[Automated Street View] ${aiReply}\nImage: ${streetViewUrl}` });
         } else {
           aiReply = `¡Excelente! 🎉 Tengo toda la información. Para asegurar que la entrega de tu pedido sea perfecta, por favor confírmame si tu dirección es correcta o si hay alguna observación adicional para el mensajero. 🏠📍`;
           
-          await isTwilioClient.messages.create({
-            from: `whatsapp:+${storeTwilioPhone.replace('+', '')}`,
-            to: `whatsapp:+${customerPhone}`,
-            body: aiReply
-          });
+          await sophiaSendText(aiReply);
           await sb.from('messages').insert({ lead_id: leadId, sender_type: 'ai', content: aiReply });
         }
         return; // Detener flujo aquí, no cerrar el pedido aún
@@ -856,39 +867,33 @@ export async function handleSophia({ lead, productInfo, leadId, incomingText, st
 
     } else {
       if (textForTwilio && mediaUrlsToSend.length > 0) {
-        // Texto + imagen en 1 solo mensaje (en vez de 2 separados)
-        await isTwilioClient.messages.create({
+        await isTwilioClient!.messages.create({
           from: fromNum, to: toNum,
           body: textForTwilio,
           mediaUrl: [mediaUrlsToSend[0]]
         });
       } else if (textForTwilio) {
-        // Solo texto
-        await isTwilioClient.messages.create({
+        await isTwilioClient!.messages.create({
           from: fromNum, to: toNum,
           body: textForTwilio
         });
       } else if (mediaUrlsToSend.length > 0) {
-        // Solo media
-        await isTwilioClient.messages.create({
+        await isTwilioClient!.messages.create({
           from: fromNum, to: toNum,
           mediaUrl: [mediaUrlsToSend[0]]
         });
       } else {
-        // Fallback
-        await isTwilioClient.messages.create({
+        await isTwilioClient!.messages.create({
           from: fromNum, to: toNum,
           body: '👍'
         });
       }
 
-      // 💰 OPTIMIZACIÓN: Máximo 1 archivo multimedia adicional (limitar costos)
       if (mediaUrlsToSend.length > 1) {
-        await isTwilioClient.messages.create({
+        await isTwilioClient!.messages.create({
           from: fromNum, to: toNum,
           mediaUrl: [mediaUrlsToSend[1]]
         });
-        // Ignorar media adicional (3ra, 4ta imagen, etc.) para ahorrar costos
       }
     }
 
